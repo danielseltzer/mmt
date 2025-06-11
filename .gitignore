@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Environment and config
+.env
+.env.local
+.env.*.local
+*.local
+
+# IDE and editor files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Electron
+.electron/
+electron-builder.yml
+
+# MMT specific
+.snapshots/
+.operations/
+test-vault/
+test-config.yaml
+test-config.yml
+
+# Debug
+*.pid
+*.seed
+*.pid.lock
+
+# Package manager files
+.yarn/
+.yarnrc.yml
+package-lock.json
+yarn.lock
