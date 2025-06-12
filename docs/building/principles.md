@@ -97,6 +97,46 @@ packages/
 3. Refactor while tests pass
 4. No implementation without tests
 
+### Dependency Injection
+- Constructor injection is the standard pattern
+- Dependencies are passed as constructor parameters
+- Depend on interfaces, not concrete implementations
+- Manual wiring in application entry points (no DI framework)
+- Lazy initialization where appropriate (e.g., indexer after config)
+
+Example:
+```typescript
+// Good: Explicit constructor injection
+export class ConfigService {
+  constructor(private fs: FileSystemAccess) {}
+}
+
+// Good: Interface dependency
+export class VaultIndex {
+  constructor(
+    private vaultPath: string,
+    private fs: FileSystemAccess  // interface, not concrete class
+  ) {}
+}
+
+// Good: Manual wiring in main
+const fs = new NodeFileSystem();
+const config = new ConfigService(fs);
+const index = new VaultIndex(config.vaultPath, fs);
+```
+
+Testing with dependencies:
+```typescript
+// Test with real implementations, not mocks
+it('should load config from file', async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), 'mmt-test-'));
+  const fs = new NodeFileSystem();  // Real implementation
+  const config = new ConfigService(fs);
+  
+  // Test with real file operations...
+});
+```
+
 ## What We Don't Do
 - No environment variables for configuration
 - No implicit defaults or magic values
