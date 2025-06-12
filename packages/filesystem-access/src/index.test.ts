@@ -365,7 +365,7 @@ This is the content.`;
       expect(result.frontmatter).toEqual({
         title: 'Test Document',
         tags: ['test', 'example'],
-        date: '2024-01-01'
+        date: new Date('2024-01-01')
       });
     });
 
