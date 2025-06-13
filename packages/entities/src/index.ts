@@ -42,18 +42,91 @@ export const DocumentSchema = z.object({
 
 export type Document = z.infer<typeof DocumentSchema>;
 
-// Query schema (GitHub-style)
-export const QuerySchema = z.object({
-  text: z.string().optional().describe('Text search'),
-  path: z.string().optional().describe('Path filter'),
-  tag: z.array(z.string()).optional().describe('Tag filters'),
-  has: z.array(z.string()).optional().describe('Property existence filters'),
-  is: z.array(z.string()).optional().describe('State filters'),
-  sort: z.enum(['name', 'modified', 'size', 'path']).optional().describe('Sort field'),
-  order: z.enum(['asc', 'desc']).optional().describe('Sort order'),
+// Query operator schemas
+export const QueryOperatorSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.array(z.any()),
+  z.object({
+    $gt: z.union([z.string(), z.number()]).optional(),
+    $gte: z.union([z.string(), z.number()]).optional(),
+    $lt: z.union([z.string(), z.number()]).optional(),
+    $lte: z.union([z.string(), z.number()]).optional(),
+    $eq: z.any().optional(),
+    $ne: z.any().optional(),
+    $in: z.array(z.any()).optional(),
+    $nin: z.array(z.any()).optional(),
+    $exists: z.boolean().optional(),
+    $contains: z.any().optional(),
+    $containsAll: z.array(z.any()).optional(),
+    $containsAny: z.array(z.any()).optional(),
+    $match: z.string().optional(),
+    $regex: z.string().optional(),
+    $between: z.tuple([z.number(), z.number()]).optional(),
+  }),
+]);
+
+export type QueryOperator = z.infer<typeof QueryOperatorSchema>;
+
+// User-facing query schema with namespace:property format
+export const QueryInputSchema = z.object({
+  // Sort options (no namespace needed)
+  sort: z.enum(['name', 'modified', 'created', 'size']).optional()
+    .describe('Sort field'),
+  order: z.enum(['asc', 'desc']).optional()
+    .describe('Sort order'),
+})
+.catchall(QueryOperatorSchema)
+.describe('Query using namespace:property format')
+.refine(
+  (obj) => {
+    const namespacePattern = /^(fs|fm|content|inline):[a-zA-Z_][a-zA-Z0-9_]*$/;
+    return Object.keys(obj).every(key => 
+      key === 'sort' || key === 'order' || namespacePattern.test(key)
+    );
+  },
+  { message: 'Query properties must use namespace:property format (e.g., "fs:path", "fm:status")' }
+);
+
+export type QueryInput = z.infer<typeof QueryInputSchema>;
+
+// Structured query schema (internal representation after parsing)
+export const StructuredQuerySchema = z.object({
+  filesystem: z.object({
+    path: QueryOperatorSchema.optional(),
+    name: QueryOperatorSchema.optional(),
+    ext: QueryOperatorSchema.optional(),
+    modified: QueryOperatorSchema.optional(),
+    created: QueryOperatorSchema.optional(),
+    size: QueryOperatorSchema.optional(),
+  }).optional().describe('Filesystem metadata queries'),
+  
+  frontmatter: z.record(z.string(), QueryOperatorSchema).optional()
+    .describe('Frontmatter property queries'),
+  
+  content: z.object({
+    text: z.string().optional(),
+    regex: z.string().optional(),
+  }).optional().describe('Content search queries'),
+  
+  inline: z.object({
+    tags: QueryOperatorSchema.optional(),
+    mentions: QueryOperatorSchema.optional(),
+    tasks: QueryOperatorSchema.optional(),
+  }).optional().describe('Inline metadata queries'),
+  
+  sort: z.object({
+    field: z.enum(['name', 'modified', 'created', 'size']),
+    order: z.enum(['asc', 'desc']).default('asc'),
+  }).optional().describe('Sort configuration'),
 });
 
-export type Query = z.infer<typeof QuerySchema>;
+export type StructuredQuery = z.infer<typeof StructuredQuerySchema>;
+
+// For backward compatibility, export QueryInput as Query
+export const QuerySchema = QueryInputSchema;
+export type Query = QueryInput;
 
 // Document set schema (defined after operations)
 // Will be properly defined after OperationSchema
@@ -218,6 +291,52 @@ export const IndexUpdateEventSchema = z.object({
 
 export type IndexUpdateEvent = z.infer<typeof IndexUpdateEventSchema>;
 
+// Query parser function
+export function parseQuery(input: QueryInput): StructuredQuery {
+  const structured: any = {};
+  
+  for (const [key, value] of Object.entries(input)) {
+    if (key === 'sort' || key === 'order') {
+      // Handle sort options
+      if (input.sort) {
+        structured.sort = { 
+          field: input.sort, 
+          order: input.order || 'asc' 
+        };
+      }
+      continue;
+    }
+    
+    // Parse namespace:property
+    const colonIndex = key.indexOf(':');
+    if (colonIndex === -1) continue; // Skip invalid keys
+    
+    const namespace = key.substring(0, colonIndex);
+    const property = key.substring(colonIndex + 1);
+    
+    switch (namespace) {
+      case 'fs':
+        structured.filesystem ??= {};
+        structured.filesystem[property] = value;
+        break;
+      case 'fm':
+        structured.frontmatter ??= {};
+        structured.frontmatter[property] = value;
+        break;
+      case 'content':
+        structured.content ??= {};
+        structured.content[property] = value;
+        break;
+      case 'inline':
+        structured.inline ??= {};
+        structured.inline[property] = value;
+        break;
+    }
+  }
+  
+  return StructuredQuerySchema.parse(structured);
+}
+
 // Export all schemas for convenience
 export const schemas = {
   // Core objects
@@ -228,7 +347,10 @@ export const schemas = {
   DocumentSet: DocumentSetSchema,
   
   // Query and operations
-  Query: QuerySchema,
+  QueryOperator: QueryOperatorSchema,
+  QueryInput: QueryInputSchema,
+  Query: QuerySchema, // Alias for QueryInput
+  StructuredQuery: StructuredQuerySchema,
   MoveOperation: MoveOperationSchema,
   UpdateFrontmatterOperation: UpdateFrontmatterOperationSchema,
   RemoveFrontmatterOperation: RemoveFrontmatterOperationSchema,

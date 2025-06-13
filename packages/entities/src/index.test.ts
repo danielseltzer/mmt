@@ -7,6 +7,7 @@ import {
   OperationSchema,
   VaultSchema,
   ExecutionResultSchema,
+  parseQuery,
   type Config,
   type DocumentMetadata,
   type Document,
@@ -83,14 +84,14 @@ describe('Entity Schemas', () => {
     });
   });
 
-  describe('QuerySchema', () => {
-    it('should validate complex query', () => {
+  describe('QuerySchema with namespaces', () => {
+    it('should validate query with namespace format', () => {
       const query: Query = {
-        text: 'search term',
-        path: 'folder/',
-        tag: ['tag1', 'tag2'],
-        has: ['property1'],
-        is: ['draft'],
+        'fs:path': 'folder/**',
+        'fs:modified': '>2024-01-01',
+        'fm:status': 'draft',
+        'fm:tags': { $contains: 'important' },
+        'content:text': 'search term',
         sort: 'modified',
         order: 'desc',
       };
@@ -99,11 +100,37 @@ describe('Entity Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should reject query without namespace prefix', () => {
+      const query = {
+        path: 'folder/', // Missing namespace
+        status: 'draft', // Missing namespace
+      };
+      
+      const result = QuerySchema.safeParse(query);
+      expect(result.success).toBe(false);
+    });
+
     it('should validate empty query', () => {
       const query: Query = {};
       
       const result = QuerySchema.safeParse(query);
       expect(result.success).toBe(true);
+    });
+
+    it('should parse query into structured format', () => {
+      const input: Query = {
+        'fs:path': 'posts/**',
+        'fm:status': 'published',
+        'content:text': 'important',
+      };
+      
+      const structured = parseQuery(input);
+      
+      expect(structured).toEqual({
+        filesystem: { path: 'posts/**' },
+        frontmatter: { status: 'published' },
+        content: { text: 'important' },
+      });
     });
   });
 
