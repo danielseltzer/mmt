@@ -66,6 +66,28 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
 
+  packages/core-operations:
+    dependencies:
+      '@mmt/entities':
+        specifier: workspace:*
+        version: link:../entities
+      '@mmt/filesystem-access':
+        specifier: workspace:*
+        version: link:../filesystem-access
+      minimatch:
+        specifier: ^9.0.0
+        version: 9.0.5
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.0
+        version: 20.19.0
+      typescript:
+        specifier: ^5.5.0
+        version: 5.8.3
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3(vitest@3.2.3))(happy-dom@18.0.1)
+
   packages/entities:
     dependencies:
       zod:
