@@ -180,6 +180,12 @@ class VaultContextImpl implements VaultContext {
     };
   }
   
+  /**
+   * @description Select documents matching a query
+   * @param query - Namespace-prefixed query object
+   * @returns New context with matching documents
+   * @example vault.select({ 'fs:path': 'posts/**', 'fm:status': 'draft' })
+   */
   select(query: Query): VaultContext {
     const structured = parseQuery(query);
     const documents = Array.from(this.vault.documents.values());
@@ -192,6 +198,12 @@ class VaultContextImpl implements VaultContext {
     });
   }
   
+  /**
+   * @description Filter current selection with a predicate function
+   * @param predicate - Function returning true to keep document
+   * @returns New context with filtered documents
+   * @example ctx.filter(doc => doc.metadata.modified < oneYearAgo)
+   */
   filter(predicate: (doc: Document) => boolean): VaultContext {
     const filtered = this.selection.documents.filter(predicate);
     
@@ -202,6 +214,12 @@ class VaultContextImpl implements VaultContext {
     });
   }
   
+  /**
+   * @description Combine with another selection (OR operation)
+   * @param other - Another vault context to union with
+   * @returns New context with documents from both selections
+   * @example drafts.union(recent) // All drafts OR recent documents
+   */
   union(other: VaultContext): VaultContext {
     const combined = new Map<string, Document>();
     
@@ -222,6 +240,12 @@ class VaultContextImpl implements VaultContext {
     });
   }
   
+  /**
+   * @description Find documents in both selections (AND operation)
+   * @param other - Another vault context to intersect with
+   * @returns New context with only common documents
+   * @example posts.intersect(drafts) // Documents that are posts AND drafts
+   */
   intersect(other: VaultContext): VaultContext {
     const otherPaths = new Set(other.selection.documents.map(d => d.path));
     const intersection = this.selection.documents.filter(doc => 
@@ -235,6 +259,12 @@ class VaultContextImpl implements VaultContext {
     });
   }
   
+  /**
+   * @description Remove documents in other selection (set difference)
+   * @param other - Selection to subtract from current
+   * @returns New context without documents from other
+   * @example all.difference(archived) // All documents EXCEPT archived
+   */
   difference(other: VaultContext): VaultContext {
     const otherPaths = new Set(other.selection.documents.map(d => d.path));
     const difference = this.selection.documents.filter(doc => 
@@ -389,8 +419,53 @@ function matchesOperator(
       );
     }
     
-    if (operator.$exists !== undefined) {
-      return operator.$exists ? value !== undefined : value === undefined;
+    if (operator.exists !== undefined) {
+      return operator.exists ? value !== undefined : value === undefined;
+    }
+    
+    if (operator.gt !== undefined) {
+      return value > operator.gt;
+    }
+    
+    if (operator.gte !== undefined) {
+      return value >= operator.gte;
+    }
+    
+    if (operator.lt !== undefined) {
+      return value < operator.lt;
+    }
+    
+    if (operator.lte !== undefined) {
+      return value <= operator.lte;
+    }
+    
+    if (operator.eq !== undefined) {
+      return value === operator.eq;
+    }
+    
+    if (operator.ne !== undefined) {
+      return value !== operator.ne;
+    }
+    
+    if (operator.in && Array.isArray(operator.in)) {
+      return operator.in.includes(value);
+    }
+    
+    if (operator.nin && Array.isArray(operator.nin)) {
+      return !operator.nin.includes(value);
+    }
+    
+    if (operator.match && typeof value === 'string') {
+      return minimatch(value, operator.match);
+    }
+    
+    if (operator.regex && typeof value === 'string') {
+      return new RegExp(operator.regex).test(value);
+    }
+    
+    if (operator.between && Array.isArray(operator.between) && operator.between.length === 2) {
+      const [min, max] = operator.between;
+      return value >= min && value <= max;
     }
     
     // Use custom matcher if provided

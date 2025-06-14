@@ -79,6 +79,22 @@ function generateMarkdown(allTests) {
   lines.push('');
   lines.push(`Generated: ${new Date().toLocaleString()}`);
   lines.push('');
+  
+  // Check for tests without documentation
+  const undocumentedTests = allTests.filter(test => !test.given && !test.when && !test.then);
+  if (undocumentedTests.length > 0) {
+    lines.push('## ⚠️ Tests Needing Documentation');
+    lines.push('');
+    lines.push(`Found ${undocumentedTests.length} tests without GIVEN/WHEN/THEN comments:`);
+    lines.push('');
+    
+    for (const test of undocumentedTests) {
+      lines.push(`- 🚨 **${test.suite}** → ${test.test}`);
+      lines.push(`  <sub>${test.file}:${test.line}</sub>`);
+    }
+    lines.push('');
+  }
+  
   lines.push('## What This System Does');
   lines.push('');
   lines.push('Based on verified test cases, MMT provides the following functionality:');
@@ -112,14 +128,23 @@ function generateMarkdown(allTests) {
     }
     
     for (const [suite, suiteTests] of bySuite) {
+      // Get the file path from the first test in this suite
+      const filePath = suiteTests[0].file;
+      
       lines.push(`**${suite}**`);
+      lines.push(`<sub>${filePath}</sub>`);
       lines.push('');
       
       for (const test of suiteTests) {
-        if (test.then) {
-          lines.push(`- ✓ ${test.then}`);
-        } else {
-          lines.push(`- ✓ ${test.test}`);
+        const hasDocumentation = test.given || test.when || test.then;
+        const icon = hasDocumentation ? '✓' : '📝';
+        const description = test.then || test.test;
+        
+        lines.push(`- ${icon} ${description}`);
+        
+        // Add warning if missing documentation
+        if (!hasDocumentation) {
+          lines.push(`  <sub>⚠️ Missing GIVEN/WHEN/THEN at line ${test.line}</sub>`);
         }
       }
       lines.push('');
@@ -130,18 +155,24 @@ function generateMarkdown(allTests) {
   lines.push('## Test Statistics');
   lines.push('');
   lines.push(`- Total tests: ${allTests.length}`);
+  lines.push(`- Documented tests: ${allTests.filter(t => t.given || t.when || t.then).length}`);
+  lines.push(`- Missing documentation: ${undocumentedTests.length}`);
   lines.push(`- Packages tested: ${byPackage.size}`);
   
   // Coverage matrix
   lines.push('');
   lines.push('## Coverage Matrix');
   lines.push('');
-  lines.push('| Package | Suite | Tests | Coverage |');
-  lines.push('|---------|-------|-------|----------|');
+  lines.push('| Package | Suite | Tests | Documented | Status |');
+  lines.push('|---------|-------|-------|------------|--------|');
   
   for (const [pkg, tests] of byPackage) {
     const suites = new Set(tests.map(t => t.suite));
-    lines.push(`| ${pkg} | ${suites.size} suites | ${tests.length} tests | ✓ |`);
+    const documented = tests.filter(t => t.given || t.when || t.then).length;
+    const percentage = Math.round((documented / tests.length) * 100);
+    const status = percentage === 100 ? '✅' : percentage >= 80 ? '⚠️' : '❌';
+    
+    lines.push(`| ${pkg} | ${suites.size} suites | ${tests.length} tests | ${documented}/${tests.length} (${percentage}%) | ${status} |`);
   }
   
   return lines.join('\n');

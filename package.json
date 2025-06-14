@@ -9,7 +9,8 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
-    "test:report": "node scripts/test-report.mjs"
+    "test:report": "node scripts/test-report.mjs",
+    "query:report": "node scripts/query-syntax-report.mjs"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -36,5 +37,6 @@
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
-  }
+  },
+  "packageManager": "pnpm@9.0.0"
 }

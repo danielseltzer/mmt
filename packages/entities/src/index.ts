@@ -42,38 +42,68 @@ export const DocumentSchema = z.object({
 
 export type Document = z.infer<typeof DocumentSchema>;
 
-// Query operator schemas
+/**
+ * @description Query operators for matching values
+ * @example "draft" - Exact match
+ * @example ["blog", "tech"] - Must contain all values
+ * @example { gt: "2024-01-01" } - Greater than comparison
+ * @example { contains: "urgent" } - Array contains value
+ */
 export const QueryOperatorSchema = z.union([
+  /** @description Exact string match */
   z.string(),
+  /** @description Exact number match */
   z.number(),
+  /** @description Exact boolean match */
   z.boolean(),
+  /** @description Array must contain all values */
   z.array(z.any()),
   z.object({
-    $gt: z.union([z.string(), z.number()]).optional(),
-    $gte: z.union([z.string(), z.number()]).optional(),
-    $lt: z.union([z.string(), z.number()]).optional(),
-    $lte: z.union([z.string(), z.number()]).optional(),
-    $eq: z.any().optional(),
-    $ne: z.any().optional(),
-    $in: z.array(z.any()).optional(),
-    $nin: z.array(z.any()).optional(),
-    $exists: z.boolean().optional(),
-    $contains: z.any().optional(),
-    $containsAll: z.array(z.any()).optional(),
-    $containsAny: z.array(z.any()).optional(),
-    $match: z.string().optional(),
-    $regex: z.string().optional(),
-    $between: z.tuple([z.number(), z.number()]).optional(),
+    /** @description Greater than */
+    gt: z.union([z.string(), z.number()]).optional(),
+    /** @description Greater than or equal */
+    gte: z.union([z.string(), z.number()]).optional(),
+    /** @description Less than */
+    lt: z.union([z.string(), z.number()]).optional(),
+    /** @description Less than or equal */
+    lte: z.union([z.string(), z.number()]).optional(),
+    /** @description Equal to (explicit) */
+    eq: z.any().optional(),
+    /** @description Not equal to */
+    ne: z.any().optional(),
+    /** @description Value in array */
+    in: z.array(z.any()).optional(),
+    /** @description Value not in array */
+    nin: z.array(z.any()).optional(),
+    /** @description Property exists */
+    exists: z.boolean().optional(),
+    /** @description Array contains value */
+    contains: z.any().optional(),
+    /** @description Array contains all values */
+    containsAll: z.array(z.any()).optional(),
+    /** @description Array contains any value */
+    containsAny: z.array(z.any()).optional(),
+    /** @description Glob pattern match */
+    match: z.string().optional(),
+    /** @description Regular expression match */
+    regex: z.string().optional(),
+    /** @description Value between two numbers */
+    between: z.tuple([z.number(), z.number()]).optional(),
   }),
 ]);
 
 export type QueryOperator = z.infer<typeof QueryOperatorSchema>;
 
-// User-facing query schema with namespace:property format
+/**
+ * @description User-facing query format using namespace:property syntax
+ * @example { 'fs:path': 'posts/**', 'fm:status': 'draft' }
+ * @example { 'content:text': 'TODO', 'fm:tag': ['urgent', 'bug'] }
+ */
 export const QueryInputSchema = z.object({
-  // Sort options (no namespace needed)
+  /** @description Sort results by field (no namespace needed) */
   sort: z.enum(['name', 'modified', 'created', 'size']).optional()
     .describe('Sort field'),
+  /** @description Sort order for results */
   order: z.enum(['asc', 'desc']).optional()
     .describe('Sort order'),
 })
@@ -91,28 +121,58 @@ export const QueryInputSchema = z.object({
 
 export type QueryInput = z.infer<typeof QueryInputSchema>;
 
-// Structured query schema (internal representation after parsing)
+/**
+ * @description Internal structured representation after parsing namespace:property format
+ */
 export const StructuredQuerySchema = z.object({
+  /**
+   * @namespace fs
+   * @description Query filesystem properties
+   */
   filesystem: z.object({
+    /** @matcher minimatch - Glob patterns for file paths */
     path: QueryOperatorSchema.optional(),
+    /** @matcher exact - Filename without extension */
     name: QueryOperatorSchema.optional(),
+    /** @matcher exact - File extension like .md */
     ext: QueryOperatorSchema.optional(),
+    /** @matcher comparison - File modification date */
     modified: QueryOperatorSchema.optional(),
+    /** @matcher comparison - File creation date */
     created: QueryOperatorSchema.optional(),
+    /** @matcher comparison - File size in bytes */
     size: QueryOperatorSchema.optional(),
   }).optional().describe('Filesystem metadata queries'),
   
+  /**
+   * @namespace fm
+   * @description Query frontmatter properties
+   * @dynamic-properties Any frontmatter field can be queried
+   */
   frontmatter: z.record(z.string(), QueryOperatorSchema).optional()
     .describe('Frontmatter property queries'),
   
+  /**
+   * @namespace content
+   * @description Search document content
+   */
   content: z.object({
+    /** @matcher case-insensitive-contains - Search for text */
     text: z.string().optional(),
+    /** @matcher regex - Regular expression search */
     regex: z.string().optional(),
   }).optional().describe('Content search queries'),
   
+  /**
+   * @namespace inline
+   * @description Query inline tags like #todo
+   */
   inline: z.object({
+    /** @matcher contains-all - Must have all specified tags */
     tags: QueryOperatorSchema.optional(),
+    /** @matcher contains-all - Must have all specified mentions */
     mentions: QueryOperatorSchema.optional(),
+    /** @matcher contains-all - Must have all specified task states */
     tasks: QueryOperatorSchema.optional(),
   }).optional().describe('Inline metadata queries'),
   

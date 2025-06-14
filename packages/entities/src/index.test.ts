@@ -90,7 +90,7 @@ describe('Entity Schemas', () => {
         'fs:path': 'folder/**',
         'fs:modified': '>2024-01-01',
         'fm:status': 'draft',
-        'fm:tags': { $contains: 'important' },
+        'fm:tags': { contains: 'important' },
         'content:text': 'search term',
         sort: 'modified',
         order: 'desc',
