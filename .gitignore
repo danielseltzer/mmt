@@ -70,6 +70,7 @@ electron-builder.yml
 test-vault/
 test-config.yaml
 test-config.yml
+reports/
 
 # Debug
 *.pid
