@@ -15,7 +15,7 @@ The MMT language supports a fluent, chainable API pattern:
 ```typescript
 // Fluent example: Archive old drafts
 const result = await vault
-  .select({ tag: ['draft'], path: 'posts/**' })
+  .select({ 'fm:tag': ['draft'], 'fs:path': 'posts/**' })
   .filter(doc => doc.metadata.modified < thirtyDaysAgo)
   .move('archive/2024/')
   .updateMetadata({ archived: new Date() })
@@ -83,11 +83,11 @@ const all = vault.select({});
 assert(all.selection.count === vault.documentCount);
 
 // Test: Path patterns work
-const posts = vault.select({ path: 'posts/**/*.md' });
+const posts = vault.select({ 'fs:path': 'posts/**/*.md' });
 assert(posts.selection.documents.every(d => d.path.startsWith('/posts/')));
 
 // Test: Multiple tags are ANDed
-const taggedDocs = vault.select({ tag: ['draft', 'important'] });
+const taggedDocs = vault.select({ 'fm:tag': ['draft', 'important'] });
 assert(taggedDocs.selection.documents.every(d => 
   d.metadata.tags.includes('draft') && 
   d.metadata.tags.includes('important')
@@ -110,13 +110,13 @@ Filters the current selection using a predicate function.
 ```typescript
 // Test: Filter reduces selection
 const old = vault
-  .select({ path: 'posts/**' })
+  .select({ 'fs:path': 'posts/**' })
   .filter(doc => doc.metadata.modified < oneYearAgo);
-assert(old.selection.count <= vault.select({ path: 'posts/**' }).selection.count);
+assert(old.selection.count <= vault.select({ 'fs:path': 'posts/**' }).selection.count);
 
 // Test: Filter on empty selection returns empty
 const empty = vault
-  .select({ tag: ['nonexistent'] })
+  .select({ 'fm:tag': ['nonexistent'] })
   .filter(doc => true);
 assert(empty.selection.count === 0);
 ```
@@ -140,19 +140,19 @@ Generates move operations for the current selection.
 ```typescript
 // Test: Cannot move outside vault
 assert.throws(() => 
-  vault.select({ path: 'doc.md' }).move('../outside/')
+  vault.select({ 'fs:path': 'doc.md' }).move('../outside/')
 );
 
 // Test: No overwrites - generates unique names
 const result = vault
-  .select({ path: 'a.md' })
+  .select({ 'fs:path': 'a.md' })
   .move('folder/') // folder/a.md exists
   .execute();
 assert(result.movedFiles['a.md'] === 'folder/a-1.md');
 
 // Test: Links are updated
 const withLinks = vault
-  .select({ path: 'doc-with-links.md' })
+  .select({ 'fs:path': 'doc-with-links.md' })
   .move('new-folder/')
   .execute();
 // All documents linking to doc-with-links.md now link to new-folder/doc-with-links.md
@@ -160,7 +160,7 @@ assert(withLinks.updatedLinks.length > 0);
 
 // Test: Preserves extensions
 const docs = vault
-  .select({ path: '*.md' })
+  .select({ 'fs:path': '*.md' })
   .move('archive/');
 assert(docs.pendingOps.every(op => 
   op.type === 'move' && op.to.endsWith('.md')
@@ -186,7 +186,7 @@ Updates frontmatter for selected documents.
 ```typescript
 // Test: Merge adds new properties
 const merged = vault
-  .select({ path: 'doc.md' }) // has {title: 'Old'}
+  .select({ 'fs:path': 'doc.md' }) // has {title: 'Old'}
   .updateMetadata({ tags: ['new'] }, 'merge')
   .execute();
 assert(merged.documents['doc.md'].metadata.frontmatter.title === 'Old');
@@ -194,7 +194,7 @@ assert(merged.documents['doc.md'].metadata.frontmatter.tags.includes('new'));
 
 // Test: Replace removes old properties  
 const replaced = vault
-  .select({ path: 'doc.md' }) // has {title: 'Old', tags: ['a']}
+  .select({ 'fs:path': 'doc.md' }) // has {title: 'Old', tags: ['a']}
   .updateMetadata({ status: 'new' }, 'replace')
   .execute();
 assert(replaced.documents['doc.md'].metadata.frontmatter.title === undefined);
@@ -202,7 +202,7 @@ assert(replaced.documents['doc.md'].metadata.frontmatter.status === 'new');
 
 // Test: Null removes in merge mode
 const removed = vault
-  .select({ path: 'doc.md' })
+  .select({ 'fs:path': 'doc.md' })
   .updateMetadata({ unwanted: null }, 'merge')
   .execute();
 assert(!('unwanted' in removed.documents['doc.md'].metadata.frontmatter));
@@ -220,14 +220,14 @@ Combines two selections (OR operation).
 **Testable Assertions:**
 ```typescript
 // Test: Union combines selections
-const drafts = vault.select({ tag: ['draft'] });
-const recent = vault.select({ path: 'posts/2024/**' });
+const drafts = vault.select({ 'fm:tag': ['draft'] });
+const recent = vault.select({ 'fs:path': 'posts/2024/**' });
 const combined = drafts.union(recent);
 assert(combined.selection.count >= Math.max(drafts.selection.count, recent.selection.count));
 
 // Test: No duplicates
-const tagA = vault.select({ tag: ['a'] }); // doc1, doc2
-const tagB = vault.select({ tag: ['b'] }); // doc2, doc3
+const tagA = vault.select({ 'fm:tag': ['a'] }); // doc1, doc2
+const tagB = vault.select({ 'fm:tag': ['b'] }); // doc2, doc3
 const union = tagA.union(tagB);
 assert(union.selection.count === 3); // doc1, doc2, doc3 (no duplicate doc2)
 ```
@@ -244,16 +244,16 @@ Finds documents in both selections (AND operation).
 **Testable Assertions:**
 ```typescript
 // Test: Intersect finds common documents
-const posts = vault.select({ path: 'posts/**' });
-const drafts = vault.select({ tag: ['draft'] });
+const posts = vault.select({ 'fs:path': 'posts/**' });
+const drafts = vault.select({ 'fm:tag': ['draft'] });
 const draftPosts = posts.intersect(drafts);
 assert(draftPosts.selection.documents.every(d => 
   d.path.startsWith('/posts/') && d.metadata.tags.includes('draft')
 ));
 
 // Test: Empty intersection
-const tagA = vault.select({ tag: ['only-a'] });
-const tagB = vault.select({ tag: ['only-b'] });
+const tagA = vault.select({ 'fm:tag': ['only-a'] });
+const tagB = vault.select({ 'fm:tag': ['only-b'] });
 assert(tagA.intersect(tagB).selection.count === 0);
 ```
 
@@ -269,7 +269,7 @@ Documents in current selection but not in other (set difference).
 ```typescript
 // Test: Difference removes documents
 const all = vault.select({});
-const drafts = vault.select({ tag: ['draft'] });
+const drafts = vault.select({ 'fm:tag': ['draft'] });
 const nonDrafts = all.difference(drafts);
 assert(nonDrafts.selection.documents.every(d => 
   !d.metadata.tags.includes('draft')
@@ -320,7 +320,7 @@ assert(result.executed.length === 0); // Nothing was executed
 // Test: Rollback works
 const before = vault.select({}).selection.documents;
 const result = await vault
-  .select({ tag: ['temp'] })
+  .select({ 'fm:tag': ['temp'] })
   .move('archived/')
   .execute();
 assert(result.success === true);
@@ -336,7 +336,7 @@ assert.deepEqual(before, after); // State restored
 ```typescript
 // Only archive if more than 100 old drafts
 const oldDrafts = vault
-  .select({ tag: ['draft'] })
+  .select({ 'fm:tag': ['draft'] })
   .filter(doc => doc.metadata.modified < thirtyDaysAgo);
 
 if (oldDrafts.selection.count > 100) {
@@ -351,7 +351,7 @@ if (oldDrafts.selection.count > 100) {
 
 ```typescript
 // 1. Find orphaned images
-const images = vault.select({ path: 'images/**' });
+const images = vault.select({ 'fs:path': 'images/**' });
 const orphaned = images.filter(img => {
   const linkedFrom = vault.findIncomingLinks(img.path);
   return linkedFrom.length === 0;
@@ -386,7 +386,7 @@ if (result.success) {
 // Process in batches to avoid memory issues
 const BATCH_SIZE = 100;
 const largeSe
-  = vault.select({ path: 'data/**' });
+  = vault.select({ 'fs:path': 'data/**' });
 
 for (let i = 0; i < largeSet.selection.count; i += BATCH_SIZE) {
   const batch = largeSet
