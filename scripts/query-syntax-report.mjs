@@ -162,15 +162,45 @@ function generateReport(data) {
   
   // Operator reference
   lines.push('**Available Operators:**');
-  lines.push('| Operator | Description | Example |');
-  lines.push('|----------|-------------|---------|');
-  lines.push('| (direct) | Exact match | `"draft"` or `["blog", "tech"]` |');
+  lines.push('');
+  lines.push('| Operator | Description |');
+  lines.push('|----------|-------------|');
+  lines.push('| (direct) | Exact match |');
   
   for (const [op, desc] of Object.entries(data.queryStructure.operators)) {
-    const example = getOperatorExample(op);
-    lines.push(`| ${op} | ${desc} | ${example} |`);
+    lines.push(`| ${op} | ${desc} |`);
   }
   
+  lines.push('');
+  lines.push('**Operator Examples:**');
+  lines.push('```typescript');
+  lines.push('// Direct values (exact match)');
+  lines.push('"draft"                              // String exact match');
+  lines.push('["blog", "tech"]                     // Array must contain all values');
+  lines.push('');
+  lines.push('// Comparison operators');
+  lines.push('{ gt: "2024-01-01" }                 // Greater than');
+  lines.push('{ gte: 100 }                         // Greater than or equal');
+  lines.push('{ lt: "2024-12-31" }                 // Less than');
+  lines.push('{ lte: 1000 }                        // Less than or equal');
+  lines.push('');
+  lines.push('// Equality operators');
+  lines.push('{ eq: "exact-value" }                // Equal to (explicit)');
+  lines.push('{ ne: "excluded" }                   // Not equal to');
+  lines.push('');
+  lines.push('// Array operators');
+  lines.push('{ in: ["option1", "option2"] }       // Value in array');
+  lines.push('{ nin: ["excluded1", "excluded2"] }  // Value not in array');
+  lines.push('{ contains: "item" }                 // Array contains value');
+  lines.push('{ containsAll: ["req1", "req2"] }    // Array contains all values');
+  lines.push('{ containsAny: ["opt1", "opt2"] }    // Array contains any value');
+  lines.push('');
+  lines.push('// Special operators');
+  lines.push('{ exists: true }                     // Property exists');
+  lines.push('{ match: "*.test.ts" }               // Glob pattern match');
+  lines.push('{ regex: "^TODO:" }                  // Regular expression match');
+  lines.push('{ between: [0, 100] }                // Value between two numbers');
+  lines.push('```');
   lines.push('');
   
   // Common patterns
@@ -202,23 +232,23 @@ function generateReport(data) {
 
 function getOperatorExample(op) {
   const examples = {
-    'gt': '`{ gt: "2024-01-01" }`',
-    'gte': '`{ gte: 100 }`',
-    'lt': '`{ lt: "2024-12-31" }`',
-    'lte': '`{ lte: 1000 }`',
-    'eq': '`{ eq: "exact-value" }`',
-    'ne': '`{ ne: "excluded" }`',
-    'in': '`{ in: ["option1", "option2"] }`',
-    'nin': '`{ nin: ["excluded1", "excluded2"] }`',
-    'exists': '`{ exists: true }`',
-    'contains': '`{ contains: "item" }`',
-    'containsAll': '`{ containsAll: ["required1", "required2"] }`',
-    'containsAny': '`{ containsAny: ["option1", "option2"] }`',
-    'match': '`{ match: "*.test.ts" }`',
-    'regex': '`{ regex: "^TODO:" }`',
-    'between': '`{ between: [0, 100] }`'
+    'gt': '<code>{ gt: "2024-01-01" }</code>',
+    'gte': '<code>{ gte: 100 }</code>',
+    'lt': '<code>{ lt: "2024-12-31" }</code>',
+    'lte': '<code>{ lte: 1000 }</code>',
+    'eq': '<code>{ eq: "exact-value" }</code>',
+    'ne': '<code>{ ne: "excluded" }</code>',
+    'in': '<code>{ in: ["option1", "option2"] }</code>',
+    'nin': '<code>{ nin: ["excluded1", "excluded2"] }</code>',
+    'exists': '<code>{ exists: true }</code>',
+    'contains': '<code>{ contains: "item" }</code>',
+    'containsAll': '<code>{ containsAll: ["required1", "required2"] }</code>',
+    'containsAny': '<code>{ containsAny: ["option1", "option2"] }</code>',
+    'match': '<code>{ match: "*.test.ts" }</code>',
+    'regex': '<code>{ regex: "^TODO:" }</code>',
+    'between': '<code>{ between: [0, 100] }</code>'
   };
-  return examples[op] || `\`{ ${op}: value }\``;
+  return examples[op] || `<code>{ ${op}: value }</code>`;
 }
 
 /**
