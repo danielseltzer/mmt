@@ -168,7 +168,7 @@ function generateReport(data) {
   
   for (const [op, desc] of Object.entries(data.queryStructure.operators)) {
     const example = getOperatorExample(op);
-    lines.push(`| ${op} | ${desc} | \`${example}\` |`);
+    lines.push(`| ${op} | ${desc} | ${example} |`);
   }
   
   lines.push('');
@@ -202,23 +202,23 @@ function generateReport(data) {
 
 function getOperatorExample(op) {
   const examples = {
-    'gt': '{ gt: "2024-01-01" }',
-    'gte': '{ gte: 100 }',
-    'lt': '{ lt: "2024-12-31" }',
-    'lte': '{ lte: 1000 }',
-    'eq': '{ eq: "exact-value" }',
-    'ne': '{ ne: "excluded" }',
-    'in': '{ in: ["option1", "option2"] }',
-    'nin': '{ nin: ["excluded1", "excluded2"] }',
-    'exists': '{ exists: true }',
-    'contains': '{ contains: "item" }',
-    'containsAll': '{ containsAll: ["required1", "required2"] }',
-    'containsAny': '{ containsAny: ["option1", "option2"] }',
-    'match': '{ match: "*.test.ts" }',
-    'regex': '{ regex: "^TODO:" }',
-    'between': '{ between: [0, 100] }'
+    'gt': '`{ gt: "2024-01-01" }`',
+    'gte': '`{ gte: 100 }`',
+    'lt': '`{ lt: "2024-12-31" }`',
+    'lte': '`{ lte: 1000 }`',
+    'eq': '`{ eq: "exact-value" }`',
+    'ne': '`{ ne: "excluded" }`',
+    'in': '`{ in: ["option1", "option2"] }`',
+    'nin': '`{ nin: ["excluded1", "excluded2"] }`',
+    'exists': '`{ exists: true }`',
+    'contains': '`{ contains: "item" }`',
+    'containsAll': '`{ containsAll: ["required1", "required2"] }`',
+    'containsAny': '`{ containsAny: ["option1", "option2"] }`',
+    'match': '`{ match: "*.test.ts" }`',
+    'regex': '`{ regex: "^TODO:" }`',
+    'between': '`{ between: [0, 100] }`'
   };
-  return examples[op] || `{ ${op}: value }`;
+  return examples[op] || `\`{ ${op}: value }\``;
 }
 
 /**
