@@ -351,51 +351,6 @@ export const IndexUpdateEventSchema = z.object({
 
 export type IndexUpdateEvent = z.infer<typeof IndexUpdateEventSchema>;
 
-// Query parser function
-export function parseQuery(input: QueryInput): StructuredQuery {
-  const structured: any = {};
-  
-  for (const [key, value] of Object.entries(input)) {
-    if (key === 'sort' || key === 'order') {
-      // Handle sort options
-      if (input.sort) {
-        structured.sort = { 
-          field: input.sort, 
-          order: input.order || 'asc' 
-        };
-      }
-      continue;
-    }
-    
-    // Parse namespace:property
-    const colonIndex = key.indexOf(':');
-    if (colonIndex === -1) continue; // Skip invalid keys
-    
-    const namespace = key.substring(0, colonIndex);
-    const property = key.substring(colonIndex + 1);
-    
-    switch (namespace) {
-      case 'fs':
-        structured.filesystem ??= {};
-        structured.filesystem[property] = value;
-        break;
-      case 'fm':
-        structured.frontmatter ??= {};
-        structured.frontmatter[property] = value;
-        break;
-      case 'content':
-        structured.content ??= {};
-        structured.content[property] = value;
-        break;
-      case 'inline':
-        structured.inline ??= {};
-        structured.inline[property] = value;
-        break;
-    }
-  }
-  
-  return StructuredQuerySchema.parse(structured);
-}
 
 // Export all schemas for convenience
 export const schemas = {

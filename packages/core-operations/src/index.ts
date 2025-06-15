@@ -2,7 +2,7 @@
  * @fileoverview Core operations for MMT - the domain-specific language for markdown operations
  */
 
-export { loadVault, createVaultContext } from './vault.js';
+export { loadVault, createVaultContext } from './vault-operations.js';
 
 // Re-export types from entities that are part of the public API
 export type {

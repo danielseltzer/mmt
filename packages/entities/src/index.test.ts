@@ -7,7 +7,6 @@ import {
   OperationSchema,
   VaultSchema,
   ExecutionResultSchema,
-  parseQuery,
   type Config,
   type DocumentMetadata,
   type Document,
@@ -117,21 +116,6 @@ describe('Entity Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should parse query into structured format', () => {
-      const input: Query = {
-        'fs:path': 'posts/**',
-        'fm:status': 'published',
-        'content:text': 'important',
-      };
-      
-      const structured = parseQuery(input);
-      
-      expect(structured).toEqual({
-        filesystem: { path: 'posts/**' },
-        frontmatter: { status: 'published' },
-        content: { text: 'important' },
-      });
-    });
   });
 
   describe('OperationSchema', () => {

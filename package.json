@@ -9,6 +9,7 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
+    "clean": "turbo clean && rm -rf node_modules",
     "test:report": "node scripts/test-report.mjs",
     "query:report": "node scripts/query-syntax-report.mjs"
   },
