@@ -45,7 +45,7 @@ export const DocumentSetSchema = z.object({
 export type DocumentSet = z.infer<typeof DocumentSetSchema>;
 
 // Import all schemas for the convenience export
-import { ConfigSchema } from './config.schema.js';
+import { ConfigSchema, AppContextSchema } from './config.schema.js';
 import { 
   BaseDocumentMetadataSchema,
   DocumentMetadataSchema,
@@ -85,6 +85,7 @@ import {
 export const schemas = {
   // Core objects
   Config: ConfigSchema,
+  AppContext: AppContextSchema,
   BaseDocumentMetadata: BaseDocumentMetadataSchema,
   DocumentMetadata: DocumentMetadataSchema,
   Document: DocumentSchema,

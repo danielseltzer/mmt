@@ -15,25 +15,31 @@ MMT (Markdown Management Toolkit) provides both programmatic (scripting) and vis
 
 ### Phase 1: Foundation & Core (Milestone 1)
 
-**Goal**: Establish config management and scripting architecture
+**Goal**: Establish config management and scripting architecture. By the end of this milestone, we can run the app from command line with a config and a simple script that writes to console.
 
 1. **Issue #5: Config Package** ⚡ CRITICAL
    - Load and validate configurations
-   - Support multiple named configs
+   - Validate paths exist
    - Provide config context to all operations
 
-2. **NEW Issue: Design Scripting Architecture** 📋 PLANNING
+2. **Issue #35: Application Director** ⚡ CRITICAL
+   - Parse command-line arguments
+   - Load configuration via ConfigService
+   - Wire up dependencies
+   - Route to appropriate handlers
+
+3. **Issue #26: Design Scripting Architecture** 📋 PLANNING
    - Define scripting API patterns
    - Operation pipeline design
    - Result collection and reporting
    - Error handling strategies
    - Example script specifications
 
-3. **NEW Issue: Basic Scripting Package** 
+4. **Issue #27: Basic Scripting Package** 
    - Implement @mmt/scripting
-   - Config loading and context
-   - Basic operation execution
-   - Result reporting (JSON, markdown)
+   - ScriptRunner class
+   - Basic console output
+   - Script loading and execution
 
 ### Phase 2: Local Indexing System (Milestone 2)
 

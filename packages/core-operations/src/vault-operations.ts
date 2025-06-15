@@ -229,7 +229,7 @@ class VaultContextImpl implements VaultContext {
     });
     
     // Add all from other selection
-    other.selection.documents.forEach(doc => {
+    other.selection.documents.forEach((doc: Document) => {
       combined.set(doc.path, doc);
     });
     
@@ -247,7 +247,7 @@ class VaultContextImpl implements VaultContext {
    * @example posts.intersect(drafts) // Documents that are posts AND drafts
    */
   intersect(other: VaultContext): VaultContext {
-    const otherPaths = new Set(other.selection.documents.map(d => d.path));
+    const otherPaths = new Set(other.selection.documents.map((d: Document) => d.path));
     const intersection = this.selection.documents.filter(doc => 
       otherPaths.has(doc.path)
     );
@@ -266,7 +266,7 @@ class VaultContextImpl implements VaultContext {
    * @example all.difference(archived) // All documents EXCEPT archived
    */
   difference(other: VaultContext): VaultContext {
-    const otherPaths = new Set(other.selection.documents.map(d => d.path));
+    const otherPaths = new Set(other.selection.documents.map((d: Document) => d.path));
     const difference = this.selection.documents.filter(doc => 
       !otherPaths.has(doc.path)
     );

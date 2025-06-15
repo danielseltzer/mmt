@@ -21,20 +21,21 @@ describe('Entity Schemas', () => {
     it('should validate valid config', () => {
       const config: Config = {
         vaultPath: '/Users/test/vault',
-        qmServiceUrl: 'http://localhost:8080',
+        indexPath: '/Users/test/.mmt/index',
       };
       
       const result = ConfigSchema.safeParse(config);
       expect(result.success).toBe(true);
     });
 
-    it('should validate config without optional qmServiceUrl', () => {
-      const config: Config = {
+    it('should require both vaultPath and indexPath', () => {
+      const config = {
         vaultPath: '/Users/test/vault',
+        // missing indexPath
       };
       
       const result = ConfigSchema.safeParse(config);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('should reject invalid config', () => {
