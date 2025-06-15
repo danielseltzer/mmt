@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "test": "vitest",
+    "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "lint": "eslint src",
     "type-check": "tsc --noEmit",

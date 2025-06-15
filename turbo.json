@@ -13,6 +13,11 @@
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
     },
+    "test:run": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": false
+    },
     "clean": {
       "cache": false
     }
