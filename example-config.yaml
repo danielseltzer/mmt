@@ -1,0 +1,11 @@
+# Example MMT configuration file
+# 
+# All paths must be absolute. No defaults are provided.
+# The vault directory must exist at load time.
+# The index path will be created by the indexer if it doesn't exist.
+
+# Absolute path to your markdown vault directory
+vaultPath: /Users/username/Documents/my-notes
+
+# Absolute path where MMT will store its index database
+indexPath: /Users/username/.mmt/my-notes-index

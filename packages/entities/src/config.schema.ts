@@ -19,7 +19,7 @@ import { z } from 'zod';
  * ```typescript
  * const config: Config = {
  *   vaultPath: '/Users/me/Documents/notes',
- *   qmServiceUrl: 'https://qm.example.com'
+ *   indexPath: '/Users/me/.mmt/notes-index'
  * };
  * ```
  */
@@ -31,10 +31,36 @@ export const ConfigSchema = z.object({
   vaultPath: z.string().describe('Absolute path to the markdown vault'),
   
   /**
-   * Optional URL for QM (Query Manager) vector similarity service.
-   * When provided, enables AI-powered similarity search features.
+   * Absolute path to store the vault index.
+   * The index database will be created here if it doesn't exist.
    */
-  qmServiceUrl: z.string().url().optional().describe('Optional URL for QM vector service'),
-});
+  indexPath: z.string().describe('Absolute path to store the vault index'),
+}).strict();
 
 export type Config = z.infer<typeof ConfigSchema>;
+
+/**
+ * Application context schema.
+ * 
+ * The runtime context containing validated configuration and other
+ * application-level data that flows through the system. Currently 
+ * minimal but designed to grow as needed.
+ * 
+ * @example
+ * ```typescript
+ * const context: AppContext = {
+ *   config: {
+ *     vaultPath: '/Users/me/Documents/notes',
+ *     indexPath: '/Users/me/.mmt/notes-index'
+ *   }
+ * };
+ * ```
+ */
+export const AppContextSchema = z.object({
+  /**
+   * The validated user configuration loaded from the config file.
+   */
+  config: ConfigSchema,
+});
+
+export type AppContext = z.infer<typeof AppContextSchema>;
