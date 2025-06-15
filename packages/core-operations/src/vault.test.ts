@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
 import type { Vault, Document, DocumentSet } from '@mmt/entities';
 import { TestVault, vaultAssertions } from '../test/test-utils.js';
-import { loadVault, createVaultContext } from './vault.js';
+import { loadVault, createVaultContext } from './vault-operations.js';
 
 describe('Vault Operations', () => {
   const testVault = new TestVault();
@@ -113,11 +113,11 @@ describe('Vault Operations', () => {
     
     it('should select by frontmatter tag with contains operator', () => {
       // GIVEN: Documents with frontmatter.tags arrays
-      // WHEN: Selecting with 'fm:tags': { $contains: 'blog' }
+      // WHEN: Selecting with 'fm:tags': { contains: 'blog' }
       // THEN: Only documents whose tags array contains 'blog' are returned
       const ctx = createVaultContext(vault);
       const result = ctx.select({ 
-        'fm:tags': { $contains: 'blog' } 
+        'fm:tags': { contains: 'blog' } 
       });
       
       expect(result.selection.documents).toHaveLength(2);
@@ -157,11 +157,11 @@ describe('Vault Operations', () => {
     
     it('should select by inline tags', () => {
       // GIVEN: Documents with #hashtags in content
-      // WHEN: Selecting by 'inline:tags': { $contains: '#active' }
+      // WHEN: Selecting by 'inline:tags': { contains: '#active' }
       // THEN: Only documents containing that hashtag in content are returned
       const ctx = createVaultContext(vault);
       const result = ctx.select({ 
-        'inline:tags': { $contains: '#active' }
+        'inline:tags': { contains: '#active' }
       });
       
       expect(result.selection.documents).toHaveLength(1);

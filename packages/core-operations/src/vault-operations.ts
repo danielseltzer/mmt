@@ -13,11 +13,11 @@ import type {
   VaultIndex,
 } from '@mmt/entities';
 import { 
-  parseQuery,
   VaultSchema,
   DocumentSchema,
   VaultContextSchema,
 } from '@mmt/entities';
+import { parseQuery } from '@mmt/query-parser';
 import { NodeFileSystem, type FileSystemAccess } from '@mmt/filesystem-access';
 import { minimatch } from 'minimatch';
 
@@ -403,18 +403,18 @@ function matchesOperator(
   
   // Complex operators
   if (typeof operator === 'object' && operator !== null) {
-    if (operator.$contains && Array.isArray(value)) {
-      return value.includes(operator.$contains);
+    if (operator.contains && Array.isArray(value)) {
+      return value.includes(operator.contains);
     }
     
-    if (operator.$containsAll && Array.isArray(value)) {
-      return operator.$containsAll.every((item: any) => 
+    if (operator.containsAll && Array.isArray(value)) {
+      return operator.containsAll.every((item: any) => 
         value.includes(item)
       );
     }
     
-    if (operator.$containsAny && Array.isArray(value)) {
-      return operator.$containsAny.some((item: any) => 
+    if (operator.containsAny && Array.isArray(value)) {
+      return operator.containsAny.some((item: any) => 
         value.includes(item)
       );
     }
@@ -423,19 +423,19 @@ function matchesOperator(
       return operator.exists ? value !== undefined : value === undefined;
     }
     
-    if (operator.gt !== undefined) {
+    if (operator.gt !== undefined && (typeof value === 'string' || typeof value === 'number')) {
       return value > operator.gt;
     }
     
-    if (operator.gte !== undefined) {
+    if (operator.gte !== undefined && (typeof value === 'string' || typeof value === 'number')) {
       return value >= operator.gte;
     }
     
-    if (operator.lt !== undefined) {
+    if (operator.lt !== undefined && (typeof value === 'string' || typeof value === 'number')) {
       return value < operator.lt;
     }
     
-    if (operator.lte !== undefined) {
+    if (operator.lte !== undefined && (typeof value === 'string' || typeof value === 'number')) {
       return value <= operator.lte;
     }
     
@@ -463,7 +463,7 @@ function matchesOperator(
       return new RegExp(operator.regex).test(value);
     }
     
-    if (operator.between && Array.isArray(operator.between) && operator.between.length === 2) {
+    if (operator.between && Array.isArray(operator.between) && operator.between.length === 2 && typeof value === 'number') {
       const [min, max] = operator.between;
       return value >= min && value <= max;
     }

@@ -15,7 +15,6 @@ export * from './query.schema.js';
 export * from './operation.schema.js';
 export * from './vault.schema.js';
 export * from './ui.schema.js';
-export * from './utils.js';
 
 // Import schemas needed for cross-references
 import { DocumentSchema } from './document.schema.js';
