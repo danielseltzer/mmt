@@ -62,8 +62,24 @@ export class ConfigService {
       config = ConfigSchema.parse(rawConfig);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const issues = error.issues.map(issue => `  - ${issue.path.join('.')}: ${issue.message}`).join('\n');
-        this.exitWithError(`Configuration validation failed:\n${issues}`);
+        const issues = error.issues.map(issue => {
+          // Provide helpful context for unrecognized keys
+          if (issue.code === 'unrecognized_keys') {
+            const unrecognized = (issue as any).keys || [];
+            return `  - Unrecognized fields: ${unrecognized.join(', ')}\n    Allowed fields: vaultPath, indexPath`;
+          }
+          return `  - ${issue.path.join('.')}: ${issue.message}`;
+        }).join('\n');
+        
+        this.exitWithError(
+          `Configuration validation failed:\n${issues}\n\n` +
+          `Valid config example:\n` +
+          `---\n` +
+          `vaultPath: /absolute/path/to/vault\n` +
+          `indexPath: /absolute/path/to/index\n` +
+          `---\n\n` +
+          `Note: Only vaultPath and indexPath are currently supported.`
+        );
       }
       this.exitWithError(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
