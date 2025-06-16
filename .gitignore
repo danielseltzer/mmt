@@ -72,6 +72,12 @@ test-config.yaml
 test-config.yml
 reports/
 
+# MMT runtime data
+.mmt-data/
+.mmt-cache/
+.mmt-index/
+.mmt/
+
 # Debug
 *.pid
 *.seed

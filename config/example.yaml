@@ -4,22 +4,27 @@
 # REQUIRED: Absolute path to your markdown vault
 vaultPath: /Users/username/Documents/MyVault
 
-# REQUIRED: Where to store the index
-indexPath: /Users/username/.mmt/index
+# REQUIRED: Where to store the index (relative or absolute)
+indexPath: .mmt-data/indexes/default
 
 # OPTIONAL: Cache configuration
 cache:
   enabled: true
-  location: /Users/username/.mmt/cache
+  location: .mmt-data/cache
+
+# OPTIONAL: Logging configuration
+logs:
+  directory: .mmt-data/logs
+  level: info              # debug, info, warn, error
 
 # OPTIONAL: Performance tuning
 performance:
-  maxConcurrent: 4      # Max concurrent operations
-  useWorkers: true      # Use worker threads for indexing
+  maxConcurrent: 4         # Max concurrent operations
+  useWorkers: true         # Use worker threads for indexing
   
 # OPTIONAL: File patterns to ignore
 ignore:
-  - ".*"                # Hidden files
-  - "_*"                # Files starting with underscore
-  - "node_modules/**"   # Dependencies
-  - ".obsidian/**"      # Obsidian config
+  - ".*"                   # Hidden files
+  - "_*"                   # Files starting with underscore
+  - "node_modules/**"      # Dependencies
+  - ".obsidian/**"         # Obsidian config

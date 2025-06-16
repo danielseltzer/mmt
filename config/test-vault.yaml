@@ -2,13 +2,17 @@
 # Update the vaultPath to point to your actual Obsidian vault
 
 vaultPath: /Users/danielseltzer/Documents/ObsidianVault  # UPDATE THIS PATH
-indexPath: /Users/danielseltzer/code/mmt/.mmt-index
+indexPath: .mmt-data/indexes/test
 
 # Optional settings
 cache:
   enabled: true
-  location: /Users/danielseltzer/code/mmt/.mmt-cache
+  location: .mmt-data/cache
 
 performance:
   maxConcurrent: 4
   useWorkers: true
+
+logs:
+  directory: .mmt-data/logs
+  level: info
