@@ -15,6 +15,7 @@ export * from './query.schema.js';
 export * from './operation.schema.js';
 export * from './vault.schema.js';
 export * from './ui.schema.js';
+export * from './scripting.schema.js';
 
 // Import schemas needed for cross-references
 import { DocumentSchema } from './document.schema.js';
@@ -77,6 +78,21 @@ import {
   ColumnConfigSchema,
   TableViewConfigSchema,
 } from './ui.schema.js';
+import {
+  SelectCriteriaSchema,
+  OperationTypeSchema,
+  ScriptOperationSchema,
+  OutputFormatSchema,
+  OutputConfigSchema,
+  ExecutionOptionsSchema,
+  OperationPipelineSchema,
+  ScriptContextSchema,
+  SuccessResultSchema,
+  FailureResultSchema,
+  SkippedResultSchema,
+  ExecutionStatsSchema,
+  ScriptExecutionResultSchema,
+} from './scripting.schema.js';
 
 /**
  * Convenience export of all schemas grouped by domain.
@@ -118,4 +134,19 @@ export const schemas = {
   // Events and results
   FileOperationResult: FileOperationResultSchema,
   IndexUpdateEvent: IndexUpdateEventSchema,
+  
+  // Scripting
+  SelectCriteria: SelectCriteriaSchema,
+  OperationType: OperationTypeSchema,
+  ScriptOperation: ScriptOperationSchema,
+  OutputFormat: OutputFormatSchema,
+  OutputConfig: OutputConfigSchema,
+  ExecutionOptions: ExecutionOptionsSchema,
+  OperationPipeline: OperationPipelineSchema,
+  ScriptContext: ScriptContextSchema,
+  SuccessResult: SuccessResultSchema,
+  FailureResult: FailureResultSchema,
+  SkippedResult: SkippedResultSchema,
+  ExecutionStats: ExecutionStatsSchema,
+  ScriptExecutionResult: ScriptExecutionResultSchema,
 } as const;
