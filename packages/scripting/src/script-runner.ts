@@ -207,9 +207,12 @@ export class ScriptRunner {
 
   /**
    * Select documents based on criteria.
+   * 
+   * Currently only supports explicit file lists. Query-based selection
+   * will be implemented once the indexer package is available.
    */
   private async selectDocuments(criteria: SelectCriteria): Promise<Document[]> {
-    // Handle explicit file list
+    // Handle explicit file list - this is the only working selection method currently
     if ('files' in criteria && criteria.files) {
       const docs: Document[] = [];
       for (const filePath of criteria.files) {
@@ -218,14 +221,14 @@ export class ScriptRunner {
           const stats = await this.fs.stat(filePath);
           docs.push({
             path: filePath,
-            content: '', // Will be loaded if needed
+            content: '', // Content loading not yet implemented
             metadata: {
               name: filePath.replace(/\.md$/, '').split('/').pop() || filePath,
               modified: stats.mtime,
               size: stats.size,
-              frontmatter: {},
-              tags: [],
-              links: [],
+              frontmatter: {}, // Frontmatter parsing requires indexer
+              tags: [],        // Tag extraction requires indexer
+              links: [],       // Link extraction requires indexer
             },
           });
         }
@@ -233,18 +236,17 @@ export class ScriptRunner {
       return docs;
     }
 
-    // Handle query-based selection
-    // This is a simplified implementation - the real one would use the indexer
+    // Query-based selection is not yet implemented
     const query = Object.entries(criteria as Record<string, any>)
       .filter(([key]) => key !== 'files')
       .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {} as Record<string, any>);
 
-    // For now, just handle basic fs:path patterns
-    if (query['fs:path']) {
-      const pattern = query['fs:path'] as string;
-      // This would use the indexer in the real implementation
-      // For now, returning empty array
-      return [];
+    if (Object.keys(query).length > 0) {
+      throw new Error(
+        `Query-based selection is not yet implemented. ` +
+        `Queries like 'fs:path' or 'fm:status' require the indexer package. ` +
+        `Currently only explicit file lists are supported using: { files: [...] }`
+      );
     }
 
     return [];
@@ -252,28 +254,23 @@ export class ScriptRunner {
 
   /**
    * Execute a single operation on a document.
+   * 
+   * @throws Error for all operations until they are implemented
    */
   private async executeOperation(
     doc: Document,
     operation: ScriptOperation
   ): Promise<{ skipped?: boolean; reason?: string; details?: any }> {
-    // This is a placeholder - real implementation would delegate to
-    // the appropriate operation package based on operation.type
-    switch (operation.type) {
-      case 'move':
-        // Would call file-relocator package
-        return { details: { moved: true } };
-      
-      case 'delete':
-        // Would call filesystem-access
-        return { details: { deleted: true } };
-      
-      case 'updateFrontmatter':
-        // Would call document-operations package
-        return { details: { updated: true } };
-      
-      default:
-        return { skipped: true, reason: `Unknown operation type: ${operation.type}` };
-    }
+    // All operations are not yet implemented
+    // They will be added as the corresponding packages are built:
+    // - 'move' requires @mmt/file-relocator package
+    // - 'delete' requires integration with @mmt/filesystem-access
+    // - 'updateFrontmatter' requires @mmt/document-operations package
+    // - 'rename' requires @mmt/file-relocator package
+    
+    throw new Error(
+      `Operation '${operation.type}' is not yet implemented. ` +
+      `This operation will be available once the required packages are built.`
+    );
   }
 }

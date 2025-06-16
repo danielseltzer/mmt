@@ -85,7 +85,7 @@ describe('ScriptRunner', () => {
       expect(output.join('')).toContain('To execute these changes, run with --execute flag');
     });
 
-    it('should execute operations when executeNow is true', async () => {
+    it('should throw error for operations when executeNow is true', async () => {
       class TestScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -106,11 +106,12 @@ describe('ScriptRunner', () => {
 
       const result = await scriptRunner.executePipeline(pipeline, { executeNow: true });
 
-      expect(result.succeeded).toHaveLength(1);
-      expect(result.failed).toHaveLength(0);
-      expect(result.succeeded[0].details).toEqual({ moved: true });
+      // Operations should fail with not implemented error
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(1);
+      expect(result.failed[0].error.message).toContain("Operation 'move' is not yet implemented");
       
-      // Check output doesn't show preview mode
+      // Check output shows execution attempted
       expect(output.join('')).toContain('EXECUTION COMPLETE');
       expect(output.join('')).not.toContain('PREVIEW MODE');
     });
@@ -170,8 +171,7 @@ describe('ScriptRunner', () => {
       expect(outputText).toContain('✓ b.md');
     });
 
-    it('should handle operation failures', async () => {
-      // Override executeOperation to simulate failure
+    it('should handle all operations as not implemented', async () => {
       const runner = new ScriptRunner({
         config: {
           vaultPath: tempDir,
@@ -182,19 +182,10 @@ describe('ScriptRunner', () => {
         outputStream: { write: (chunk: string) => { output.push(chunk); return true; } } as any,
       });
 
-      // Monkey-patch to simulate failure
-      const originalExecute = runner['executeOperation'];
-      runner['executeOperation'] = async (doc, op) => {
-        if (doc.path === 'fail.md') {
-          throw new Error('Simulated failure');
-        }
-        return originalExecute.call(runner, doc, op);
-      };
-
       class FailScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: ['pass.md', 'fail.md'] },
+            select: { files: ['test1.md', 'test2.md'] },
             operations: [{ type: 'delete' }],
           };
         }
@@ -210,9 +201,11 @@ describe('ScriptRunner', () => {
 
       const result = await runner.executePipeline(pipeline, { executeNow: true });
 
-      expect(result.succeeded).toHaveLength(1);
-      expect(result.failed).toHaveLength(1);
-      expect(result.failed[0].error.message).toBe('Simulated failure');
+      // All operations should fail as not implemented
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(2);
+      expect(result.failed[0].error.message).toContain("Operation 'delete' is not yet implemented");
+      expect(result.failed[1].error.message).toContain("Operation 'delete' is not yet implemented");
     });
 
     it('should respect failFast option', async () => {
@@ -225,11 +218,6 @@ describe('ScriptRunner', () => {
         queryParser: new QueryParser(),
         outputStream: { write: () => true } as any,
       });
-
-      // Monkey-patch to simulate all failures
-      runner['executeOperation'] = async () => {
-        throw new Error('Failed');
-      };
 
       class FailFastScript implements Script {
         define(context: ScriptContext): OperationPipeline {
@@ -251,33 +239,35 @@ describe('ScriptRunner', () => {
 
       const result = await runner.executePipeline(pipeline, { executeNow: true, failFast: true });
 
-      // Should stop after first failure
+      // Should stop after first failure (all operations are not implemented)
       expect(result.failed).toHaveLength(1);
       expect(result.succeeded).toHaveLength(0);
+      expect(result.failed[0].error.message).toContain("Operation 'delete' is not yet implemented");
     });
   });
 
-  describe('script loading', () => {
-    it('should load and validate script files', async () => {
-      // Create a test script file
-      const scriptPath = join(tempDir, 'test-script.mmt.ts');
-      const scriptContent = `
-        export default class TestScript {
-          define(context) {
-            return {
-              select: { files: ['test.md'] },
-              operations: [{ type: 'delete' }],
-            };
-          }
+  describe('selection validation', () => {
+    it('should throw error for query-based selection', async () => {
+      class QueryScript implements Script {
+        define(context: ScriptContext): OperationPipeline {
+          return {
+            select: { 'fs:path': 'posts/**/*.md' },
+            operations: [{ type: 'delete' }],
+          };
         }
-      `;
-      writeFileSync(scriptPath, scriptContent);
+      }
 
-      // This would work with real ES modules
-      // For testing, we'll verify the validation logic
+      const script = new QueryScript();
+      const pipeline = script.define({
+        vaultPath: tempDir,
+        indexPath: join(tempDir, '.mmt-index'),
+        scriptPath: 'query.mmt.ts',
+        cliOptions: {},
+      });
+
       await expect(
-        scriptRunner.runScript(scriptPath)
-      ).rejects.toThrow(/Failed to load script/);
+        scriptRunner.executePipeline(pipeline, { executeNow: false })
+      ).rejects.toThrow(/Query-based selection is not yet implemented/);
     });
   });
 

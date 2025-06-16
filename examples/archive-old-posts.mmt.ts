@@ -4,10 +4,13 @@ import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
  * Example MMT script that archives posts older than one week.
  * 
  * This demonstrates:
- * - Pattern-based file selection
+ * - Pattern-based file selection (NOT YET IMPLEMENTED - requires indexer)
  * - Filter functions to refine selection
- * - Move operations
+ * - Move operations (NOT YET IMPLEMENTED - requires file-relocator)
  * - Safe-by-default (preview mode)
+ * 
+ * NOTE: This script will throw errors until the required packages are built.
+ * It serves as a specification for future functionality.
  */
 export default class ArchiveOldPosts implements Script {
   define(context: ScriptContext): OperationPipeline {

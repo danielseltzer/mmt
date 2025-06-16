@@ -4,10 +4,13 @@ import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
  * Example MMT script that deletes old draft posts.
  * 
  * This demonstrates:
- * - Query-based selection using frontmatter
- * - Delete operations
+ * - Query-based selection using frontmatter (NOT YET IMPLEMENTED - requires indexer)
+ * - Delete operations (NOT YET IMPLEMENTED)
  * - Detailed output format
  * - Safe-by-default with explicit execute required
+ * 
+ * NOTE: This script will throw errors until the required packages are built.
+ * It serves as a specification for future functionality.
  */
 export default class CleanupDrafts implements Script {
   define(context: ScriptContext): OperationPipeline {
