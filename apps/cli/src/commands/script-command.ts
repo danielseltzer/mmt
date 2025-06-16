@@ -1,14 +1,20 @@
 import type { AppContext } from '@mmt/entities';
 import type { CommandHandler } from './index.js';
+import { ScriptRunner } from '@mmt/scripting';
+import { NodeFileSystem } from '@mmt/filesystem-access';
+import { QueryParser } from '@mmt/query-parser';
 import { ScriptCommandArgsSchema } from '../schemas/cli.schema.js';
 import { debugLog } from '../schemas/cli.schema.js';
+import { resolve, isAbsolute } from 'path';
 
 /**
  * Script command handler.
- * Executes user scripts with access to the vault.
+ * Executes MMT scripts with operation pipelines.
  * 
- * This is a placeholder implementation until we build
- * the actual scripting package.
+ * Usage: mmt script <script-file> [options]
+ * Options:
+ *   --execute    Actually execute operations (default is preview)
+ *   --output     Output format (summary, detailed, json, csv)
  */
 export class ScriptCommand implements CommandHandler {
   static readonly COMMAND_NAME = 'script';
@@ -16,7 +22,7 @@ export class ScriptCommand implements CommandHandler {
   async execute(context: AppContext, args: string[]): Promise<void> {
     // Check for script path before parsing
     if (!args[0]) {
-      throw new Error('Script path required. Usage: mmt --config=<path> script <script-path>');
+      throw new Error('Script path required. Usage: mmt --config=<path> script <script-path> [--execute]');
     }
     
     // Parse and validate script arguments
@@ -32,21 +38,38 @@ export class ScriptCommand implements CommandHandler {
       indexPath: context.config.indexPath,
     });
     
-    // Placeholder implementation
-    console.log(`[Script Placeholder] Would execute: ${scriptArgs.scriptPath}`);
-    console.log(`[Script Placeholder] Vault path: ${context.config.vaultPath}`);
-    console.log(`[Script Placeholder] Index path: ${context.config.indexPath}`);
+    // Resolve script path
+    const absoluteScriptPath = isAbsolute(scriptArgs.scriptPath) 
+      ? scriptArgs.scriptPath 
+      : resolve(process.cwd(), scriptArgs.scriptPath);
+
+    // Extract CLI options
+    const cliOptions: Record<string, any> = {};
     
-    if (scriptArgs.scriptArgs.length > 0) {
-      console.log(`[Script Placeholder] Script args: ${scriptArgs.scriptArgs.join(' ')}`);
+    // Check for --execute flag
+    if (scriptArgs.scriptArgs.includes('--execute')) {
+      cliOptions.execute = true;
     }
-    
-    // TODO: When we implement the scripting package:
-    // const scriptConfig: ScriptRunnerConfig = {
-    //   vaultPath: context.config.vaultPath,
-    //   scriptPath: scriptArgs.scriptPath,
-    // };
-    // const runner = new ScriptRunner(scriptConfig, new NodeFileSystem());
-    // await runner.execute(context);
+
+    // Check for --output format
+    const outputIndex = scriptArgs.scriptArgs.indexOf('--output');
+    if (outputIndex !== -1 && scriptArgs.scriptArgs[outputIndex + 1]) {
+      cliOptions.outputFormat = scriptArgs.scriptArgs[outputIndex + 1];
+    }
+
+    // Create script runner with dependencies
+    const runner = new ScriptRunner({
+      config: context.config,
+      fileSystem: new NodeFileSystem(),
+      queryParser: new QueryParser(),
+    });
+
+    try {
+      // Execute the script
+      await runner.runScript(absoluteScriptPath, cliOptions);
+    } catch (error) {
+      console.error(`Script execution failed: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
   }
 }

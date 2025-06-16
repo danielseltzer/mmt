@@ -77,6 +77,15 @@ importers:
       '@mmt/entities':
         specifier: workspace:*
         version: link:../../packages/entities
+      '@mmt/filesystem-access':
+        specifier: workspace:*
+        version: link:../../packages/filesystem-access
+      '@mmt/query-parser':
+        specifier: workspace:*
+        version: link:../../packages/query-parser
+      '@mmt/scripting':
+        specifier: workspace:*
+        version: link:../../packages/scripting
       zod:
         specifier: ^3.22.4
         version: 3.25.62
@@ -197,6 +206,31 @@ importers:
       vitest:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.0)(@vitest/ui@1.6.1)(happy-dom@18.0.1)
+
+  packages/scripting:
+    dependencies:
+      '@mmt/entities':
+        specifier: workspace:*
+        version: link:../entities
+      '@mmt/filesystem-access':
+        specifier: workspace:*
+        version: link:../filesystem-access
+      '@mmt/query-parser':
+        specifier: workspace:*
+        version: link:../query-parser
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.62
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.0
+      typescript:
+        specifier: ^5.3.2
+        version: 5.8.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
 
 packages:
 

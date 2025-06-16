@@ -1,13 +1,16 @@
 {
-  "name": "@mmt/cli",
-  "version": "0.1.0",
-  "description": "Command-line interface for MMT - Markdown Management Toolkit",
+  "name": "@mmt/scripting",
+  "version": "0.0.0",
+  "description": "Scripting API for MMT - execute declarative operation pipelines on markdown vaults",
   "type": "module",
-  "bin": {
-    "mmt": "./dist/index.js"
-  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -19,11 +22,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@mmt/config": "workspace:*",
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/query-parser": "workspace:*",
-    "@mmt/scripting": "workspace:*",
     "zod": "^3.22.4"
   },
   "devDependencies": {
