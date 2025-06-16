@@ -6,6 +6,20 @@ import type { QueryInput, StructuredQuery } from '@mmt/entities';
 import { StructuredQuerySchema } from '@mmt/entities';
 
 /**
+ * Query parser class for converting user queries to structured format
+ */
+export class QueryParser {
+  /**
+   * Parse a user-facing query into structured format
+   * @param input - Query with namespace:property format
+   * @returns Structured query with separated namespaces
+   */
+  parse(input: QueryInput): StructuredQuery {
+    return parseQuery(input);
+  }
+}
+
+/**
  * Parse a user-facing query into structured format
  * @param input - Query with namespace:property format
  * @returns Structured query with separated namespaces
