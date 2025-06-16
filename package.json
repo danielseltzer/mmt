@@ -12,11 +12,13 @@
     "type-check": "turbo type-check",
     "clean": "turbo clean && rm -rf node_modules",
     "test:report": "node scripts/test-report.mjs",
-    "query:report": "node scripts/query-syntax-report.mjs"
+    "query:report": "node scripts/query-syntax-report.mjs",
+    "report:operations": "tsx tools/generate-operations-report.ts"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@electron-toolkit/utils": "^4.0.0",
+    "@types/glob": "^8.1.0",
     "@types/node": "^20.14.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
@@ -31,6 +33,7 @@
     "glob": "^11.0.3",
     "happy-dom": "^18.0.1",
     "prettier": "^3.5.3",
+    "tsx": "^4.20.3",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0",
     "vite": "^6.3.5",
