@@ -246,6 +246,9 @@ importers:
       '@mmt/filesystem-access':
         specifier: workspace:*
         version: link:../filesystem-access
+      '@mmt/indexer':
+        specifier: workspace:*
+        version: link:../indexer
       '@mmt/query-parser':
         specifier: workspace:*
         version: link:../query-parser

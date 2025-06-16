@@ -1,0 +1,3 @@
+# Simplified config for testing (only required fields)
+vaultPath: /Users/danielseltzer/Notes/Personal-sync-20250616
+indexPath: /Users/danielseltzer/code/mmt/.mmt-data/indexes/daniel-personal

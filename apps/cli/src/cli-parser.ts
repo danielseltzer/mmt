@@ -30,8 +30,20 @@ export class CliParser {
         parsed.version = true;
       } else if (arg === '--debug') {
         parsed.debug = true;
-      } else if (arg.startsWith('--config=')) {
+      } else if (arg.startsWith('--config=') && !parsed.command) {
+        // Handle --config=value format (only before command)
         parsed.configPath = arg.slice('--config='.length);
+      } else if (arg === '--config' && !parsed.command) {
+        // Handle --config value format (only before command)
+        if (i + 1 >= args.length) {
+          throw new Error('--config flag requires a value');
+        }
+        // Check if next arg looks like a command instead of a value
+        const nextArg = args[i + 1];
+        if (!nextArg.startsWith('-') && ['script', 'help'].includes(nextArg)) {
+          throw new Error('--config flag requires a value');
+        }
+        parsed.configPath = args[++i];
       } else if (arg === '--help' || arg === '-h') {
         parsed.command = 'help';
       } else if (!parsed.command && !arg.startsWith('-')) {

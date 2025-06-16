@@ -14,6 +14,8 @@ import type {
 } from '@mmt/entities';
 import { OperationPipelineSchema } from '@mmt/entities';
 import type { FileSystemAccess } from '@mmt/filesystem-access';
+import { VaultIndexer } from '@mmt/indexer';
+import type { Query, PageMetadata } from '@mmt/indexer';
 import { QueryParser } from '@mmt/query-parser';
 import type { Script } from './script.interface.js';
 import { ResultFormatter } from './result-formatter.js';
@@ -37,6 +39,7 @@ export class ScriptRunner {
   private readonly queryParser: QueryParser;
   private readonly output: NodeJS.WritableStream;
   private readonly formatter: ResultFormatter;
+  private indexer?: VaultIndexer;
 
   constructor(options: ScriptRunnerOptions) {
     this.config = options.config;
@@ -50,6 +53,17 @@ export class ScriptRunner {
    * Load and execute a script from a file path.
    */
   async runScript(scriptPath: string, cliOptions: Record<string, any> = {}): Promise<ScriptExecutionResult> {
+    // Initialize indexer if not already done
+    if (!this.indexer) {
+      this.indexer = new VaultIndexer({
+        vaultPath: this.config.vaultPath,
+        fileSystem: this.fs,
+        useCache: true,
+        useWorkers: true,
+      });
+      await this.indexer.initialize();
+    }
+    
     // Load the script module
     const script = await this.loadScript(scriptPath);
     
@@ -59,6 +73,7 @@ export class ScriptRunner {
       indexPath: this.config.indexPath,
       scriptPath,
       cliOptions,
+      indexer: this.indexer,
     };
 
     // Get pipeline definition from script
@@ -208,11 +223,10 @@ export class ScriptRunner {
   /**
    * Select documents based on criteria.
    * 
-   * Currently only supports explicit file lists. Query-based selection
-   * will be implemented once the indexer package is available.
+   * Supports both explicit file lists and query-based selection using the indexer.
    */
   private async selectDocuments(criteria: SelectCriteria): Promise<Document[]> {
-    // Handle explicit file list - this is the only working selection method currently
+    // Handle explicit file list
     if ('files' in criteria && criteria.files) {
       const docs: Document[] = [];
       for (const filePath of criteria.files) {
@@ -221,14 +235,14 @@ export class ScriptRunner {
           const stats = await this.fs.stat(filePath);
           docs.push({
             path: filePath,
-            content: '', // Content loading not yet implemented
+            content: '', // Content loading on demand
             metadata: {
               name: filePath.replace(/\.md$/, '').split('/').pop() || filePath,
               modified: stats.mtime,
               size: stats.size,
-              frontmatter: {}, // Frontmatter parsing requires indexer
-              tags: [],        // Tag extraction requires indexer
-              links: [],       // Link extraction requires indexer
+              frontmatter: {},
+              tags: [],
+              links: [],
             },
           });
         }
@@ -236,20 +250,66 @@ export class ScriptRunner {
       return docs;
     }
 
-    // Query-based selection is not yet implemented
+    // Query-based selection using indexer
+    if (!this.indexer) {
+      throw new Error('Indexer not initialized');
+    }
+
     const query = Object.entries(criteria as Record<string, any>)
       .filter(([key]) => key !== 'files')
       .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {} as Record<string, any>);
 
-    if (Object.keys(query).length > 0) {
-      throw new Error(
-        `Query-based selection is not yet implemented. ` +
-        `Queries like 'fs:path' or 'fm:status' require the indexer package. ` +
-        `Currently only explicit file lists are supported using: { files: [...] }`
-      );
+    if (Object.keys(query).length === 0) {
+      // No criteria - return all documents
+      const allDocs = await this.indexer.getAllDocuments();
+      return this.convertMetadataToDocuments(allDocs);
     }
 
-    return [];
+    // Convert criteria to indexer query
+    const indexerQuery = this.buildIndexerQuery(query);
+    const results = await this.indexer.query(indexerQuery);
+    return this.convertMetadataToDocuments(results);
+  }
+
+  /**
+   * Build an indexer query from script selection criteria.
+   */
+  private buildIndexerQuery(criteria: Record<string, any>): Query {
+    const conditions: Query['conditions'] = [];
+
+    for (const [field, value] of Object.entries(criteria)) {
+      // Determine operator based on value type
+      let operator: Query['conditions'][0]['operator'] = 'equals';
+      if (typeof value === 'string' && value.includes('*')) {
+        operator = 'matches';
+      }
+
+      conditions.push({
+        field,
+        operator,
+        value,
+      });
+    }
+
+    return { conditions };
+  }
+
+  /**
+   * Convert PageMetadata from indexer to Document format for scripts.
+   */
+  private convertMetadataToDocuments(metadata: PageMetadata[]): Document[] {
+    return metadata.map(meta => ({
+      path: meta.path,
+      content: '', // Content loaded on demand
+      metadata: {
+        name: meta.basename,
+        modified: new Date(meta.mtime),
+        size: meta.size,
+        frontmatter: meta.frontmatter,
+        tags: meta.tags,
+        links: [], // Links would need to be fetched separately from indexer
+      },
+    }));
   }
 
   /**

@@ -1,0 +1,8 @@
+# Ignore personal config files
+*.personal.yaml
+*.local.yaml
+daniel-vault.yaml
+
+# But keep example configs
+!*.example.yaml
+!test-vault.yaml
