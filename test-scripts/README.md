@@ -4,14 +4,14 @@ These scripts test the indexer integration and allow comparison with Obsidian Da
 
 ## Setup
 
-1. Update `test-vault-config.yaml` with your actual vault path:
+1. Update `config/test-vault.yaml` with your actual vault path:
    ```yaml
    vaultPath: /path/to/your/obsidian/vault
    ```
 
 2. Run a test script:
    ```bash
-   pnpm mmt script test-scripts/count-all.mmt.ts --config test-vault-config.yaml
+   pnpm mmt script test-scripts/count-all.mmt.ts --config config/test-vault.yaml
    ```
 
 ## Test Scripts

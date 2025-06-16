@@ -1,0 +1,25 @@
+# Example MMT configuration file
+# Copy this to create your own config
+
+# REQUIRED: Absolute path to your markdown vault
+vaultPath: /Users/username/Documents/MyVault
+
+# REQUIRED: Where to store the index
+indexPath: /Users/username/.mmt/index
+
+# OPTIONAL: Cache configuration
+cache:
+  enabled: true
+  location: /Users/username/.mmt/cache
+
+# OPTIONAL: Performance tuning
+performance:
+  maxConcurrent: 4      # Max concurrent operations
+  useWorkers: true      # Use worker threads for indexing
+  
+# OPTIONAL: File patterns to ignore
+ignore:
+  - ".*"                # Hidden files
+  - "_*"                # Files starting with underscore
+  - "node_modules/**"   # Dependencies
+  - ".obsidian/**"      # Obsidian config
