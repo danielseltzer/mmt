@@ -1,0 +1,14 @@
+# Test configuration for validating indexer against production vault
+# Update the vaultPath to point to your actual Obsidian vault
+
+vaultPath: /Users/danielseltzer/Documents/ObsidianVault  # UPDATE THIS PATH
+indexPath: /Users/danielseltzer/code/mmt/.mmt-index
+
+# Optional settings
+cache:
+  enabled: true
+  location: /Users/danielseltzer/code/mmt/.mmt-cache
+
+performance:
+  maxConcurrent: 4
+  useWorkers: true

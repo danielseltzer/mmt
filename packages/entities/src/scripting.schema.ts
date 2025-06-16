@@ -87,6 +87,7 @@ export const ScriptContextSchema = z.object({
   indexPath: z.string().describe('Absolute path to the index'),
   scriptPath: z.string().describe('Path to the executing script'),
   cliOptions: z.record(z.string(), z.any()).describe('Options passed from CLI'),
+  indexer: z.any().describe('Vault indexer instance for queries'),
 }).describe('Context provided to scripts');
 
 /**

@@ -247,7 +247,7 @@ describe('ScriptRunner', () => {
   });
 
   describe('selection validation', () => {
-    it('should throw error for query-based selection', async () => {
+    it('should throw error when indexer not initialized for query-based selection', async () => {
       class QueryScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -267,7 +267,7 @@ describe('ScriptRunner', () => {
 
       await expect(
         scriptRunner.executePipeline(pipeline, { executeNow: false })
-      ).rejects.toThrow(/Query-based selection is not yet implemented/);
+      ).rejects.toThrow('Indexer not initialized');
     });
   });
 
