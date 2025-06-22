@@ -27,6 +27,7 @@ export class VaultIndexer {
   private cache?: MetadataCache;
   private workers?: WorkerPool;
   private watcher?: FileWatcher;
+  private errorCount: number = 0;
   
   constructor(private options: IndexerOptions) {
     this.storage = new IndexStorage();
@@ -49,6 +50,9 @@ export class VaultIndexer {
   async initialize(): Promise<void> {
     console.log(`Initializing indexer for vault: ${this.options.vaultPath}`);
     
+    const startTime = Date.now();
+    this.errorCount = 0; // Reset error count
+    
     // Load from cache if available
     if (this.cache) {
       await this.loadFromCache();
@@ -62,11 +66,23 @@ export class VaultIndexer {
     this.linkExtractor.updateFileLookup(files);
     
     // Index files (using workers if available)
+    const indexingStart = Date.now();
     if (this.workers && files.length > 100) {
       await this.indexFilesWithWorkers(files);
     } else {
       await this.indexFilesSequentially(files);
     }
+    
+    const indexingTime = Date.now() - indexingStart;
+    const totalTime = Date.now() - startTime;
+    
+    // Display timing information
+    console.log(`\n✓ Indexing completed in ${(indexingTime / 1000).toFixed(2)}s`);
+    console.log(`  Successfully indexed: ${files.length - this.errorCount} files`);
+    if (this.errorCount > 0) {
+      console.log(`  ⚠️  Skipped ${this.errorCount} files due to errors`);
+    }
+    console.log(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
     
     // Start file watching
     if (this.options.useCache) {
@@ -246,8 +262,28 @@ export class VaultIndexer {
           indexed: Date.now(),
         });
       }
-    } catch (error) {
-      console.error(`Failed to index ${fullPath}:`, error);
+    } catch (error: any) {
+      // Handle YAML parsing errors with user-friendly messages
+      if (error.name === 'YAMLException') {
+        const relativePath = relative(this.options.vaultPath, fullPath);
+        console.error(`\n⚠️  YAML Parsing Error in: ${relativePath}`);
+        console.error(`   ${error.reason}`);
+        
+        // Extract the problematic line from the error
+        if (error.mark) {
+          console.error(`   At line ${error.mark.line + 1}, column ${error.mark.column + 1}`);
+          console.error(`\n   This often happens with:`);
+          console.error(`   - Template files containing variables like {{DATE}}`);
+          console.error(`   - Missing quotes around values with colons`);
+          console.error(`   - Incorrect indentation in YAML frontmatter\n`);
+        }
+      } else {
+        // Other errors - show simplified message
+        const relativePath = relative(this.options.vaultPath, fullPath);
+        console.error(`\n⚠️  Failed to index: ${relativePath}`);
+        console.error(`   ${error.message || error}\n`);
+      }
+      this.errorCount++;
     }
   }
   

@@ -26,9 +26,11 @@
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
     "@mmt/query-parser": "workspace:*",
+    "arquero": "^8.0.3",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@jrwats/arquero-types": "^5.4.1",
     "@types/node": "^20.10.0",
     "typescript": "^5.3.2",
     "vitest": "^1.0.0"

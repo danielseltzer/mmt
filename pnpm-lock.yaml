@@ -258,10 +258,16 @@ importers:
       '@mmt/query-parser':
         specifier: workspace:*
         version: link:../query-parser
+      arquero:
+        specifier: ^8.0.3
+        version: 8.0.3
       zod:
         specifier: ^3.22.4
         version: 3.25.62
     devDependencies:
+      '@jrwats/arquero-types':
+        specifier: ^5.4.1
+        version: 5.4.1
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.0
@@ -778,6 +784,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
 
+  '@jrwats/arquero-types@5.4.1':
+    resolution: {integrity: sha512-d9105REkN3NonA+pNWu0fm6+/VcLZdibVtvA6CMI8f6qZqfVzB/xY4I+yoVhmGQpvabAZJOWFK+IbJFX9OZ8LQ==}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -1026,6 +1035,9 @@ packages:
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
 
+  '@uwdata/flechette@2.0.1':
+    resolution: {integrity: sha512-eKrNd1mNZDqf0iUbaDs3/Ld3qmVGb+ADckNjXTdUwfb2Q4o9cdGYIIYfzFSA5LybXx2RK5PXHPZS1c+PmyW0sA==}
+
   '@vitejs/plugin-react@4.5.2':
     resolution: {integrity: sha512-QNVT3/Lxx99nMQWJWF7K4N6apUEuT0KlZA3mx/mVaoGj3smm/8rc8ezz15J1pcbcjDK0V15rpHetVfya08r76Q==}
     engines: {node: ^14.18.0 || >=16.0.0}
@@ -1132,6 +1144,9 @@ packages:
 
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+
+  arquero@8.0.3:
+    resolution: {integrity: sha512-7YQwe/GPVBUiahaPwEwgvu6VHyuhX0Ut61JZlIJYsAobOH5unLBwTmh43BobhX/N4dW1sb8WyKlQ8GjFq2whzQ==}
 
   array-buffer-byte-length@1.0.2:
     resolution: {integrity: sha512-LHE+8BuR7RYGDKvnrmcuSq3tDcKv9OFEXQt/HpbZhY7V6h0zlUXutnAD82GiFx9rdieCMjkvtcsPqBwgUl1Iiw==}
@@ -3229,6 +3244,8 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
+  '@jrwats/arquero-types@5.4.1': {}
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -3479,6 +3496,8 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
+  '@uwdata/flechette@2.0.1': {}
+
   '@vitejs/plugin-react@4.5.2(vite@6.3.5(@types/node@20.19.0)(tsx@4.20.3))':
     dependencies:
       '@babel/core': 7.27.4
@@ -3635,6 +3654,11 @@ snapshots:
       sprintf-js: 1.0.3
 
   argparse@2.0.1: {}
+
+  arquero@8.0.3:
+    dependencies:
+      '@uwdata/flechette': 2.0.1
+      acorn: 8.15.0
 
   array-buffer-byte-length@1.0.2:
     dependencies:

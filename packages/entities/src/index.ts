@@ -11,6 +11,7 @@ import { z } from 'zod';
 // Re-export all schemas and types from individual modules
 export * from './config.schema.js';
 export * from './document.schema.js';
+export * from './document-set.schema.js';
 export * from './query.schema.js';
 export * from './operation.schema.js';
 export * from './vault.schema.js';
@@ -84,6 +85,7 @@ import {
   ScriptOperationSchema,
   OutputFormatSchema,
   OutputConfigSchema,
+  ExecuteOptionsSchema,
   ExecutionOptionsSchema,
   OperationPipelineSchema,
   ScriptContextSchema,
@@ -93,6 +95,10 @@ import {
   ExecutionStatsSchema,
   ScriptExecutionResultSchema,
 } from './scripting.schema.js';
+import {
+  OperationReadyDocumentSetSchema,
+  ToDocumentSetOptionsSchema,
+} from './document-set.schema.js';
 
 /**
  * Convenience export of all schemas grouped by domain.
@@ -141,6 +147,7 @@ export const schemas = {
   ScriptOperation: ScriptOperationSchema,
   OutputFormat: OutputFormatSchema,
   OutputConfig: OutputConfigSchema,
+  ExecuteOptions: ExecuteOptionsSchema,
   ExecutionOptions: ExecutionOptionsSchema,
   OperationPipeline: OperationPipelineSchema,
   ScriptContext: ScriptContextSchema,
@@ -149,4 +156,8 @@ export const schemas = {
   SkippedResult: SkippedResultSchema,
   ExecutionStats: ExecutionStatsSchema,
   ScriptExecutionResult: ScriptExecutionResultSchema,
+  
+  // Document sets
+  OperationReadyDocumentSet: OperationReadyDocumentSetSchema,
+  ToDocumentSetOptions: ToDocumentSetOptionsSchema,
 } as const;
