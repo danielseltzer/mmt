@@ -26,10 +26,16 @@ export const SelectCriteriaSchema = z.union([
  * Operation types that can be performed on documents
  */
 export const OperationTypeSchema = z.enum([
+  // Mutations (require destructive: true)
   'move',
   'rename', 
   'updateFrontmatter',
   'delete',
+  // Analysis (always safe)
+  'analyze',
+  'transform',
+  'aggregate',
+  // Legacy
   'custom',
 ]).describe('Type of operation to perform');
 
@@ -48,6 +54,7 @@ export const OutputFormatSchema = z.enum([
   'detailed',
   'csv',
   'json',
+  'table',
 ]).describe('Output format for results');
 
 /**
@@ -59,7 +66,17 @@ export const OutputConfigSchema = z.object({
 }).describe('Output configuration');
 
 /**
- * Execution options
+ * Execution options for mutation operations
+ */
+export const ExecuteOptionsSchema = z.object({
+  destructive: z.boolean().default(false).describe('Actually perform mutations (default is preview)'),
+  confirmCount: z.boolean().default(false).describe('Fail if document count changes unexpectedly'),
+  maxDocuments: z.number().optional().describe('Maximum documents to affect (fails if exceeded)'),
+  continueOnError: z.boolean().default(false).describe('Continue processing after errors'),
+}).describe('Execution options for mutations');
+
+/**
+ * Legacy execution options (deprecated)
  */
 export const ExecutionOptionsSchema = z.object({
   executeNow: z.boolean().default(false).describe('Execute operations (default is preview-only)'),
@@ -143,6 +160,7 @@ export type ScriptOperation = z.infer<typeof ScriptOperationSchema>;
 export type OperationType = z.infer<typeof OperationTypeSchema>;
 export type OutputFormat = z.infer<typeof OutputFormatSchema>;
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
+export type ExecuteOptions = z.infer<typeof ExecuteOptionsSchema>;
 export type ExecutionOptions = z.infer<typeof ExecutionOptionsSchema>;
 export type OperationPipeline = z.infer<typeof OperationPipelineSchema>;
 export type ScriptContext = z.infer<typeof ScriptContextSchema>;

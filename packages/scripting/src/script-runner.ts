@@ -5,6 +5,7 @@ import type {
   OperationPipeline,
   ScriptExecutionResult,
   ExecutionOptions,
+  ExecuteOptions,
   Document,
   SelectCriteria,
   ScriptOperation,
@@ -19,6 +20,8 @@ import type { Query, PageMetadata } from '@mmt/indexer';
 import { QueryParser } from '@mmt/query-parser';
 import type { Script } from './script.interface.js';
 import { ResultFormatter } from './result-formatter.js';
+import { AnalysisRunner } from './analysis-runner.js';
+import { aq } from './analysis-pipeline.js';
 
 export interface ScriptRunnerOptions {
   config: {
@@ -39,6 +42,7 @@ export class ScriptRunner {
   private readonly queryParser: QueryParser;
   private readonly output: NodeJS.WritableStream;
   private readonly formatter: ResultFormatter;
+  private readonly analysisRunner: AnalysisRunner;
   private indexer?: VaultIndexer;
 
   constructor(options: ScriptRunnerOptions) {
@@ -47,6 +51,7 @@ export class ScriptRunner {
     this.queryParser = options.queryParser;
     this.output = options.outputStream ?? process.stdout;
     this.formatter = new ResultFormatter();
+    this.analysisRunner = new AnalysisRunner();
   }
 
   /**
@@ -67,14 +72,16 @@ export class ScriptRunner {
     // Load the script module
     const script = await this.loadScript(scriptPath);
     
-    // Create script context
+    // Create script context with Arquero namespace
     const context: ScriptContext = {
       vaultPath: this.config.vaultPath,
       indexPath: this.config.indexPath,
       scriptPath,
       cliOptions,
       indexer: this.indexer,
-    };
+      // Add Arquero namespace for scripts
+      aq,
+    } as any;
 
     // Get pipeline definition from script
     const pipeline = script.define(context);
@@ -109,6 +116,15 @@ export class ScriptRunner {
     let documents = selectedDocs;
     if (pipeline.filter) {
       documents = selectedDocs.filter(pipeline.filter);
+    }
+
+    // Check if this is an analysis pipeline
+    const hasAnalysisOps = pipeline.operations.some(op => 
+      op.type === 'analyze' || op.type === 'transform' || op.type === 'aggregate'
+    );
+    
+    if (hasAnalysisOps) {
+      return this.executeAnalysisPipeline(pipeline, documents, startTime);
     }
 
     // Initialize result collectors
@@ -262,13 +278,13 @@ export class ScriptRunner {
     if (Object.keys(query).length === 0) {
       // No criteria - return all documents
       const allDocs = await this.indexer.getAllDocuments();
-      return this.convertMetadataToDocuments(allDocs);
+      return await this.convertMetadataToDocuments(allDocs);
     }
 
     // Convert criteria to indexer query
     const indexerQuery = this.buildIndexerQuery(query);
     const results = await this.indexer.query(indexerQuery);
-    return this.convertMetadataToDocuments(results);
+    return await this.convertMetadataToDocuments(results);
   }
 
   /**
@@ -297,19 +313,37 @@ export class ScriptRunner {
   /**
    * Convert PageMetadata from indexer to Document format for scripts.
    */
-  private convertMetadataToDocuments(metadata: PageMetadata[]): Document[] {
-    return metadata.map(meta => ({
-      path: meta.path,
-      content: '', // Content loaded on demand
-      metadata: {
-        name: meta.basename,
-        modified: new Date(meta.mtime),
-        size: meta.size,
-        frontmatter: meta.frontmatter,
-        tags: meta.tags,
-        links: [], // Links would need to be fetched separately from indexer
-      },
-    }));
+  private async convertMetadataToDocuments(metadata: PageMetadata[]): Promise<Document[]> {
+    if (!this.indexer) {
+      throw new Error('Indexer not initialized');
+    }
+    
+    const documents: Document[] = [];
+    
+    for (const meta of metadata) {
+      // Get outgoing links for this document
+      const outgoingLinks = await this.indexer.getOutgoingLinks(meta.relativePath);
+      
+      // Get incoming links (backlinks) for this document
+      const incomingLinks = await this.indexer.getBacklinks(meta.relativePath);
+      
+      documents.push({
+        path: meta.path,
+        content: '', // Content loaded on demand
+        metadata: {
+          name: meta.basename,
+          modified: new Date(meta.mtime),
+          size: meta.size,
+          frontmatter: meta.frontmatter || {},
+          tags: meta.tags || [],
+          // Convert PageMetadata targets to relative paths
+          links: outgoingLinks.map(targetDoc => targetDoc.relativePath),
+          backlinks: incomingLinks.map(sourceDoc => sourceDoc.relativePath),
+        },
+      });
+    }
+    
+    return documents;
   }
 
   /**
@@ -332,5 +366,49 @@ export class ScriptRunner {
       `Operation '${operation.type}' is not yet implemented. ` +
       `This operation will be available once the required packages are built.`
     );
+  }
+
+  /**
+   * Execute a pipeline with analysis operations.
+   * Analysis operations are always executed immediately (safe by nature).
+   */
+  private async executeAnalysisPipeline(
+    pipeline: OperationPipeline,
+    documents: Document[],
+    startTime: Date
+  ): Promise<ScriptExecutionResult> {
+    // Run analysis operations
+    const analysisResult = await this.analysisRunner.runAnalysis(
+      documents,
+      pipeline.operations,
+      pipeline.output
+    );
+
+    // Output formatted results if available
+    if (analysisResult.output) {
+      this.output.write(analysisResult.output + '\n');
+    }
+
+    const endTime = new Date();
+    
+    // Return execution result for consistency
+    return {
+      attempted: documents,
+      succeeded: [{
+        item: { path: 'analysis', content: '', metadata: {} as any },
+        operation: { type: 'analyze' },
+        details: { 
+          rowCount: analysisResult.table.numRows(),
+          colCount: analysisResult.table.numCols()
+        }
+      }],
+      failed: [],
+      skipped: [],
+      stats: {
+        duration: endTime.getTime() - startTime.getTime(),
+        startTime,
+        endTime,
+      },
+    };
   }
 }

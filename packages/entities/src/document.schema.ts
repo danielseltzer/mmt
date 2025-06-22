@@ -33,6 +33,9 @@ export const BaseDocumentMetadataSchema = z.object({
   
   /** Outgoing links to other documents (wiki-links and markdown links) */
   links: z.array(z.string()).default([]).describe('Outgoing links'),
+  
+  /** Incoming links from other documents (backlinks) */
+  backlinks: z.array(z.string()).default([]).describe('Incoming links').optional(),
 });
 
 export type BaseDocumentMetadata = z.infer<typeof BaseDocumentMetadataSchema>;
