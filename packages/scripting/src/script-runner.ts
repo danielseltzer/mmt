@@ -12,6 +12,7 @@ import type {
   SuccessResult,
   FailureResult,
   SkippedResult,
+  OutputSpec,
 } from '@mmt/entities';
 import { OperationPipelineSchema } from '@mmt/entities';
 import type { FileSystemAccess } from '@mmt/filesystem-access';
@@ -120,7 +121,8 @@ export class ScriptRunner {
 
     // Check if this is an analysis pipeline
     const hasAnalysisOps = pipeline.operations.some(op => 
-      op.type === 'analyze' || op.type === 'transform' || op.type === 'aggregate'
+      op.type === 'analyze' || op.type === 'transform' || op.type === 'aggregate' ||
+      (op.type === 'custom' && 'action' in op && op.action === 'analyze')
     );
     
     if (hasAnalysisOps) {
@@ -194,10 +196,23 @@ export class ScriptRunner {
       },
     };
 
-    // Format and output results
+    // Format and output results (for non-analysis pipelines, use console output)
+    let format = 'summary';
+    let fields: string[] | undefined;
+    
+    if (pipeline.output) {
+      // After transform, output is always an array
+      const outputs = pipeline.output as OutputSpec[];
+      const consoleOutput = outputs.find(o => o.destination === 'console');
+      if (consoleOutput) {
+        format = consoleOutput.format;
+        fields = consoleOutput.fields;
+      }
+    }
+    
     const formatted = this.formatter.format(result, {
-      format: pipeline.output?.format ?? 'summary',
-      fields: pipeline.output?.fields,
+      format: format as any,
+      fields,
       isPreview: !options.executeNow,
     });
     
@@ -384,10 +399,7 @@ export class ScriptRunner {
       pipeline.output
     );
 
-    // Output formatted results if available
-    if (analysisResult.output) {
-      this.output.write(analysisResult.output + '\n');
-    }
+    // Output is now handled directly by analysis runner
 
     const endTime = new Date();
     

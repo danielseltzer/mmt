@@ -58,12 +58,41 @@ export const OutputFormatSchema = z.enum([
 ]).describe('Output format for results');
 
 /**
- * Output configuration
+ * Single output specification
  */
-export const OutputConfigSchema = z.object({
-  format: OutputFormatSchema.default('summary'),
+export const OutputSpecSchema = z.object({
+  format: OutputFormatSchema,
+  destination: z.enum(['console', 'file']).default('console'),
+  path: z.string().optional().describe('File path when destination is file'),
   fields: z.array(z.string()).optional().describe('Fields to include in csv/json output'),
-}).describe('Output configuration');
+}).refine(
+  (data) => data.destination === 'console' || (data.destination === 'file' && data.path),
+  { message: 'Path is required when destination is file' }
+).describe('Single output specification');
+
+/**
+ * Output configuration - supports multiple outputs
+ */
+export const OutputConfigSchema = z.union([
+  // Legacy: single format string
+  OutputFormatSchema,
+  // Legacy: single output object
+  z.object({
+    format: OutputFormatSchema.default('summary'),
+    fields: z.array(z.string()).optional().describe('Fields to include in csv/json output'),
+  }),
+  // New: array of output specs
+  z.array(OutputSpecSchema).min(1),
+]).transform((val) => {
+  // Normalize to array format
+  if (typeof val === 'string') {
+    return [{ format: val, destination: 'console' as const }];
+  }
+  if (!Array.isArray(val)) {
+    return [{ ...val, destination: 'console' as const }];
+  }
+  return val;
+}).describe('Output configuration - single or multiple outputs');
 
 /**
  * Execution options for mutation operations
@@ -159,6 +188,7 @@ export type SelectCriteria = z.infer<typeof SelectCriteriaSchema>;
 export type ScriptOperation = z.infer<typeof ScriptOperationSchema>;
 export type OperationType = z.infer<typeof OperationTypeSchema>;
 export type OutputFormat = z.infer<typeof OutputFormatSchema>;
+export type OutputSpec = z.infer<typeof OutputSpecSchema>;
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 export type ExecuteOptions = z.infer<typeof ExecuteOptionsSchema>;
 export type ExecutionOptions = z.infer<typeof ExecutionOptionsSchema>;

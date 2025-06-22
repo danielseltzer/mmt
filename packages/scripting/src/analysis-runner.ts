@@ -4,11 +4,15 @@ import type {
   ScriptOperation,
   OperationReadyDocumentSet,
   OutputConfig,
+  OutputSpec,
   ToDocumentSetOptions,
 } from '@mmt/entities';
 import { documentsToTable, tableToDocumentSet } from './analysis-pipeline.js';
 import * as aq from 'arquero';
 import { ResultFormatter } from './result-formatter.js';
+import { writeFile } from 'fs/promises';
+import { dirname } from 'path';
+import { mkdir } from 'fs/promises';
 
 export interface AnalysisContext {
   table: Table;
@@ -60,15 +64,14 @@ export class AnalysisRunner {
       }
     }
     
-    // Format output if requested
-    let output: string | undefined;
+    // Process outputs if requested
     if (outputConfig) {
-      output = this.formatAnalysisOutput(table, outputConfig);
+      await this.processOutputs(table, outputConfig);
     }
     
     return {
       table,
-      output,
+      output: undefined, // Legacy field, kept for compatibility
     };
   }
   
@@ -119,19 +122,48 @@ export class AnalysisRunner {
   }
   
   /**
-   * Format analysis output for display.
+   * Process multiple outputs according to configuration.
    */
-  private formatAnalysisOutput(table: Table, config: OutputConfig): string {
-    switch (config.format) {
+  private async processOutputs(table: Table, config: OutputConfig): Promise<void> {
+    // Handle the config which might be in various formats
+    let outputs: OutputSpec[];
+    
+    if (Array.isArray(config)) {
+      outputs = config;
+    } else if (typeof config === 'string') {
+      outputs = [{ format: config as any, destination: 'console' }];
+    } else {
+      outputs = [{ ...(config as any), destination: 'console' }];
+    }
+    
+    for (const output of outputs) {
+      const formatted = this.formatOutput(table, output);
+      
+      if (output.destination === 'console') {
+        console.log(formatted);
+      } else if (output.destination === 'file' && output.path) {
+        // Ensure directory exists
+        await mkdir(dirname(output.path), { recursive: true });
+        await writeFile(output.path, formatted, 'utf-8');
+        console.log(`✓ Wrote ${output.format} output to: ${output.path}`);
+      }
+    }
+  }
+  
+  /**
+   * Format output according to specification.
+   */
+  private formatOutput(table: Table, spec: OutputSpec): string {
+    switch (spec.format) {
       case 'csv':
-        return this.formatAsCSV(table, config.fields);
+        return this.formatAsCSV(table, spec.fields);
         
       case 'json':
-        return this.formatAsJSON(table, config.fields);
+        return this.formatAsJSON(table, spec.fields);
         
       case 'table':
       case 'detailed':
-        return this.formatAsTable(table, config.fields);
+        return this.formatAsTable(table, spec.fields);
         
       case 'summary':
       default:
