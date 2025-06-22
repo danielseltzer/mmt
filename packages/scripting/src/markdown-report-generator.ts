@@ -1,8 +1,12 @@
-import type { ScriptExecutionResult, OperationPipeline, OutputConfig } from '@mmt/entities';
+import type { ScriptExecutionResult, OperationPipeline, OutputConfig, AgentAnalysis } from '@mmt/entities';
 import type { Table } from 'arquero';
-import { writeFile } from 'fs/promises';
-import { dirname } from 'path';
+import { writeFile, unlink } from 'fs/promises';
+import { dirname, basename } from 'path';
 import { mkdir } from 'fs/promises';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 export interface ReportGenerationOptions {
   scriptPath: string;
@@ -14,6 +18,20 @@ export interface ReportGenerationOptions {
   isPreview: boolean;
 }
 
+const execAsync = promisify(exec);
+
+// Default prompt template based on ADR-010 decision
+const DEFAULT_PROMPT_TEMPLATE = `I have a markdown report from analyzing [ANALYSIS_TYPE] in my personal knowledge vault. Please provide a concise summary (2-3 sentences) identifying the critical insights about my knowledge organization patterns and note-taking habits.
+
+Focus on:
+1. What the [KEY_METRIC] reveal about recurring themes or knowledge hubs
+2. What the [PATTERNS] suggest about how I organize and connect information
+3. Any notable patterns in the ratio of documents to connections
+
+Here's the report:
+
+[REPORT CONTENT]`;
+
 /**
  * Generates markdown reports from script execution results
  */
@@ -22,7 +40,16 @@ export class MarkdownReportGenerator {
    * Generate a markdown report from script execution
    */
   async generateReport(options: ReportGenerationOptions): Promise<void> {
-    const report = this.buildReport(options);
+    let report = this.buildReport(options);
+    
+    // Check if agent analysis is requested
+    const agentConfig = options.pipeline.agentAnalysis;
+    if (agentConfig?.enabled !== false) { // Default to enabled if present
+      const analysis = await this.generateAgentAnalysis(report, options, agentConfig);
+      if (analysis) {
+        report = this.appendAgentAnalysis(report, analysis);
+      }
+    }
     
     // Ensure directory exists
     await mkdir(dirname(options.reportPath), { recursive: true });
@@ -281,5 +308,142 @@ _This report was automatically generated. For questions or issues, please refer 
     if (hasDate && !hasNumber) return 'date';
     if (hasNumber && !hasString) return 'number';
     return 'string';
+  }
+  
+  /**
+   * Generate AI-powered analysis of the report
+   */
+  private async generateAgentAnalysis(
+    report: string, 
+    options: ReportGenerationOptions,
+    agentConfig?: AgentAnalysis
+  ): Promise<{ content: string; duration: number } | null> {
+    const startTime = Date.now();
+    
+    // Create temporary file for the prompt
+    const tempFile = join(tmpdir(), `mmt-prompt-${Date.now()}.txt`);
+    
+    try {
+      const prompt = this.buildPrompt(report, options, agentConfig);
+      const model = agentConfig?.model || 'sonnet';
+      const timeout = agentConfig?.timeout || 30000;
+      
+      // Write prompt to temporary file
+      await writeFile(tempFile, prompt, 'utf-8');
+      
+      // Execute claude with --print flag using file input
+      const { stdout, stderr } = await execAsync(
+        `claude --print --model ${model} < "${tempFile}"`,
+        { 
+          timeout,
+          shell: '/bin/bash'
+        }
+      );
+      
+      if (stderr) {
+        console.warn('Claude analysis warning:', stderr);
+      }
+      
+      const duration = Date.now() - startTime;
+      return { content: stdout.trim(), duration };
+    } catch (error) {
+      console.error('Failed to generate agent analysis:', error);
+      return null;
+    } finally {
+      // Clean up temp file
+      try {
+        await unlink(tempFile);
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
+  }
+  
+  /**
+   * Build the prompt for agent analysis
+   */
+  private buildPrompt(
+    report: string, 
+    options: ReportGenerationOptions,
+    agentConfig?: AgentAnalysis
+  ): string {
+    const template = agentConfig?.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+    
+    // Detect analysis type from script name or operations
+    const analysisType = this.detectAnalysisType(options);
+    const keyMetric = this.getKeyMetric(analysisType);
+    const patterns = this.getPatternType(analysisType);
+    
+    return template
+      .replace('[ANALYSIS_TYPE]', analysisType)
+      .replace('[KEY_METRIC]', keyMetric)
+      .replace('[PATTERNS]', patterns)
+      .replace('[REPORT CONTENT]', report);
+  }
+  
+  /**
+   * Detect the type of analysis from the script and operations
+   */
+  private detectAnalysisType(options: ReportGenerationOptions): string {
+    const scriptName = basename(options.scriptPath).toLowerCase();
+    
+    if (scriptName.includes('link')) return 'document links';
+    if (scriptName.includes('tag')) return 'tag distribution';
+    if (scriptName.includes('orphan')) return 'orphaned documents';
+    if (scriptName.includes('type')) return 'document types';
+    
+    return 'vault structure';
+  }
+  
+  /**
+   * Get the key metric name for the analysis type
+   */
+  private getKeyMetric(analysisType: string): string {
+    switch (analysisType) {
+      case 'document links': return 'most-linked documents';
+      case 'tag distribution': return 'tag frequencies';
+      case 'orphaned documents': return 'isolated documents';
+      case 'document types': return 'document type distribution';
+      default: return 'analysis results';
+    }
+  }
+  
+  /**
+   * Get the pattern type description
+   */
+  private getPatternType(analysisType: string): string {
+    switch (analysisType) {
+      case 'document links': return 'linking patterns';
+      case 'tag distribution': return 'tagging patterns';
+      case 'orphaned documents': return 'isolation patterns';
+      case 'document types': return 'content organization patterns';
+      default: return 'organizational patterns';
+    }
+  }
+  
+  /**
+   * Append agent analysis to the report
+   */
+  private appendAgentAnalysis(report: string, analysis: { content: string; duration: number }): string {
+    const durationSeconds = (analysis.duration / 1000).toFixed(1);
+    
+    const analysisSection = `
+
+---
+
+## AI-Powered Analysis
+
+${analysis.content}
+
+_Analysis generated by Claude Code in ${durationSeconds} seconds._
+`; // Added blank line after the italic text to prevent header formatting
+    
+    // Insert before the metadata footer
+    const footerIndex = report.lastIndexOf('\n---\n\n## Metadata');
+    if (footerIndex > -1) {
+      return report.slice(0, footerIndex) + analysisSection + report.slice(footerIndex);
+    } else {
+      return report + analysisSection;
+    }
   }
 }
