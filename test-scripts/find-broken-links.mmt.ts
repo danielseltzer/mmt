@@ -78,9 +78,12 @@ export default class FindBrokenLinks implements Script {
           }
         }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

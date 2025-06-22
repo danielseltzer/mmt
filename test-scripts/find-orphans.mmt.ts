@@ -48,9 +48,12 @@ export default class FindOrphans implements Script {
           }
         }
       ],
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

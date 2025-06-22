@@ -24,9 +24,12 @@ export default class ShowAllTypes implements Script {
             .orderby('fm_type', 'name')
         }
       ],
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

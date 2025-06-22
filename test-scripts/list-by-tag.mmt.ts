@@ -29,9 +29,12 @@ export default class ListByTag implements Script {
             .orderby(aq.desc('modified'))
         }
       ],
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

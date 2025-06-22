@@ -22,9 +22,12 @@ export default class FindOrphansDemo implements Script {
             .orderby('name')
         }
       ],
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

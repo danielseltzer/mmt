@@ -43,10 +43,13 @@ export default class AnalyzeLinksFixed implements Script {
           }
         }
       ],
-      output: {
-        format: 'table',
-        fields: ['target', 'incoming_links', 'from_count']
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console',
+          fields: ['target', 'incoming_links', 'from_count']
+        }
+      ]
     };
   }
 }

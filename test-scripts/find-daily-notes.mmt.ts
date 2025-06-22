@@ -11,9 +11,12 @@ export default class FindDailyNotes implements Script {
       operations: [
         { type: 'custom', action: 'count' }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

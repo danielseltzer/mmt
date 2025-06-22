@@ -54,10 +54,13 @@ export default class ArchiveOldDrafts implements Script {
           }
         }
       ],
-      output: {
-        format: 'table',
-        fields: ['path', 'name', 'months_old', 'suggested_location']
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console',
+          fields: ['path', 'name', 'months_old', 'suggested_location']
+        }
+      ]
     };
   }
 }

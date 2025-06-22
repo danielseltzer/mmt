@@ -24,9 +24,12 @@ export default class FindMostLinked implements Script {
             .slice(0, 10)
         }
       ],
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

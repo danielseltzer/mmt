@@ -104,9 +104,12 @@ export default class VaultLinkStatistics implements Script {
         }
       ],
       
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

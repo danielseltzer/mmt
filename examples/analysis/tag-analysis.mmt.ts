@@ -105,9 +105,12 @@ export default class TagAnalysis implements Script {
         }
       ],
       
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

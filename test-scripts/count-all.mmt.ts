@@ -14,9 +14,12 @@ export default class CountAll implements Script {
       operations: [
         { type: 'custom', action: 'count' }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

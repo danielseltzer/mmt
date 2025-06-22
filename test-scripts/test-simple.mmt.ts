@@ -18,9 +18,12 @@ export default class TestSimple implements Script {
           }
         }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }
