@@ -1,6 +1,28 @@
 # MMT Configuration Files
 
-This directory contains configuration files for MMT.
+This directory contains example configuration files for MMT.
+
+## User Configuration
+
+User-specific configuration files should be stored in `~/.mmt/config/` to:
+- Keep them separate from the project codebase
+- Prevent accidental commits of personal vault paths
+- Allow multiple users to work on the project
+
+Example:
+```bash
+# Create your personal config directory
+mkdir -p ~/.mmt/config
+
+# Copy and customize an example config
+cp config/example.yaml ~/.mmt/config/my-vault.yaml
+
+# Edit with your vault paths
+vim ~/.mmt/config/my-vault.yaml
+
+# Use it with MMT
+pnpm mmt --config ~/.mmt/config/my-vault.yaml script examples/analysis/vault-link-statistics.mmt.ts
+```
 
 ## Files
 
