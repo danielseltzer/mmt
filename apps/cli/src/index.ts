@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --no-warnings=ExperimentalWarning
 /**
  * @fileoverview CLI entry point for MMT.
  * 
