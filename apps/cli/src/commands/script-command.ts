@@ -15,6 +15,7 @@ import { resolve, isAbsolute } from 'path';
  * Options:
  *   --execute    Actually execute operations (default is preview)
  *   --output     Output format (summary, detailed, json, csv)
+ *   --report     Generate markdown report (optional: specify path)
  */
 export class ScriptCommand implements CommandHandler {
   static readonly COMMAND_NAME = 'script';
@@ -55,6 +56,20 @@ export class ScriptCommand implements CommandHandler {
     const outputIndex = scriptArgs.scriptArgs.indexOf('--output');
     if (outputIndex !== -1 && scriptArgs.scriptArgs[outputIndex + 1]) {
       cliOptions.outputFormat = scriptArgs.scriptArgs[outputIndex + 1];
+    }
+
+    // Check for --report flag
+    const reportIndex = scriptArgs.scriptArgs.indexOf('--report');
+    if (reportIndex !== -1) {
+      // Check if next arg is a path (doesn't start with --)
+      const nextArg = scriptArgs.scriptArgs[reportIndex + 1];
+      if (nextArg && !nextArg.startsWith('--')) {
+        cliOptions.reportPath = nextArg;
+      } else {
+        // Default report path
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        cliOptions.reportPath = `mmt-report-${timestamp}.md`;
+      }
     }
 
     // Create script runner with dependencies
