@@ -31,9 +31,12 @@ export default class GroupByType implements Script {
             .orderby(aq.desc('count'))
         }
       ],
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

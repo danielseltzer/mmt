@@ -71,28 +71,10 @@ export const OutputSpecSchema = z.object({
 ).describe('Single output specification');
 
 /**
- * Output configuration - supports multiple outputs
+ * Output configuration - array of output specifications
  */
-export const OutputConfigSchema = z.union([
-  // Legacy: single format string
-  OutputFormatSchema,
-  // Legacy: single output object
-  z.object({
-    format: OutputFormatSchema.default('summary'),
-    fields: z.array(z.string()).optional().describe('Fields to include in csv/json output'),
-  }),
-  // New: array of output specs
-  z.array(OutputSpecSchema).min(1),
-]).transform((val) => {
-  // Normalize to array format
-  if (typeof val === 'string') {
-    return [{ format: val, destination: 'console' as const }];
-  }
-  if (!Array.isArray(val)) {
-    return [{ ...val, destination: 'console' as const }];
-  }
-  return val;
-}).describe('Output configuration - single or multiple outputs');
+export const OutputConfigSchema = z.array(OutputSpecSchema).min(1)
+  .describe('Output configuration - one or more output destinations');
 
 /**
  * Execution options for mutation operations

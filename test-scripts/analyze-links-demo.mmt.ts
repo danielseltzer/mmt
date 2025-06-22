@@ -19,9 +19,12 @@ export default class AnalyzeLinksDemo implements Script {
             .orderby(aq.desc('links_count'))
         }
       ],
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

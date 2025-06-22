@@ -35,9 +35,12 @@ export default class LinkGraphSummary implements Script {
           }
         }
       ],
-      output: {
-        format: 'json'
-      }
+      output: [
+        {
+          format: 'json',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

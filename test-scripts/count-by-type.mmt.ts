@@ -32,9 +32,12 @@ export default class CountByType implements Script {
             .orderby(aq.desc('count'))
         }
       ],
-      output: {
-        format: 'table' // Display as table
-      }
+      output: [
+        {
+          format: 'table', // Display as table
+          destination: 'console'
+        }
+      ]
     };
   }
 }

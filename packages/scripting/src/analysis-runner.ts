@@ -125,16 +125,8 @@ export class AnalysisRunner {
    * Process multiple outputs according to configuration.
    */
   private async processOutputs(table: Table, config: OutputConfig): Promise<void> {
-    // Handle the config which might be in various formats
-    let outputs: OutputSpec[];
-    
-    if (Array.isArray(config)) {
-      outputs = config;
-    } else if (typeof config === 'string') {
-      outputs = [{ format: config as any, destination: 'console' }];
-    } else {
-      outputs = [{ ...(config as any), destination: 'console' }];
-    }
+    // Config is always an array of OutputSpec
+    const outputs = config;
     
     for (const output of outputs) {
       const formatted = this.formatOutput(table, output);

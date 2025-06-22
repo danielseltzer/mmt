@@ -85,9 +85,12 @@ export default class FindOrphanedDocuments implements Script {
         }
       ],
       
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

@@ -55,9 +55,12 @@ export default class FindMostLinkedDocuments implements Script {
         }
       ],
       
-      output: {
-        format: 'table' // Display results as a formatted table
-      }
+      output: [
+        {
+          format: 'table', // Display results as a formatted table
+          destination: 'console'
+        }
+      ]
     };
   }
 }

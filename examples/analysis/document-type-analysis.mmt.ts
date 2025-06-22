@@ -102,9 +102,12 @@ export default class DocumentTypeAnalysis implements Script {
         }
       ],
       
-      output: {
-        format: 'table'
-      }
+      output: [
+        {
+          format: 'table',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

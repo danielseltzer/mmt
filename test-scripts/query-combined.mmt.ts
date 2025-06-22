@@ -19,10 +19,13 @@ export default class QueryCombined implements Script {
       operations: [
         { type: 'custom', action: 'list' }
       ],
-      output: {
-        format: 'csv',
-        fields: ['path', 'fm:status', 'modified']
-      }
+      output: [
+        {
+          format: 'csv',
+          destination: 'console',
+          fields: ['path', 'fm:status', 'modified']
+        }
+      ]
     };
   }
 }

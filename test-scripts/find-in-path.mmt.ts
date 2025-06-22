@@ -17,9 +17,12 @@ export default class FindInPath implements Script {
       operations: [
         { type: 'custom', action: 'list' }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

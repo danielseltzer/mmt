@@ -71,9 +71,12 @@ export default class AnalyzeLinks implements Script {
       operations: [
         { type: 'custom', action: 'analyze-links' }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

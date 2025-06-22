@@ -40,9 +40,12 @@ export default class ShowBidirectionalLinks implements Script {
           }
         }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

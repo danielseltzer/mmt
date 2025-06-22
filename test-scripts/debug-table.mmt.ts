@@ -20,9 +20,12 @@ export default class DebugTable implements Script {
           }
         }
       ],
-      output: {
-        format: 'summary'
-      }
+      output: [
+        {
+          format: 'summary',
+          destination: 'console'
+        }
+      ]
     };
   }
 }

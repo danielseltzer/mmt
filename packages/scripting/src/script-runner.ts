@@ -201,9 +201,7 @@ export class ScriptRunner {
     let fields: string[] | undefined;
     
     if (pipeline.output) {
-      // After transform, output is always an array
-      const outputs = pipeline.output as OutputSpec[];
-      const consoleOutput = outputs.find(o => o.destination === 'console');
+      const consoleOutput = pipeline.output.find(o => o.destination === 'console');
       if (consoleOutput) {
         format = consoleOutput.format;
         fields = consoleOutput.fields;
