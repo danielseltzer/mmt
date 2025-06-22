@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { pathToFileURL } from 'url';
+import type { Table } from 'arquero';
 import type {
   ScriptContext,
   OperationPipeline,
@@ -23,6 +24,7 @@ import type { Script } from './script.interface.js';
 import { ResultFormatter } from './result-formatter.js';
 import { AnalysisRunner } from './analysis-runner.js';
 import { aq } from './analysis-pipeline.js';
+import { MarkdownReportGenerator } from './markdown-report-generator.js';
 
 export interface ScriptRunnerOptions {
   config: {
@@ -44,6 +46,7 @@ export class ScriptRunner {
   private readonly output: NodeJS.WritableStream;
   private readonly formatter: ResultFormatter;
   private readonly analysisRunner: AnalysisRunner;
+  private readonly reportGenerator: MarkdownReportGenerator;
   private indexer?: VaultIndexer;
 
   constructor(options: ScriptRunnerOptions) {
@@ -53,6 +56,7 @@ export class ScriptRunner {
     this.output = options.outputStream ?? process.stdout;
     this.formatter = new ResultFormatter();
     this.analysisRunner = new AnalysisRunner();
+    this.reportGenerator = new MarkdownReportGenerator();
   }
 
   /**
@@ -98,7 +102,23 @@ export class ScriptRunner {
     };
 
     // Execute the pipeline
-    return this.executePipeline(validatedPipeline, executionOptions);
+    const result = await this.executePipeline(validatedPipeline, executionOptions);
+    
+    // Generate report if requested
+    if (cliOptions.reportPath) {
+      const resultWithTable = result as ScriptExecutionResult & { analysisTable?: Table };
+      await this.reportGenerator.generateReport({
+        scriptPath,
+        vaultPath: this.config.vaultPath,
+        executionResult: result,
+        pipeline: validatedPipeline,
+        analysisTable: resultWithTable.analysisTable,
+        reportPath: cliOptions.reportPath,
+        isPreview: !executionOptions.executeNow,
+      });
+    }
+    
+    return result;
   }
 
   /**
@@ -389,7 +409,7 @@ export class ScriptRunner {
     pipeline: OperationPipeline,
     documents: Document[],
     startTime: Date
-  ): Promise<ScriptExecutionResult> {
+  ): Promise<ScriptExecutionResult & { analysisTable?: Table }> {
     // Run analysis operations
     const analysisResult = await this.analysisRunner.runAnalysis(
       documents,
@@ -401,7 +421,7 @@ export class ScriptRunner {
 
     const endTime = new Date();
     
-    // Return execution result for consistency
+    // Return execution result for consistency with analysis table
     return {
       attempted: documents,
       succeeded: [{
@@ -419,6 +439,7 @@ export class ScriptRunner {
         startTime,
         endTime,
       },
+      analysisTable: analysisResult.table,
     };
   }
 }
