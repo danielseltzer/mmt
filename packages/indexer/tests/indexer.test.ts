@@ -62,6 +62,9 @@ Links to [[doc1]] in parent folder.`);
   });
 
   it('indexes a small vault and finds all documents', async () => {
+    // GIVEN: A vault with 4 markdown files (3 root + 1 nested)
+    // WHEN: Getting all documents from the index
+    // THEN: Returns all files with correct paths (recursive by default)
     const allDocs = await indexer.getAllDocuments();
     
     expect(allDocs).toHaveLength(4);
@@ -74,6 +77,9 @@ Links to [[doc1]] in parent folder.`);
   });
 
   it('finds all files linking TO doc1 (should return doc2, doc3)', async () => {
+    // GIVEN: Multiple documents with [[wikilinks]] pointing to doc1
+    // WHEN: Getting backlinks for doc1
+    // THEN: Returns all documents that reference doc1 (incoming links)
     const backlinks = await indexer.getBacklinks('doc1.md');
     
     expect(backlinks).toHaveLength(3);
@@ -85,6 +91,9 @@ Links to [[doc1]] in parent folder.`);
   });
 
   it('finds all files linked FROM doc1 (should return doc2, doc3)', async () => {
+    // GIVEN: doc1 contains [[doc2]] and [[doc3]] wikilinks
+    // WHEN: Getting outgoing links from doc1
+    // THEN: Returns documents that doc1 links to (outgoing links)
     const outgoingLinks = await indexer.getOutgoingLinks('doc1.md');
     
     expect(outgoingLinks).toHaveLength(2);
@@ -95,6 +104,9 @@ Links to [[doc1]] in parent folder.`);
   });
 
   it('queries by frontmatter property kind:test', async () => {
+    // GIVEN: Documents with frontmatter property kind: test
+    // WHEN: Querying with fm:kind equals test
+    // THEN: Returns only documents where frontmatter.kind === 'test'
     const results = await indexer.query({
       conditions: [
         { field: 'fm:kind', operator: 'equals', value: 'test' }
@@ -109,6 +121,9 @@ Links to [[doc1]] in parent folder.`);
   });
 
   it('queries by path pattern path:/folder/*', async () => {
+    // GIVEN: Documents in nested folder structure
+    // WHEN: Querying with fs:path matches folder/* pattern
+    // THEN: Returns only files in the specified folder (glob pattern)
     const results = await indexer.query({
       conditions: [
         { field: 'fs:path', operator: 'matches', value: 'folder/*' }
@@ -120,6 +135,9 @@ Links to [[doc1]] in parent folder.`);
   });
 
   it('combines text search with property filter', async () => {
+    // GIVEN: Documents with various frontmatter and content
+    // WHEN: Querying with multiple conditions (AND logic)
+    // THEN: Returns only documents matching ALL conditions
     // Query for documents with kind:test that contain "Document"
     const results = await indexer.query({
       conditions: [
@@ -136,6 +154,9 @@ Links to [[doc1]] in parent folder.`);
   });
 
   it('updates index when file is modified', async () => {
+    // GIVEN: A file with links that gets modified
+    // WHEN: Updating the file content and re-indexing
+    // THEN: Link graph updates to reflect new relationships
     // Modify doc1 to remove link to doc2
     writeFileSync(join(testVaultPath, 'doc1.md'), `# Document 1
 This document only contains [[doc3]] now.`);
@@ -154,6 +175,9 @@ This document only contains [[doc3]] now.`);
   });
 
   it('updates links when file is moved', async () => {
+    // GIVEN: A file that is referenced by other documents
+    // WHEN: Moving the file to a new location
+    // THEN: Backlinks track the file at its new location
     // Move doc2 to a new location
     const oldPath = join(testVaultPath, 'doc2.md');
     const newPath = join(testVaultPath, 'folder', 'doc2-moved.md');
@@ -173,6 +197,9 @@ This document only contains [[doc3]] now.`);
   });
 
   it('handles 5000 files in < 5 seconds', async () => {
+    // GIVEN: A vault with 5000 interconnected markdown files
+    // WHEN: Initializing the indexer
+    // THEN: Completes indexing within 5 seconds (performance requirement)
     // Create a large test vault
     const largeVaultPath = mkdtempSync(join(tmpdir(), 'mmt-large-vault-'));
     

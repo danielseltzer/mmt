@@ -19,6 +19,9 @@ import {
 describe('Entity Schemas', () => {
   describe('ConfigSchema', () => {
     it('should validate valid config', () => {
+      // GIVEN: A config object with required paths
+      // WHEN: Validating against ConfigSchema
+      // THEN: Valid because both vaultPath and indexPath are absolute paths
       const config: Config = {
         vaultPath: '/Users/test/vault',
         indexPath: '/Users/test/.mmt/index',
@@ -29,6 +32,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should require both vaultPath and indexPath', () => {
+      // GIVEN: A config missing required indexPath
+      // WHEN: Validating against ConfigSchema
+      // THEN: Invalid because both paths are required (no defaults policy)
       const config = {
         vaultPath: '/Users/test/vault',
         // missing indexPath
@@ -39,6 +45,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should reject invalid config', () => {
+      // GIVEN: A config with wrong data types
+      // WHEN: Validating against ConfigSchema
+      // THEN: Invalid because vaultPath must be a string, not a number
       const invalidConfig = {
         vaultPath: 123, // Should be string
       };
@@ -50,6 +59,9 @@ describe('Entity Schemas', () => {
 
   describe('DocumentMetadataSchema', () => {
     it('should validate document metadata', () => {
+      // GIVEN: Complete document metadata with all fields
+      // WHEN: Validating against DocumentMetadataSchema
+      // THEN: Valid with all required fields (path, name, modified, size) and optional fields
       const doc: DocumentMetadata = {
         path: '/Users/test/vault/note.md',
         relativePath: 'note.md',
@@ -66,6 +78,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should validate minimal document metadata with defaults', () => {
+      // GIVEN: Document metadata with only required fields
+      // WHEN: Validating against DocumentMetadataSchema
+      // THEN: Valid with optional fields defaulting to empty objects/arrays
       const doc = {
         path: '/Users/test/vault/note.md',
         relativePath: 'note.md',
@@ -86,6 +101,9 @@ describe('Entity Schemas', () => {
 
   describe('QuerySchema with namespaces', () => {
     it('should validate query with namespace format', () => {
+      // GIVEN: Query with namespace:property format
+      // WHEN: Validating against QuerySchema
+      // THEN: Valid because all properties use correct namespace prefixes (fs:, fm:, content:)
       const query: Query = {
         'fs:path': 'folder/**',
         'fs:modified': '>2024-01-01',
@@ -101,6 +119,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should reject query without namespace prefix', () => {
+      // GIVEN: Query properties without namespace prefixes
+      // WHEN: Validating against QuerySchema
+      // THEN: Invalid because all query properties must have namespace (prevents ambiguity)
       const query = {
         path: 'folder/', // Missing namespace
         status: 'draft', // Missing namespace
@@ -111,6 +132,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should validate empty query', () => {
+      // GIVEN: An empty query object
+      // WHEN: Validating against QuerySchema
+      // THEN: Valid because empty queries select all documents
       const query: Query = {};
       
       const result = QuerySchema.safeParse(query);
@@ -121,6 +145,9 @@ describe('Entity Schemas', () => {
 
   describe('OperationSchema', () => {
     it('should validate move operation', () => {
+      // GIVEN: A move operation with source and target paths
+      // WHEN: Validating against OperationSchema
+      // THEN: Valid because move requires both sourcePath and targetPath
       const op: Operation = {
         type: 'move',
         sourcePath: '/old/path.md',
@@ -132,6 +159,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should validate update-frontmatter operation', () => {
+      // GIVEN: An update-frontmatter operation with updates object
+      // WHEN: Validating against OperationSchema
+      // THEN: Valid with path, updates object, and optional mode (merge/replace)
       const op: Operation = {
         type: 'update-frontmatter',
         path: '/path/to/file.md',
@@ -144,6 +174,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should reject invalid operation type', () => {
+      // GIVEN: An operation with unsupported type
+      // WHEN: Validating against OperationSchema
+      // THEN: Invalid because type must be one of the defined operation types
       const invalidOp = {
         type: 'invalid-type',
         path: '/path/to/file.md',
@@ -156,6 +189,9 @@ describe('Entity Schemas', () => {
 
   describe('DocumentSchema', () => {
     it('should validate full document', () => {
+      // GIVEN: A complete document with content and metadata
+      // WHEN: Validating against DocumentSchema
+      // THEN: Valid with path, content string, and metadata object
       const doc: Document = {
         path: '/Users/test/vault/note.md',
         content: '# Test Note\n\nContent here.',
@@ -176,6 +212,9 @@ describe('Entity Schemas', () => {
 
   describe('VaultSchema', () => {
     it('should validate vault structure', () => {
+      // GIVEN: A vault with documents and indices
+      // WHEN: Validating against VaultSchema
+      // THEN: Valid with basePath, documents Map, and index structure for fast lookups
       const vault: Vault = {
         basePath: '/Users/test/vault',
         documents: new Map([
@@ -207,6 +246,9 @@ describe('Entity Schemas', () => {
 
   describe('New Operation Types', () => {
     it('should validate remove-frontmatter operation', () => {
+      // GIVEN: A remove-frontmatter operation with keys array
+      // WHEN: Validating against OperationSchema
+      // THEN: Valid with path and array of property keys to remove
       const op: Operation = {
         type: 'remove-frontmatter',
         path: '/path/to/file.md',
@@ -218,6 +260,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should validate delete operation', () => {
+      // GIVEN: A delete operation with file path
+      // WHEN: Validating against OperationSchema
+      // THEN: Valid with just path (moves to trash, not permanent deletion)
       const op: Operation = {
         type: 'delete',
         path: '/path/to/delete.md',
@@ -228,6 +273,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should validate create operation', () => {
+      // GIVEN: A create operation with content and metadata
+      // WHEN: Validating against OperationSchema
+      // THEN: Valid with path, content, and optional metadata for new file
       const op: Operation = {
         type: 'create',
         path: '/path/to/new.md',
@@ -245,6 +293,9 @@ describe('Entity Schemas', () => {
 
   describe('ExecutionResultSchema', () => {
     it('should validate successful execution result', () => {
+      // GIVEN: A successful execution with vault state and changes
+      // WHEN: Validating against ExecutionResultSchema
+      // THEN: Valid with success=true, vault state, and detailed change tracking
       const result: ExecutionResult = {
         success: true,
         vault: {
@@ -276,6 +327,9 @@ describe('Entity Schemas', () => {
     });
 
     it('should validate failed execution result', () => {
+      // GIVEN: A failed execution with error
+      // WHEN: Validating against ExecutionResultSchema
+      // THEN: Valid with success=false and error object (no vault state on failure)
       const result: ExecutionResult = {
         success: false,
         error: new Error('Permission denied'),

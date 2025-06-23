@@ -22,7 +22,7 @@ describe('MoveOperation', () => {
     it('should validate move to existing directory', async () => {
       // GIVEN: A document and a target directory that exists
       // WHEN: Validating a move operation to that directory
-      // THEN: The operation should be valid
+      // THEN: Valid because target directory exists and no file conflicts
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -43,7 +43,7 @@ describe('MoveOperation', () => {
     it('should fail validation when target directory does not exist', async () => {
       // GIVEN: A document and a target path with non-existent directory
       // WHEN: Validating a move operation
-      // THEN: The operation should be invalid with appropriate error
+      // THEN: Invalid because move won't create missing directories (must exist first)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -62,7 +62,7 @@ describe('MoveOperation', () => {
     it('should fail validation when target file already exists', async () => {
       // GIVEN: A document and a target path where a file already exists
       // WHEN: Validating a move operation
-      // THEN: The operation should be invalid to prevent overwriting
+      // THEN: Invalid because move will not overwrite existing files (safety protection)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -88,7 +88,7 @@ describe('MoveOperation', () => {
     it('should fail validation when trying to move file to itself', async () => {
       // GIVEN: A document and a target path that is the same as source
       // WHEN: Validating a move operation
-      // THEN: The operation should be invalid
+      // THEN: Invalid because moving to same location is a no-op (wasteful)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -107,7 +107,7 @@ describe('MoveOperation', () => {
     it('should validate moves outside vault when allowed', async () => {
       // GIVEN: A document and allowOutsideVault option enabled
       // WHEN: Validating a move to a path outside the vault
-      // THEN: The operation should be valid
+      // THEN: Valid only when explicitly allowed via options (security feature)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -128,7 +128,7 @@ describe('MoveOperation', () => {
     it('should fail validation when moving outside vault is not allowed', async () => {
       // GIVEN: A document and default security settings
       // WHEN: Validating a move to a path outside the vault
-      // THEN: The operation should be invalid for security
+      // THEN: Invalid by default to prevent accidental data exposure (enable allowOutsideVault to override)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',

@@ -56,6 +56,9 @@ describe('ScriptRunner', () => {
 
   describe('execute with test script', () => {
     it('should run in preview mode by default', async () => {
+      // GIVEN: A script with destructive operations
+      // WHEN: Executing without explicit --execute flag
+      // THEN: Runs in preview mode showing what would happen (safety first)
       // Create a test script class
       class TestScript implements Script {
         define(context: ScriptContext): OperationPipeline {
@@ -86,6 +89,9 @@ describe('ScriptRunner', () => {
     });
 
     it('should throw error for operations when executeNow is true', async () => {
+      // GIVEN: A script with executeNow: true
+      // WHEN: Running with operations that aren't implemented yet
+      // THEN: Operations fail with clear "not implemented" error
       class TestScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -117,6 +123,9 @@ describe('ScriptRunner', () => {
     });
 
     it('should handle script with filter function', async () => {
+      // GIVEN: A script that selects files then applies a filter function
+      // WHEN: Filter function narrows down the selection
+      // THEN: Operations only apply to files passing the filter
       class FilterScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -144,6 +153,9 @@ describe('ScriptRunner', () => {
     });
 
     it('should format output based on preferences', async () => {
+      // GIVEN: A script with output format preference
+      // WHEN: Setting format to 'detailed'
+      // THEN: Shows verbose output with file-by-file breakdown
       class DetailedScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -172,6 +184,9 @@ describe('ScriptRunner', () => {
     });
 
     it('should handle all operations as not implemented', async () => {
+      // GIVEN: Script runner without operation implementations
+      // WHEN: Attempting to execute any operation
+      // THEN: Gracefully reports operations as not implemented
       const runner = new ScriptRunner({
         config: {
           vaultPath: tempDir,
@@ -209,6 +224,9 @@ describe('ScriptRunner', () => {
     });
 
     it('should respect failFast option', async () => {
+      // GIVEN: A script with failFast: true and multiple files
+      // WHEN: First operation fails
+      // THEN: Stops processing remaining files immediately
       const runner = new ScriptRunner({
         config: {
           vaultPath: tempDir,
@@ -248,6 +266,9 @@ describe('ScriptRunner', () => {
 
   describe('selection validation', () => {
     it('should throw error when indexer not initialized for query-based selection', async () => {
+      // GIVEN: A script using query-based selection (not simple file list)
+      // WHEN: Indexer is not initialized
+      // THEN: Throws clear error that indexer is required for queries
       class QueryScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -273,6 +294,9 @@ describe('ScriptRunner', () => {
 
   describe('output formats', () => {
     it('should output JSON format', async () => {
+      // GIVEN: A script with output format: 'json'
+      // WHEN: Executing the pipeline
+      // THEN: Outputs valid JSON with attempted, succeeded, and stats
       class JsonScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -303,6 +327,9 @@ describe('ScriptRunner', () => {
     });
 
     it('should output CSV format', async () => {
+      // GIVEN: A script with output format: 'csv'
+      // WHEN: Executing the pipeline
+      // THEN: Outputs CSV with header row and one row per file
       class CsvScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {

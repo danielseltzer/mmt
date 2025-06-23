@@ -22,7 +22,7 @@ describe('RenameOperation', () => {
     it('should validate rename with valid new name', async () => {
       // GIVEN: A document and a valid new name
       // WHEN: Validating a rename operation
-      // THEN: The operation should be valid
+      // THEN: Valid because new name is non-empty, has no path separators, and doesn't conflict with existing files
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/old-name.md',
@@ -38,7 +38,7 @@ describe('RenameOperation', () => {
     it('should fail validation when new name is empty', async () => {
       // GIVEN: A document and an empty name
       // WHEN: Validating a rename operation
-      // THEN: The operation should be invalid
+      // THEN: Invalid because file names cannot be empty
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -55,7 +55,7 @@ describe('RenameOperation', () => {
     it('should fail validation when new name contains path separators', async () => {
       // GIVEN: A document and a name with path separators
       // WHEN: Validating a rename operation
-      // THEN: The operation should be invalid to prevent directory changes
+      // THEN: Invalid because rename cannot change directories (use move operation instead)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -72,7 +72,7 @@ describe('RenameOperation', () => {
     it('should fail validation when target file already exists', async () => {
       // GIVEN: A document and a name that conflicts with existing file
       // WHEN: Validating a rename operation
-      // THEN: The operation should be invalid to prevent overwriting
+      // THEN: Invalid because rename will not overwrite existing files (safety protection)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/old.md',
@@ -95,7 +95,7 @@ describe('RenameOperation', () => {
     it('should fail validation when renaming to same name', async () => {
       // GIVEN: A document and its current name
       // WHEN: Validating a rename to same name
-      // THEN: The operation should be invalid as no-op
+      // THEN: Invalid because renaming to the same name is a no-op (wasteful)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -112,7 +112,7 @@ describe('RenameOperation', () => {
     it('should automatically add .md extension if missing', async () => {
       // GIVEN: A document and a name without .md extension
       // WHEN: Validating a rename operation
-      // THEN: Should auto-append .md and validate successfully
+      // THEN: Valid because system auto-appends .md extension to maintain consistency
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',

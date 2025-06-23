@@ -21,7 +21,7 @@ describe('UpdateFrontmatterOperation', () => {
     it('should validate frontmatter updates', async () => {
       // GIVEN: A document and valid frontmatter updates
       // WHEN: Validating an update operation
-      // THEN: The operation should be valid
+      // THEN: Valid because updates object contains at least one property change
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -40,7 +40,7 @@ describe('UpdateFrontmatterOperation', () => {
     it('should validate removal of properties', async () => {
       // GIVEN: A document with frontmatter and null values to remove
       // WHEN: Validating an update with null values
-      // THEN: The operation should be valid
+      // THEN: Valid because null values are used to remove properties from frontmatter
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -59,7 +59,7 @@ describe('UpdateFrontmatterOperation', () => {
     it('should fail validation when updates is empty', async () => {
       // GIVEN: A document and empty updates object
       // WHEN: Validating an update operation
-      // THEN: The operation should be invalid
+      // THEN: Invalid because empty updates would be a no-op (nothing to change)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -78,7 +78,7 @@ describe('UpdateFrontmatterOperation', () => {
     it('should validate merge mode', async () => {
       // GIVEN: A document and merge mode configuration
       // WHEN: Validating with merge mode
-      // THEN: The operation should be valid
+      // THEN: Valid in merge mode which preserves existing properties while adding new ones
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
@@ -98,7 +98,7 @@ describe('UpdateFrontmatterOperation', () => {
     it('should validate replace mode', async () => {
       // GIVEN: A document and replace mode configuration
       // WHEN: Validating with replace mode
-      // THEN: The operation should be valid
+      // THEN: Valid in replace mode which completely replaces all frontmatter (use with caution)
       const doc = await createTestDocument(
         testVault.vaultPath,
         'notes/test.md',
