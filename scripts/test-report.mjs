@@ -185,7 +185,7 @@ async function main() {
   console.log('Scanning for test files...\n');
   
   // Find all test files
-  const testFiles = await glob('packages/*/src/**/*.test.{ts,js}', {
+  const testFiles = await glob('packages/*/{src,tests}/**/*.test.{ts,js}', {
     cwd: process.cwd()
   });
   

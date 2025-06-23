@@ -4,38 +4,194 @@ import type {
   OperationContext, 
   ValidationResult, 
   OperationPreview, 
-  OperationResult 
+  OperationResult,
+  PreviewChange
 } from '../types.js';
+import { join, dirname } from 'path';
 
-export interface UpdateFrontmatterOptions {
-  updates: Record<string, any | ((doc: Document) => any)>;
-  preserveExisting?: boolean;
+export interface UpdateFrontmatterOperationOptions {
+  updates: Record<string, any>;
+  mode?: 'merge' | 'replace';
 }
 
 export class UpdateFrontmatterOperation implements DocumentOperation {
   readonly type = 'updateFrontmatter' as const;
-
-  constructor(private options: UpdateFrontmatterOptions) {}
+  private mode: 'merge' | 'replace';
+  
+  constructor(private options: UpdateFrontmatterOperationOptions) {
+    this.mode = options.mode || 'merge';
+  }
 
   async validate(doc: Document, context: OperationContext): Promise<ValidationResult> {
-    // TODO: Implement validation
+    // Check if updates is empty
+    if (Object.keys(this.options.updates).length === 0) {
+      return {
+        valid: false,
+        error: 'No updates provided'
+      };
+    }
+
     return { valid: true };
   }
 
   async preview(doc: Document, context: OperationContext): Promise<OperationPreview> {
-    // TODO: Implement preview
+    const changes: PreviewChange[] = [];
+    
+    // Show frontmatter update
+    const currentFrontmatter = doc.metadata.frontmatter || {};
+    let newFrontmatter: Record<string, any>;
+    
+    if (this.mode === 'replace') {
+      // In replace mode, only the updates will remain
+      newFrontmatter = { ...this.options.updates };
+    } else {
+      // In merge mode, merge updates with existing
+      newFrontmatter = { ...currentFrontmatter };
+      
+      // Apply updates
+      for (const [key, value] of Object.entries(this.options.updates)) {
+        if (value === null) {
+          delete newFrontmatter[key];
+        } else {
+          newFrontmatter[key] = value;
+        }
+      }
+    }
+    
+    // Generate YAML representations
+    const beforeYaml = Object.keys(currentFrontmatter).length > 0 
+      ? this.formatYaml(currentFrontmatter)
+      : '(no frontmatter)';
+      
+    const afterYaml = Object.keys(newFrontmatter).length > 0
+      ? this.formatYaml(newFrontmatter)
+      : '(no frontmatter)';
+    
+    changes.push({
+      type: 'frontmatter-update',
+      file: doc.path,
+      description: `Update frontmatter (${this.mode} mode)`,
+      before: beforeYaml,
+      after: afterYaml
+    });
+    
     return {
       type: 'updateFrontmatter',
       source: doc.path,
-      changes: []
+      changes
     };
   }
 
   async execute(doc: Document, context: OperationContext): Promise<OperationResult> {
-    // TODO: Implement execution
-    return {
-      success: true,
-      document: doc
+    try {
+      // Create backup if requested
+      let backup;
+      if (context.options.createBackup && !context.options.dryRun) {
+        const backupPath = await this.createBackup(doc, context);
+        backup = {
+          originalPath: doc.path,
+          backupPath
+        };
+      }
+
+      // Calculate new frontmatter
+      let newFrontmatter: Record<string, any>;
+      
+      if (this.mode === 'replace') {
+        // Replace mode: only use the provided updates
+        newFrontmatter = { ...this.options.updates };
+      } else {
+        // Merge mode: merge with existing frontmatter
+        newFrontmatter = { ...(doc.metadata.frontmatter || {}) };
+        
+        // Apply updates
+        for (const [key, value] of Object.entries(this.options.updates)) {
+          if (value === null) {
+            delete newFrontmatter[key];
+          } else {
+            newFrontmatter[key] = value;
+          }
+        }
+      }
+      
+      if (!context.options.dryRun) {
+        // Read current content
+        const { content, frontmatter } = await context.fs.readMarkdownFile(doc.path);
+        
+        // Write back with updated frontmatter
+        await context.fs.writeMarkdownFile(doc.path, content, newFrontmatter);
+      }
+      
+      // Create updated document
+      const updatedDoc: Document = {
+        ...doc,
+        metadata: {
+          ...doc.metadata,
+          frontmatter: newFrontmatter
+        }
+      };
+
+      return {
+        success: true,
+        document: updatedDoc,
+        backup,
+        dryRun: context.options.dryRun
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error as Error
+      };
+    }
+  }
+
+  private async createBackup(doc: Document, context: OperationContext): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupDir = join(dirname(doc.path), '.backups');
+    const backupPath = join(backupDir, `${doc.metadata.name}-${timestamp}.md`);
+    
+    // Ensure backup directory exists
+    await context.fs.mkdir(backupDir, { recursive: true });
+    
+    // Copy file to backup location
+    await context.fs.copyFile(doc.path, backupPath);
+    
+    return backupPath;
+  }
+
+  private formatYaml(obj: Record<string, any>): string {
+    // Simple YAML formatter for preview purposes
+    const lines: string[] = [];
+    
+    const formatValue = (value: any, indent: string = ''): string => {
+      if (value === null) return 'null';
+      if (value === undefined) return 'null';
+      if (typeof value === 'boolean') return value.toString();
+      if (typeof value === 'number') return value.toString();
+      if (typeof value === 'string') return value;
+      
+      if (Array.isArray(value)) {
+        if (value.length === 0) return '[]';
+        return '\n' + value.map(item => `${indent}  - ${formatValue(item, indent + '  ')}`).join('\n');
+      }
+      
+      if (typeof value === 'object') {
+        const entries = Object.entries(value);
+        if (entries.length === 0) return '{}';
+        return '\n' + entries.map(([k, v]) => {
+          const formattedValue = formatValue(v, indent + '  ');
+          return `${indent}  ${k}: ${formattedValue}`;
+        }).join('\n');
+      }
+      
+      return String(value);
     };
+    
+    for (const [key, value] of Object.entries(obj)) {
+      const formattedValue = formatValue(value);
+      lines.push(`${key}: ${formattedValue}`);
+    }
+    
+    return lines.join('\n');
   }
 }

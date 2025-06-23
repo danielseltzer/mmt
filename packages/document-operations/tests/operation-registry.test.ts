@@ -28,22 +28,37 @@ describe('OperationRegistry', () => {
 
   describe('default operations', () => {
     it('should have move operation registered by default', () => {
+      // GIVEN: A new OperationRegistry instance
+      // WHEN: Checking for move operation
+      // THEN: It should be pre-registered
       expect(registry.has('move')).toBe(true);
     });
 
     it('should have rename operation registered by default', () => {
+      // GIVEN: A new OperationRegistry instance
+      // WHEN: Checking for rename operation
+      // THEN: It should be pre-registered
       expect(registry.has('rename')).toBe(true);
     });
 
     it('should have updateFrontmatter operation registered by default', () => {
+      // GIVEN: A new OperationRegistry instance
+      // WHEN: Checking for updateFrontmatter operation
+      // THEN: It should be pre-registered
       expect(registry.has('updateFrontmatter')).toBe(true);
     });
 
     it('should have delete operation registered by default', () => {
+      // GIVEN: A new OperationRegistry instance
+      // WHEN: Checking for delete operation
+      // THEN: It should be pre-registered
       expect(registry.has('delete')).toBe(true);
     });
 
     it('should list all default operation types', () => {
+      // GIVEN: A new OperationRegistry instance
+      // WHEN: Getting all operation types
+      // THEN: Should return all pre-registered operations
       const types = registry.getTypes();
       expect(types).toContain('move');
       expect(types).toContain('rename');
@@ -54,18 +69,27 @@ describe('OperationRegistry', () => {
 
   describe('operation creation', () => {
     it('should create real move operation instance', () => {
+      // GIVEN: A registry and move operation parameters
+      // WHEN: Creating a move operation
+      // THEN: Should return properly configured MoveOperation instance
       const operation = registry.create('move', { targetPath: '/new/path.md' });
       expect(operation).toBeInstanceOf(MoveOperation);
       expect(operation.type).toBe('move');
     });
 
     it('should create real rename operation instance', () => {
+      // GIVEN: A registry and rename parameters
+      // WHEN: Creating a rename operation
+      // THEN: Should return properly configured RenameOperation instance
       const operation = registry.create('rename', { newName: 'renamed.md' });
       expect(operation).toBeInstanceOf(RenameOperation);
       expect(operation.type).toBe('rename');
     });
 
     it('should create real updateFrontmatter operation instance', () => {
+      // GIVEN: A registry and frontmatter updates
+      // WHEN: Creating an updateFrontmatter operation
+      // THEN: Should return properly configured UpdateFrontmatterOperation
       const operation = registry.create('updateFrontmatter', { 
         updates: { title: 'New Title' } 
       });
@@ -74,12 +98,18 @@ describe('OperationRegistry', () => {
     });
 
     it('should create real delete operation instance', () => {
+      // GIVEN: A registry and delete parameters
+      // WHEN: Creating a delete operation
+      // THEN: Should return properly configured DeleteOperation instance
       const operation = registry.create('delete', {});
       expect(operation).toBeInstanceOf(DeleteOperation);
       expect(operation.type).toBe('delete');
     });
 
     it('should pass options to operation constructor', async () => {
+      // GIVEN: A registry and operation with specific options
+      // WHEN: Creating an operation with options
+      // THEN: Options should be passed to operation constructor
       const targetPath = '/test/moved.md';
       const operation = registry.create('move', { targetPath });
       
@@ -96,6 +126,9 @@ describe('OperationRegistry', () => {
     });
 
     it('should throw when creating unregistered operation type', () => {
+      // GIVEN: A registry without a custom operation type
+      // WHEN: Attempting to create unknown operation
+      // THEN: Should throw with descriptive error
       expect(() => registry.create('unknown' as OperationType, {}))
         .toThrow('Unknown operation type: unknown');
     });
@@ -103,6 +136,9 @@ describe('OperationRegistry', () => {
 
   describe('custom operation registration', () => {
     it('should allow registering custom operations', () => {
+      // GIVEN: A registry and custom operation implementation
+      // WHEN: Registering new operation type
+      // THEN: Should be available for creation
       // Create a real transform operation implementation
       class TransformOperation implements DocumentOperation {
         readonly type = 'transform' as const;
@@ -155,6 +191,9 @@ describe('OperationRegistry', () => {
     });
 
     it('should throw when registering duplicate operation type', () => {
+      // GIVEN: A registry with existing operation type
+      // WHEN: Attempting to register same type again
+      // THEN: Should throw to prevent conflicts
       // Try to register over an existing operation
       expect(() => {
         registry.register('move', () => new MoveOperation({ targetPath: '/test' }));

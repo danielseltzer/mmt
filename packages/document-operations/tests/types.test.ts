@@ -14,6 +14,9 @@ import type { Document } from '@mmt/entities';
 describe('Type Definitions', () => {
   describe('OperationType', () => {
     it('should include all core operation types', () => {
+      // GIVEN: The OperationType type definition
+      // WHEN: Listing all valid operation types
+      // THEN: Should include move, rename, updateFrontmatter, delete, transform
       const validTypes: OperationType[] = [
         'move',
         'rename', 
@@ -29,6 +32,9 @@ describe('Type Definitions', () => {
 
   describe('ValidationResult', () => {
     it('should support valid result', () => {
+      // GIVEN: A successful validation
+      // WHEN: Creating a validation result
+      // THEN: Should have valid=true with no errors
       const result: ValidationResult = {
         valid: true
       };
@@ -38,6 +44,9 @@ describe('Type Definitions', () => {
     });
 
     it('should support invalid result with errors', () => {
+      // GIVEN: A failed validation with specific errors
+      // WHEN: Creating a validation result
+      // THEN: Should have valid=false with error details
       const errors: ValidationError[] = [
         {
           code: 'INVALID_PATH',
@@ -58,6 +67,9 @@ describe('Type Definitions', () => {
 
   describe('OperationPreview', () => {
     it('should include all required fields', () => {
+      // GIVEN: An operation preview for a move
+      // WHEN: Creating the preview object
+      // THEN: Should include type, source, target, and changes
       const preview: OperationPreview = {
         type: 'move',
         source: '/old/path.md',
@@ -78,6 +90,9 @@ describe('Type Definitions', () => {
     });
 
     it('should support operations without target', () => {
+      // GIVEN: An operation like delete that has no target
+      // WHEN: Creating the preview
+      // THEN: Target should be optional
       const preview: OperationPreview = {
         type: 'delete',
         source: '/path/to/file.md',
@@ -90,6 +105,9 @@ describe('Type Definitions', () => {
 
   describe('OperationResult', () => {
     it('should support successful result', () => {
+      // GIVEN: A successful operation execution
+      // WHEN: Creating the result
+      // THEN: Should have success=true with updated document
       const doc: Document = {
         path: '/test.md',
         content: '# Test',
@@ -115,6 +133,9 @@ describe('Type Definitions', () => {
     });
 
     it('should support failed result', () => {
+      // GIVEN: A failed operation execution
+      // WHEN: Creating the result
+      // THEN: Should have success=false with error
       const result: OperationResult = {
         success: false,
         error: new Error('Operation failed')
@@ -128,6 +149,9 @@ describe('Type Definitions', () => {
 
   describe('OperationOptions', () => {
     it('should have sensible defaults', () => {
+      // GIVEN: Operation options configuration
+      // WHEN: Setting up options
+      // THEN: Should have safe defaults like dryRun=true
       const options: OperationOptions = {
         dryRun: true, // Safe by default
         updateLinks: true,
@@ -142,6 +166,9 @@ describe('Type Definitions', () => {
 
   describe('OperationContext', () => {
     it('should include all required dependencies', () => {
+      // GIVEN: An operation context
+      // WHEN: Checking required services
+      // THEN: Should provide vault, fs, indexer, and options
       // This is more of a compile-time test
       // Ensures our context has all needed services
       type ContextKeys = keyof OperationContext;

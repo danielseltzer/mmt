@@ -17,6 +17,7 @@ export type OperationType =
  */
 export interface ValidationResult {
   valid: boolean;
+  error?: string;
   errors?: ValidationError[];
 }
 
@@ -36,13 +37,13 @@ export interface OperationPreview {
   type: OperationType;
   source: string;
   target?: string;
-  changes: PreviewChange[];
+  changes: FileChange[];
 }
 
 /**
  * A single change that will be made
  */
-export interface PreviewChange {
+export interface FileChange {
   type: 'file-move' | 'file-rename' | 'file-delete' | 'link-update' | 'frontmatter-update';
   file: string;
   description: string;
@@ -56,7 +57,12 @@ export interface PreviewChange {
 export interface OperationResult {
   success: boolean;
   document?: Document;
-  error?: Error;
+  error?: string;
+  dryRun?: boolean;
+  backup?: {
+    originalPath: string;
+    backupPath: string;
+  };
   rollback?: () => Promise<void>;
 }
 
@@ -68,6 +74,7 @@ export interface OperationOptions {
   updateLinks: boolean;
   createBackup: boolean;
   continueOnError: boolean;
+  allowOutsideVault?: boolean;
 }
 
 /**
