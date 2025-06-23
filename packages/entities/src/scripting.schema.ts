@@ -96,6 +96,16 @@ export const ExecutionOptionsSchema = z.object({
 }).describe('Execution options');
 
 /**
+ * Agent analysis configuration for AI-powered insights
+ */
+export const AgentAnalysisSchema = z.object({
+  enabled: z.boolean().default(true).describe('Enable Claude AI analysis of results'),
+  promptTemplate: z.string().optional().describe('Override default prompt template'),
+  model: z.string().optional().describe('Claude model to use (e.g., "sonnet", "opus")'),
+  timeout: z.number().default(30000).describe('Timeout in milliseconds (default: 30 seconds)'),
+}).describe('Configuration for AI-powered analysis of results');
+
+/**
  * Operation pipeline - the core schema that scripts produce
  */
 export const OperationPipelineSchema = z.object({
@@ -105,6 +115,7 @@ export const OperationPipelineSchema = z.object({
   operations: z.array(ScriptOperationSchema).min(1).describe('Operations to perform'),
   output: OutputConfigSchema.optional(),
   options: ExecutionOptionsSchema.optional(),
+  agentAnalysis: AgentAnalysisSchema.optional().describe('Optional AI analysis configuration'),
 }).describe('Complete operation pipeline definition');
 
 /**
@@ -174,6 +185,7 @@ export type OutputSpec = z.infer<typeof OutputSpecSchema>;
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 export type ExecuteOptions = z.infer<typeof ExecuteOptionsSchema>;
 export type ExecutionOptions = z.infer<typeof ExecutionOptionsSchema>;
+export type AgentAnalysis = z.infer<typeof AgentAnalysisSchema>;
 export type OperationPipeline = z.infer<typeof OperationPipelineSchema>;
 export type ScriptContext = z.infer<typeof ScriptContextSchema>;
 export type SuccessResult = z.infer<typeof SuccessResultSchema>;
