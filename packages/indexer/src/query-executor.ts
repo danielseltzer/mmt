@@ -21,7 +21,7 @@ export class QueryExecutor {
       results = this.applyCondition(results, condition);
       
       // Short circuit if no results
-      if (results.length === 0) break;
+      if (results.length === 0) {break;}
     }
     
     // Apply sorting if requested
@@ -45,7 +45,7 @@ export class QueryExecutor {
     for (const condition of query.conditions) {
       // Tag queries can use index
       if (condition.field === 'tag' && condition.operator === 'equals') {
-        return this.storage.getDocumentsByTag(condition.value);
+        return this.storage.getDocumentsByTag(String(condition.value));
       }
       
       // Path prefix queries can use prefix tree
@@ -129,7 +129,7 @@ export class QueryExecutor {
   /**
    * Compare values based on operator
    */
-  private compareValues(docValue: any, operator: string, queryValue: any): boolean {
+  private compareValues(docValue: unknown, operator: string, queryValue: unknown): boolean {
     switch (operator) {
       case 'equals':
         return docValue === queryValue;
@@ -163,7 +163,7 @@ export class QueryExecutor {
   /**
    * Check if document matches tag condition
    */
-  private matchesTag(doc: PageMetadata, operator: string, value: any): boolean {
+  private matchesTag(doc: PageMetadata, operator: string, value: unknown): boolean {
     const tagValue = String(value).toLowerCase();
     
     switch (operator) {
@@ -197,8 +197,14 @@ export class QueryExecutor {
       }
       
       let result = 0;
-      if (aValue < bValue) result = -1;
-      else if (aValue > bValue) result = 1;
+      // Type-safe comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        result = aValue.localeCompare(bValue);
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        result = aValue - bValue;
+      } else if (aValue instanceof Date && bValue instanceof Date) {
+        result = aValue.getTime() - bValue.getTime();
+      }
       
       return order === 'asc' ? result : -result;
     });
@@ -207,7 +213,7 @@ export class QueryExecutor {
   /**
    * Get field value from document
    */
-  private getFieldValue(doc: PageMetadata, field: string): any {
+  private getFieldValue(doc: PageMetadata, field: string): unknown {
     if (field.startsWith('fm:')) {
       return doc.frontmatter[field.substring(3)];
     }

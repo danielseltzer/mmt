@@ -11,17 +11,17 @@ export class IndexStorage {
   private pages = new Map<string, PageMetadata>();
   
   // Secondary indices for query performance
-  private tags = new Map<string, Set<string>>();          // tag -> file paths
-  private etags = new Map<string, Set<string>>();         // exact tag -> file paths  
-  private titles = new Map<string, string>();             // normalized title -> path
-  private prefixTree = new PrefixIndex();                 // for path queries
+  private tags = new Map<string, Set<string>>(); // tag -> file paths
+  private etags = new Map<string, Set<string>>(); // exact tag -> file paths  
+  private titles = new Map<string, string>(); // normalized title -> path
+  private prefixTree = new PrefixIndex(); // for path queries
   
   // Link indices
   private outgoingLinks = new Map<string, LinkEntry[]>(); // source -> targets
   private incomingLinks = new Map<string, Set<string>>(); // target -> sources
   
   // Frontmatter property index
-  private properties = new Map<string, Map<any, Set<string>>>(); // property -> value -> paths
+  private properties = new Map<string, Map<unknown, Set<string>>>(); // property -> value -> paths
   
   // Change tracking
   private revision = 0;
@@ -44,7 +44,7 @@ export class IndexStorage {
    * Add or update a document in the index
    */
   addDocument(metadata: PageMetadata): void {
-    const path = metadata.path;
+    const {path} = metadata;
     
     // Remove old data if updating
     if (this.pages.has(path)) {
@@ -67,7 +67,7 @@ export class IndexStorage {
    * Remove a document from all indices
    */
   removeDocument(path: string): void {
-    if (!this.pages.has(path)) return;
+    if (!this.pages.has(path)) {return;}
     
     this.removeFromIndices(path);
     this.pages.delete(path);
@@ -102,7 +102,7 @@ export class IndexStorage {
    */
   getDocumentsByTag(tag: string): PageMetadata[] {
     const normalizedTag = tag.toLowerCase();
-    const paths = this.tags.get(normalizedTag) || new Set();
+    const paths = this.tags.get(normalizedTag) ?? new Set();
     return this.getDocumentsByPaths(paths);
   }
   
@@ -110,7 +110,7 @@ export class IndexStorage {
    * Get documents by exact tag
    */
   getDocumentsByExactTag(tag: string): PageMetadata[] {
-    const paths = this.etags.get(tag) || new Set();
+    const paths = this.etags.get(tag) ?? new Set();
     return this.getDocumentsByPaths(paths);
   }
   
@@ -125,11 +125,11 @@ export class IndexStorage {
   /**
    * Get documents by frontmatter property
    */
-  getDocumentsByProperty(property: string, value: any): PageMetadata[] {
+  getDocumentsByProperty(property: string, value: unknown): PageMetadata[] {
     const propertyIndex = this.properties.get(property);
-    if (!propertyIndex) return [];
+    if (!propertyIndex) {return [];}
     
-    const paths = propertyIndex.get(value) || new Set();
+    const paths = propertyIndex.get(value) ?? new Set();
     return this.getDocumentsByPaths(paths);
   }
   
@@ -138,7 +138,7 @@ export class IndexStorage {
    */
   updateLinks(sourcePath: string, links: LinkEntry[]): void {
     // Remove old links
-    const oldLinks = this.outgoingLinks.get(sourcePath) || [];
+    const oldLinks = this.outgoingLinks.get(sourcePath) ?? [];
     for (const link of oldLinks) {
       const targetSources = this.incomingLinks.get(link.target);
       if (targetSources) {
@@ -153,7 +153,10 @@ export class IndexStorage {
       if (!this.incomingLinks.has(link.target)) {
         this.incomingLinks.set(link.target, new Set());
       }
-      this.incomingLinks.get(link.target)!.add(sourcePath);
+      const targetSources = this.incomingLinks.get(link.target);
+      if (targetSources) {
+        targetSources.add(sourcePath);
+      }
     }
     
     this.touch();
@@ -163,14 +166,14 @@ export class IndexStorage {
    * Get outgoing links from a document
    */
   getOutgoingLinks(path: string): LinkEntry[] {
-    return this.outgoingLinks.get(path) || [];
+    return this.outgoingLinks.get(path) ?? [];
   }
   
   /**
    * Get documents that link to a given document
    */
   getBacklinks(targetPath: string): string[] {
-    const sources = this.incomingLinks.get(targetPath) || new Set();
+    const sources = this.incomingLinks.get(targetPath) ?? new Set();
     return Array.from(sources);
   }
   
@@ -179,7 +182,7 @@ export class IndexStorage {
    */
   private removeFromIndices(path: string): void {
     const metadata = this.pages.get(path);
-    if (!metadata) return;
+    if (!metadata) {return;}
     
     // Remove from tag indices
     for (const tag of metadata.tags) {
@@ -217,7 +220,10 @@ export class IndexStorage {
       if (!this.tags.has(tag)) {
         this.tags.set(tag, new Set());
       }
-      this.tags.get(tag)!.add(path);
+      const tagPaths = this.tags.get(tag);
+      if (tagPaths) {
+        tagPaths.add(path);
+      }
     }
     
     // Index exact tags
@@ -225,7 +231,10 @@ export class IndexStorage {
       if (!this.etags.has(tag)) {
         this.etags.set(tag, new Set());
       }
-      this.etags.get(tag)!.add(path);
+      const etagPaths = this.etags.get(tag);
+      if (etagPaths) {
+        etagPaths.add(path);
+      }
     }
   }
   
@@ -261,12 +270,18 @@ export class IndexStorage {
         this.properties.set(key, new Map());
       }
       
-      const propertyIndex = this.properties.get(key)!;
+      const propertyIndex = this.properties.get(key);
+      if (!propertyIndex) {
+        continue;
+      }
       if (!propertyIndex.has(value)) {
         propertyIndex.set(value, new Set());
       }
       
-      propertyIndex.get(value)!.add(path);
+      const valuePaths = propertyIndex.get(value);
+      if (valuePaths) {
+        valuePaths.add(path);
+      }
     }
   }
   

@@ -2,13 +2,10 @@
  * Main indexer class that orchestrates vault indexing
  */
 
-import type { FileSystemAccess } from '@mmt/filesystem-access';
 import type { 
   IndexerOptions, 
   PageMetadata, 
-  Query,
-  LinkEntry,
-  CacheEntry 
+  Query
 } from './types.js';
 import { IndexStorage } from './index-storage.js';
 import { MetadataExtractor } from './metadata-extractor.js';
@@ -27,7 +24,7 @@ export class VaultIndexer {
   private cache?: MetadataCache;
   private workers?: WorkerPool;
   private watcher?: FileWatcher;
-  private errorCount: number = 0;
+  private errorCount = 0;
   
   constructor(private options: IndexerOptions) {
     this.storage = new IndexStorage();
@@ -36,11 +33,11 @@ export class VaultIndexer {
     this.queryExecutor = new QueryExecutor(this.storage);
     
     if (options.useCache) {
-      this.cache = new MetadataCache(options.cacheDir || join(options.vaultPath, '.mmt-cache'));
+      this.cache = new MetadataCache(options.cacheDir ?? join(options.vaultPath, '.mmt-cache'));
     }
     
     if (options.useWorkers) {
-      this.workers = new WorkerPool(options.workerCount || 4);
+      this.workers = new WorkerPool(options.workerCount ?? 4);
     }
   }
   
@@ -48,7 +45,7 @@ export class VaultIndexer {
    * Initialize the indexer by scanning the vault
    */
   async initialize(): Promise<void> {
-    console.log(`Initializing indexer for vault: ${this.options.vaultPath}`);
+    console.error(`Initializing indexer for vault: ${this.options.vaultPath}`);
     
     const startTime = Date.now();
     this.errorCount = 0; // Reset error count
@@ -60,7 +57,7 @@ export class VaultIndexer {
     
     // Scan vault for markdown files
     const files = await this.findMarkdownFiles();
-    console.log(`Found ${files.length} markdown files`);
+    console.error(`Found ${files.length.toString()} markdown files`);
     
     // Update link extractor with file list for resolution
     this.linkExtractor.updateFileLookup(files);
@@ -77,12 +74,12 @@ export class VaultIndexer {
     const totalTime = Date.now() - startTime;
     
     // Display timing information
-    console.log(`\n✓ Indexing completed in ${(indexingTime / 1000).toFixed(2)}s`);
-    console.log(`  Successfully indexed: ${files.length - this.errorCount} files`);
+    console.error(`\n✓ Indexing completed in ${(indexingTime / 1000).toFixed(2)}s`);
+    console.error(`  Successfully indexed: ${String(files.length - this.errorCount)} files`);
     if (this.errorCount > 0) {
-      console.log(`  ⚠️  Skipped ${this.errorCount} files due to errors`);
+      console.error(`  ⚠️  Skipped ${String(this.errorCount)} files due to errors`);
     }
-    console.log(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
+    console.error(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
     
     // Start file watching
     if (this.options.useCache) {
@@ -93,14 +90,14 @@ export class VaultIndexer {
   /**
    * Get all indexed documents
    */
-  async getAllDocuments(): Promise<PageMetadata[]> {
+  getAllDocuments(): PageMetadata[] {
     return this.storage.getAllDocuments();
   }
   
   /**
    * Get documents that link TO the given document
    */
-  async getBacklinks(relativePath: string): Promise<PageMetadata[]> {
+  getBacklinks(relativePath: string): PageMetadata[] {
     const fullPath = join(this.options.vaultPath, relativePath);
     const sources = this.storage.getBacklinks(fullPath);
     
@@ -112,7 +109,7 @@ export class VaultIndexer {
   /**
    * Get documents that are linked FROM the given document
    */
-  async getOutgoingLinks(relativePath: string): Promise<PageMetadata[]> {
+  getOutgoingLinks(relativePath: string): PageMetadata[] {
     const fullPath = join(this.options.vaultPath, relativePath);
     const links = this.storage.getOutgoingLinks(fullPath);
     
@@ -127,7 +124,7 @@ export class VaultIndexer {
   /**
    * Execute a query against the index
    */
-  async query(query: Query): Promise<PageMetadata[]> {
+  query(query: Query): PageMetadata[] {
     return this.queryExecutor.execute(query);
   }
   
@@ -147,7 +144,7 @@ export class VaultIndexer {
   /**
    * Remove a file from the index
    */
-  async deleteFile(relativePath: string): Promise<void> {
+  deleteFile(relativePath: string): void {
     const fullPath = join(this.options.vaultPath, relativePath);
     this.storage.removeDocument(fullPath);
   }
@@ -193,7 +190,7 @@ export class VaultIndexer {
    * Index files using worker pool (for large vaults)
    */
   private async indexFilesWithWorkers(files: string[]): Promise<void> {
-    if (!this.workers) return;
+    if (!this.workers) {return;}
     
     // Process in batches
     const batchSize = 50;
@@ -205,7 +202,13 @@ export class VaultIndexer {
     
     // Process batches in parallel
     const results = await Promise.all(
-      batches.map(batch => this.workers!.processBatch(batch))
+      batches.map(batch => {
+        const { workers } = this;
+        if (!workers) {
+          throw new Error('Workers not initialized');
+        }
+        return Promise.resolve(workers.processBatch(batch));
+      })
     );
     
     // Store results
@@ -232,7 +235,7 @@ export class VaultIndexer {
       // Check cache first
       if (this.cache) {
         const stats = await this.options.fileSystem.stat(fullPath);
-        const cached = await this.cache.get(fullPath);
+        const cached = this.cache.get(fullPath);
         
         if (cached && this.cache.isValid(cached, stats)) {
           this.storage.addDocument(cached.metadata);
@@ -242,7 +245,7 @@ export class VaultIndexer {
       
       // Read and parse file
       const content = await this.options.fileSystem.readFile(fullPath);
-      const relativePath = relative(this.options.vaultPath, fullPath);
+      // const relativePath = relative(this.options.vaultPath, fullPath); // unused
       
       // Extract metadata
       const metadata = await this.extractor.extract(fullPath, content);
@@ -256,22 +259,28 @@ export class VaultIndexer {
       
       // Update cache
       if (this.cache) {
-        await this.cache.set(fullPath, {
+        this.cache.set(fullPath, {
           metadata,
           version: '1.0.0',
           indexed: Date.now(),
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       // Handle YAML parsing errors with user-friendly messages
-      if (error.name === 'YAMLException') {
+      if (error !== null && typeof error === 'object' && 'name' in error && error.name === 'YAMLException') {
         const relativePath = relative(this.options.vaultPath, fullPath);
         console.error(`\n⚠️  YAML Parsing Error in: ${relativePath}`);
-        console.error(`   ${error.reason}`);
+        if ('reason' in error && typeof error.reason === 'string') {
+          console.error(`   ${error.reason}`);
+        }
         
         // Extract the problematic line from the error
-        if (error.mark) {
-          console.error(`   At line ${error.mark.line + 1}, column ${error.mark.column + 1}`);
+        if ('mark' in error && error.mark !== null && error.mark !== undefined &&
+            typeof error.mark === 'object' && 'line' in error.mark && 'column' in error.mark &&
+            typeof (error.mark as {line: unknown}).line === 'number' &&
+            typeof (error.mark as {column: unknown}).column === 'number') {
+          const mark = error.mark as { line: number; column: number };
+          console.error(`   At line ${String(mark.line + 1)}, column ${String(mark.column + 1)}`);
           console.error(`\n   This often happens with:`);
           console.error(`   - Template files containing variables like {{DATE}}`);
           console.error(`   - Missing quotes around values with colons`);
@@ -281,7 +290,7 @@ export class VaultIndexer {
         // Other errors - show simplified message
         const relativePath = relative(this.options.vaultPath, fullPath);
         console.error(`\n⚠️  Failed to index: ${relativePath}`);
-        console.error(`   ${error.message || error}\n`);
+        console.error(`   ${error instanceof Error ? error.message : String(error)}\n`);
       }
       this.errorCount++;
     }
@@ -291,10 +300,10 @@ export class VaultIndexer {
    * Load metadata from cache
    */
   private async loadFromCache(): Promise<void> {
-    if (!this.cache) return;
+    if (!this.cache) {return;}
     
     try {
-      const entries = await this.cache.getAll();
+      const entries = this.cache.getAll();
       
       for (const [path, entry] of entries) {
         // Verify file still exists
@@ -303,7 +312,7 @@ export class VaultIndexer {
         }
       }
       
-      console.log(`Loaded ${entries.size} documents from cache`);
+      console.error(`Loaded ${String(entries.size)} documents from cache`);
     } catch (error) {
       console.warn('Failed to load cache:', error);
     }
@@ -315,9 +324,25 @@ export class VaultIndexer {
   private startWatching(): void {
     this.watcher = new FileWatcher(this.options.vaultPath);
     
-    this.watcher.on('add', (path) => this.handleFileAdded(path));
-    this.watcher.on('change', (path) => this.handleFileChanged(path));
-    this.watcher.on('unlink', (path) => this.handleFileDeleted(path));
+    this.watcher.on('add', (path: unknown) => {
+      if (typeof path === 'string') {
+        this.handleFileAdded(path).catch((error: unknown) => {
+          console.error('Error handling file added:', error);
+        });
+      }
+    });
+    this.watcher.on('change', (path: unknown) => {
+      if (typeof path === 'string') {
+        this.handleFileChanged(path).catch((error: unknown) => {
+          console.error('Error handling file changed:', error);
+        });
+      }
+    });
+    this.watcher.on('unlink', (path: unknown) => {
+      if (typeof path === 'string') {
+        this.handleFileDeleted(path);
+      }
+    });
     
     this.watcher.start();
   }
@@ -335,12 +360,12 @@ export class VaultIndexer {
     }
   }
   
-  private async handleFileDeleted(path: string): Promise<void> {
+  private handleFileDeleted(path: string): void {
     if (path.endsWith('.md')) {
       this.storage.removeDocument(path);
       
       if (this.cache) {
-        await this.cache.delete(path);
+        this.cache.delete(path);
       }
     }
   }
