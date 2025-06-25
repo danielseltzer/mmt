@@ -7,7 +7,7 @@ import type {
   OutputSpec,
   ToDocumentSetOptions,
 } from '@mmt/entities';
-import { documentsToTable, tableToDocumentSet } from './analysis-pipeline.js';
+import { DocumentSet, fromDocuments, fromTable } from '@mmt/document-set';
 import * as aq from 'arquero';
 import { ResultFormatter } from './result-formatter.js';
 import { writeFile } from 'fs/promises';
@@ -45,8 +45,9 @@ export class AnalysisRunner {
     outputConfig?: OutputConfig
   ): Promise<AnalysisResult> {
     console.log('runAnalysis called with', documents.length, 'documents');
-    // Convert documents to Arquero table
-    let table = documentsToTable(documents);
+    // Create DocumentSet from documents
+    const docSet = await fromDocuments(documents, { overrideLimit: true });
+    let table = docSet.tableRef;
     console.log('Table created with', table.numRows(), 'rows');
     
     // Execute each analysis operation
@@ -118,7 +119,7 @@ export class AnalysisRunner {
     analysisResult: AnalysisResult,
     options: Partial<ToDocumentSetOptions> = {}
   ): Promise<OperationReadyDocumentSet> {
-    return tableToDocumentSet(analysisResult.table, options);
+    return fromTable(analysisResult.table, options);
   }
   
   /**

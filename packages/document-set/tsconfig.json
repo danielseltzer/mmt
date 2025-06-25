@@ -9,10 +9,7 @@
   "exclude": ["dist", "node_modules"],
   "references": [
     { "path": "../entities" },
-    { "path": "../filesystem-access" },
     { "path": "../indexer" },
-    { "path": "../query-parser" },
-    { "path": "../document-operations" },
-    { "path": "../document-set" }
+    { "path": "../query-parser" }
   ]
 }
