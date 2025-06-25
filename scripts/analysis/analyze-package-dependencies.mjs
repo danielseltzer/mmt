@@ -249,126 +249,139 @@ report += `  - 1 = Maximally unstable (nothing depends on it, it depends on many
 report += `\n### Suggested Package Layers\n\n`;
 report += `Based on the dependency analysis, here's the suggested layered architecture:\n\n`;
 
-// Generate DOT file for layer diagram with better structure
+// Generate DOT file for layer diagram
 let dotContent = `digraph PackageLayers {
-  rankdir=BT;
-  ranksep=2.0;     // Much more vertical space
-  nodesep=1.2;     // More horizontal space
-  splines=ortho;   // Use orthogonal edges for cleaner look
+  rankdir=BT;  // Bottom to top for better layering visualization
+  ranksep=2.5; // Much more vertical space between ranks
+  nodesep=1.0; // More horizontal space between nodes
   
-  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, height=0.9, width=3.5];
-  edge [penwidth=2];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, height=0.8];
+  edge [color="#666666", penwidth=1.5];
   
-  // Create invisible structure nodes to align layers
-  node [style=invis, width=0, height=0];
-  l0 -> l1 -> l2 -> l3 -> l4 [style=invis];
+  // Force vertical alignment of layers using invisible edges
+  edge [style=invis];
   
-  // Layer 0: Core
+  // Layer 0 nodes
   subgraph cluster_0 {
     label="Layer 0: Core (No dependencies)";
-    style="filled,rounded";
+    style=filled;
     fillcolor="#e8f4fd";
     color="#1f77b4";
-    fontsize=16;
+    fontsize=14;
     fontname="Arial Bold";
-    margin=25;
+    margin=20;
     
-    node [style="filled", fillcolor="#ffffff"];
-    { rank=same; l0;
-      entities [label="@mmt/entities\\n(schemas/contracts)"];
-      filesystem [label="@mmt/filesystem-access\\n(file system abstraction)"];
-    }
+    entities [label="@mmt/entities\\n(schemas/contracts)", fillcolor="#ffffff", width=3];
+    filesystem [label="@mmt/filesystem-access\\n(file system abstraction)", fillcolor="#ffffff", width=3];
+    
+    // Keep layer 0 nodes together
+    { rank=same; entities; filesystem; }
   }
   
-  // Layer 1: Foundation
+  // Layer 1 nodes
   subgraph cluster_1 {
     label="Layer 1: Foundation";
-    style="filled,rounded";
+    style=filled;
     fillcolor="#d4e8fc";
     color="#1f77b4";
-    fontsize=16;
+    fontsize=14;
     fontname="Arial Bold";
-    margin=25;
+    margin=20;
     
-    node [style="filled", fillcolor="#ffffff"];
-    { rank=same; l1;
-      config [label="@mmt/config"];
-      queryparser [label="@mmt/query-parser"];
-      documentset [label="@mmt/document-set"];
-    }
+    config [label="@mmt/config", fillcolor="#ffffff", width=2.5];
+    queryparser [label="@mmt/query-parser", fillcolor="#ffffff", width=2.5];
+    documentset [label="@mmt/document-set", fillcolor="#ffffff", width=2.5];
+    
+    // Keep layer 1 nodes together
+    { rank=same; config; queryparser; documentset; }
   }
   
-  // Layer 2: Services
+  // Layer 2 nodes
   subgraph cluster_2 {
     label="Layer 2: Services";
-    style="filled,rounded";
+    style=filled;
     fillcolor="#c0dcfb";
     color="#1f77b4";
-    fontsize=16;
+    fontsize=14;
     fontname="Arial Bold";
-    margin=25;
+    margin=20;
     
-    node [style="filled", fillcolor="#ffffff"];
-    { rank=same; l2;
-      indexer [label="@mmt/indexer"];
-      coreops [label="@mmt/core-operations"];
-    }
+    indexer [label="@mmt/indexer", fillcolor="#ffffff", width=2.5];
+    coreops [label="@mmt/core-operations", fillcolor="#ffffff", width=2.5];
+    
+    // Keep layer 2 nodes together
+    { rank=same; indexer; coreops; }
   }
   
-  // Layer 3: Operations
+  // Layer 3 nodes
   subgraph cluster_3 {
     label="Layer 3: Operations";
-    style="filled,rounded";
+    style=filled;
     fillcolor="#acd0fa";
     color="#1f77b4";
-    fontsize=16;
+    fontsize=14;
     fontname="Arial Bold";
-    margin=25;
+    margin=20;
     
-    node [style="filled", fillcolor="#ffffff"];
-    { rank=same; l3;
-      docops [label="@mmt/document-operations"];
-    }
+    docops [label="@mmt/document-operations", fillcolor="#ffffff", width=3];
+    
+    // Single node layer
+    { rank=same; docops; }
   }
   
-  // Layer 4: Applications
+  // Layer 4 nodes
   subgraph cluster_4 {
     label="Layer 4: Applications";
-    style="filled,rounded";
+    style=filled;
     fillcolor="#98c4f9";
     color="#1f77b4";
-    fontsize=16;
+    fontsize=14;
     fontname="Arial Bold";
-    margin=25;
+    margin=20;
     
-    node [style="filled", fillcolor="#ffffff"];
-    { rank=same; l4;
-      scripting [label="@mmt/scripting"];
-      cli [label="app:cli"];
-    }
+    scripting [label="@mmt/scripting", fillcolor="#ffffff", width=2.5];
+    cli [label="app:cli", fillcolor="#ffffff", width=2.5];
+    
+    // Keep layer 4 nodes together
+    { rank=same; scripting; cli; }
   }
   
-  // Dependencies with proper coloring by layer
-  edge [constraint=true];
+  // Invisible edges to enforce layer ordering
+  entities -> config [style=invis];
+  entities -> queryparser [style=invis];
+  entities -> documentset [style=invis];
   
-  // From Layer 1 to Layer 0
+  config -> indexer [style=invis];
+  queryparser -> coreops [style=invis];
+  
+  indexer -> docops [style=invis];
+  coreops -> docops [style=invis];
+  
+  docops -> scripting [style=invis];
+  docops -> cli [style=invis];
+  
+  // Now add the actual visible dependencies
+  edge [style=solid, constraint=false];
+  
+  // Layer 1 dependencies
   config -> entities [color="#4a90e2"];
   queryparser -> entities [color="#4a90e2"];
   documentset -> entities [color="#4a90e2"];
   
-  // From Layer 2 to Layers 0-1
+  // Layer 2 dependencies
   indexer -> entities [color="#5a9fd4"];
   indexer -> filesystem [color="#5a9fd4"];
+  
   coreops -> entities [color="#5a9fd4"];
   coreops -> filesystem [color="#5a9fd4"];
   coreops -> queryparser [color="#5a9fd4"];
   
-  // From Layer 3 to Layers 0-2
+  // Layer 3 dependencies
   docops -> entities [color="#6aaec6"];
   docops -> filesystem [color="#6aaec6"];
   docops -> indexer [color="#6aaec6"];
   
-  // From Layer 4 to all lower layers
+  // Layer 4 dependencies
   scripting -> entities [color="#7abdb8"];
   scripting -> filesystem [color="#7abdb8"];
   scripting -> queryparser [color="#7abdb8"];
