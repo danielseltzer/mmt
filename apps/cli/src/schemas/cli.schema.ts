@@ -37,8 +37,9 @@ export function setDebug(value: boolean): void {
   DEBUG = value;
 }
 
-export function debugLog(...args: any[]): void {
+export function debugLog(...args: unknown[]): void {
   if (DEBUG) {
+    // eslint-disable-next-line no-console
     console.debug('[DEBUG]', ...args);
   }
 }

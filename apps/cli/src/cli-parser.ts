@@ -49,10 +49,10 @@ export class CliParser {
       } else if (!parsed.command && !arg.startsWith('-')) {
         // First non-flag arg is the command
         // Store as-is, let schema validation handle unknown commands
-        parsed.command = arg as any;
+        parsed.command = arg as 'script' | 'help';
       } else if (parsed.command) {
         // Everything after command goes to commandArgs
-        parsed.commandArgs!.push(arg);
+        parsed.commandArgs?.push(arg);
       } else if (!arg.startsWith('-')) {
         // Non-flag arg before command - invalid
         throw new Error(`Unexpected argument: ${arg}`);
