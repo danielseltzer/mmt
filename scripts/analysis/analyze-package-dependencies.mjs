@@ -10,7 +10,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { promisify } from 'util';
+import { exec } from 'child_process';
 
+const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '../..');
@@ -110,8 +113,10 @@ for (const pkg of Object.values(packageDeps)) {
   pkg.dependedOnBy = Array.from(pkg.dependedOnBy).sort();
 }
 
-// Generate report
-let report = `# Package Dependency Analysis
+// Main analysis function
+async function analyzePackageDependencies() {
+  // Generate report
+  let report = `# Package Dependency Analysis
 
 Generated: ${new Date().toISOString()}
 
@@ -131,39 +136,10 @@ for (const [pkg, deps] of sortedPackages) {
   report += `| ${pkg} | ${dependsOn} | ${dependedOnBy} | ${deps.internal.files} | ${deps.internal.dependencies} |\n`;
 }
 
-// Section 2: Detailed import analysis
-report += `\n## 2. What Each Package Imports From Its Dependencies\n\n`;
+// Section 2 removed - not adding value
 
-const sortedImports = Object.entries(packageImports).sort();
-let currentSource = '';
-
-for (const [importPath, details] of sortedImports) {
-  const [source, target] = importPath.split(' -> ');
-  
-  if (source !== currentSource) {
-    if (currentSource) report += '\n';
-    report += `### ${source}\n\n`;
-    currentSource = source;
-  }
-  
-  report += `**From ${target}:**\n`;
-  report += `- Used in ${details.files.size} file(s)\n`;
-  report += `- Import patterns:\n`;
-  
-  // Show first 5 import patterns as examples
-  const imports = Array.from(details.imports).slice(0, 5);
-  for (const imp of imports) {
-    report += `  - ${imp}\n`;
-  }
-  
-  if (details.imports.size > 5) {
-    report += `  - ...(${details.imports.size - 5} more)\n`;
-  }
-  report += '\n';
-}
-
-// Section 3: Architecture Analysis
-report += `## 3. Architecture Analysis & Recommendations\n\n`;
+// Section 2: Architecture Analysis  
+report += `## 2. Architecture Analysis & Recommendations\n\n`;
 
 // Analyze for common issues
 const issues = [];
@@ -220,8 +196,23 @@ if (issues.length > 0) {
   report += `✅ No major architectural issues found.\n`;
 }
 
+// Helper function to create visual bars
+function createBar(count, maxCount = 10, char = '█') {
+  if (count === 0) return '·';
+  const normalized = Math.min(count, maxCount);
+  return char.repeat(normalized);
+}
+
 // Recommendations based on dependency count
 report += `\n### Dependency Metrics\n\n`;
+
+// Find max values for normalization
+let maxCa = 0, maxCe = 0;
+for (const [, deps] of sortedPackages) {
+  maxCa = Math.max(maxCa, deps.dependedOnBy.length);
+  maxCe = Math.max(maxCe, deps.dependsOn.length);
+}
+
 report += `| Package | Afferent Coupling | Efferent Coupling | Instability |\n`;
 report += `|---------|------------------|-------------------|-------------|\n`;
 
@@ -230,7 +221,21 @@ for (const [pkg, deps] of sortedPackages) {
   const ce = deps.dependsOn.length;     // Efferent coupling (outgoing)
   const instability = ca + ce > 0 ? (ce / (ca + ce)).toFixed(2) : 'N/A';
   
-  report += `| ${pkg} | ${ca} | ${ce} | ${instability} |\n`;
+  // Create visual representations
+  const caBar = createBar(ca, maxCa, '▮');
+  const ceBar = createBar(ce, maxCe, '▮');
+  
+  // Color-code instability
+  let stabilityIndicator = instability;
+  if (instability !== 'N/A') {
+    const val = parseFloat(instability);
+    if (val === 0) stabilityIndicator = `✅ ${instability}`;
+    else if (val <= 0.3) stabilityIndicator = `🟢 ${instability}`;
+    else if (val <= 0.7) stabilityIndicator = `🟡 ${instability}`;
+    else stabilityIndicator = `🔴 ${instability}`;
+  }
+  
+  report += `| ${pkg} | ${ca} ${caBar} | ${ce} ${ceBar} | ${stabilityIndicator} |\n`;
 }
 
 report += `\n**Metrics Explanation:**\n`;
@@ -243,23 +248,123 @@ report += `  - 1 = Maximally unstable (nothing depends on it, it depends on many
 // Layer analysis
 report += `\n### Suggested Package Layers\n\n`;
 report += `Based on the dependency analysis, here's the suggested layered architecture:\n\n`;
-report += `\`\`\`\n`;
-report += `Layer 0 (Core - No dependencies):\n`;
-report += `  - @mmt/entities (schemas/contracts)\n`;
-report += `  - @mmt/filesystem-access (file system abstraction)\n\n`;
-report += `Layer 1 (Foundation - Depends only on Layer 0):\n`;
-report += `  - @mmt/config\n`;
-report += `  - @mmt/query-parser\n`;
-report += `  - @mmt/document-set\n\n`;
-report += `Layer 2 (Services - Depends on Layers 0-1):\n`;
-report += `  - @mmt/indexer\n`;
-report += `  - @mmt/core-operations\n\n`;
-report += `Layer 3 (Operations - Depends on Layers 0-2):\n`;
-report += `  - @mmt/document-operations\n\n`;
-report += `Layer 4 (Applications - Can depend on all layers):\n`;
-report += `  - @mmt/scripting\n`;
-report += `  - app:cli\n`;
-report += `\`\`\`\n`;
+
+// Generate DOT file for layer diagram
+let dotContent = `digraph PackageLayers {
+  rankdir=TB;
+  node [shape=box, style="rounded,filled", fontname="Arial"];
+  edge [color="#666666"];
+  
+  // Define layers with subgraphs
+  subgraph cluster_0 {
+    label="Layer 0: Core (No dependencies)";
+    style=filled;
+    fillcolor="#e8f4fd";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    entities [label="@mmt/entities\\n(schemas/contracts)", fillcolor="#ffffff"];
+    filesystem [label="@mmt/filesystem-access\\n(file system abstraction)", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_1 {
+    label="Layer 1: Foundation";
+    style=filled;
+    fillcolor="#d4e8fc";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    config [label="@mmt/config", fillcolor="#ffffff"];
+    queryparser [label="@mmt/query-parser", fillcolor="#ffffff"];
+    documentset [label="@mmt/document-set", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_2 {
+    label="Layer 2: Services";
+    style=filled;
+    fillcolor="#c0dcfb";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    indexer [label="@mmt/indexer", fillcolor="#ffffff"];
+    coreops [label="@mmt/core-operations", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_3 {
+    label="Layer 3: Operations";
+    style=filled;
+    fillcolor="#acd0fa";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    docops [label="@mmt/document-operations", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_4 {
+    label="Layer 4: Applications";
+    style=filled;
+    fillcolor="#98c4f9";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    scripting [label="@mmt/scripting", fillcolor="#ffffff"];
+    cli [label="app:cli", fillcolor="#ffffff"];
+  }
+  
+  // Add actual dependencies as edges
+  config -> entities;
+  queryparser -> entities;
+  documentset -> entities;
+  
+  indexer -> entities;
+  indexer -> filesystem;
+  
+  coreops -> entities;
+  coreops -> filesystem;
+  coreops -> queryparser;
+  
+  docops -> entities;
+  docops -> filesystem;
+  docops -> indexer;
+  
+  scripting -> entities;
+  scripting -> filesystem;
+  scripting -> queryparser;
+  scripting -> indexer;
+  scripting -> docops;
+  
+  cli -> entities;
+  cli -> filesystem;
+  cli -> queryparser;
+  cli -> config;
+  cli -> scripting;
+}`;
+
+// Write DOT file
+const dotPath = path.join(projectRoot, 'code-analysis/2025-06-25/package-layers.dot');
+fs.writeFileSync(dotPath, dotContent);
+
+// Generate SVG
+try {
+  await execAsync(`dot -Tsvg ${dotPath} -o ${dotPath.replace('.dot', '.svg')}`);
+  report += `![Package Layers Diagram](./package-layers.svg)\n\n`;
+  report += `_[View full diagram](./package-layers.svg)_\n\n`;
+} catch (error) {
+  console.warn('Could not generate layer diagram:', error.message);
+  report += `_Layer diagram generation failed. Install graphviz to generate the diagram._\n\n`;
+}
+
+report += `#### Layer Descriptions:\n\n`;
+report += `- **Layer 0 (Core)**: No dependencies, used by all other layers\n`;
+report += `- **Layer 1 (Foundation)**: Basic services that depend only on core\n`;
+report += `- **Layer 2 (Services)**: Business logic services\n`;
+report += `- **Layer 3 (Operations)**: Complex operations that orchestrate services\n`;
+report += `- **Layer 4 (Applications)**: End-user applications\n`;
 
 // Write report
 const reportPath = path.join(projectRoot, 'code-analysis/2025-06-25/package-dependency-report.md');
@@ -285,3 +390,7 @@ Object.entries(packageDeps)
 if (issues.length > 0) {
   console.log(`\n⚠️  Found ${issues.length} architectural issues - see report for details`);
 }
+}
+
+// Run the analysis
+analyzePackageDependencies().catch(console.error);

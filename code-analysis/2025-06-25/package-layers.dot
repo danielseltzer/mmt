@@ -1,0 +1,94 @@
+digraph PackageLayers {
+  rankdir=TB;
+  node [shape=box, style="rounded,filled", fontname="Arial"];
+  edge [color="#666666"];
+  
+  // Define layers with subgraphs
+  subgraph cluster_0 {
+    label="Layer 0: Core (No dependencies)";
+    style=filled;
+    fillcolor="#e8f4fd";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    entities [label="@mmt/entities\n(schemas/contracts)", fillcolor="#ffffff"];
+    filesystem [label="@mmt/filesystem-access\n(file system abstraction)", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_1 {
+    label="Layer 1: Foundation";
+    style=filled;
+    fillcolor="#d4e8fc";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    config [label="@mmt/config", fillcolor="#ffffff"];
+    queryparser [label="@mmt/query-parser", fillcolor="#ffffff"];
+    documentset [label="@mmt/document-set", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_2 {
+    label="Layer 2: Services";
+    style=filled;
+    fillcolor="#c0dcfb";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    indexer [label="@mmt/indexer", fillcolor="#ffffff"];
+    coreops [label="@mmt/core-operations", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_3 {
+    label="Layer 3: Operations";
+    style=filled;
+    fillcolor="#acd0fa";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    docops [label="@mmt/document-operations", fillcolor="#ffffff"];
+  }
+  
+  subgraph cluster_4 {
+    label="Layer 4: Applications";
+    style=filled;
+    fillcolor="#98c4f9";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    
+    scripting [label="@mmt/scripting", fillcolor="#ffffff"];
+    cli [label="app:cli", fillcolor="#ffffff"];
+  }
+  
+  // Add actual dependencies as edges
+  config -> entities;
+  queryparser -> entities;
+  documentset -> entities;
+  
+  indexer -> entities;
+  indexer -> filesystem;
+  
+  coreops -> entities;
+  coreops -> filesystem;
+  coreops -> queryparser;
+  
+  docops -> entities;
+  docops -> filesystem;
+  docops -> indexer;
+  
+  scripting -> entities;
+  scripting -> filesystem;
+  scripting -> queryparser;
+  scripting -> indexer;
+  scripting -> docops;
+  
+  cli -> entities;
+  cli -> filesystem;
+  cli -> queryparser;
+  cli -> config;
+  cli -> scripting;
+}
