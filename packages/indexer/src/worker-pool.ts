@@ -8,7 +8,7 @@ import type { ParseResult } from './types.js';
 export class WorkerPool {
   constructor(private workerCount: number) {}
   
-  async processBatch(paths: string[]): Promise<ParseResult[]> {
+  processBatch(_paths: string[]): ParseResult[] {
     // Stub - would use actual workers
     // For now, return empty results so the main thread handles it
     return [];

@@ -17,7 +17,11 @@ export class PrefixIndex {
       if (!node.children.has(part)) {
         node.children.set(part, new PrefixNode());
       }
-      node = node.children.get(part)!;
+      const nextNode = node.children.get(part);
+      if (!nextNode) {
+        throw new Error(`Unexpected missing node for part: ${part}`);
+      }
+      node = nextNode;
     }
     
     node.files.add(path);
@@ -43,7 +47,11 @@ export class PrefixIndex {
       if (!node.children.has(part)) {
         return new Set(); // Prefix not found
       }
-      node = node.children.get(part)!;
+      const nextNode = node.children.get(part);
+      if (!nextNode) {
+        return new Set();
+      }
+      node = nextNode;
     }
     
     // Collect all files under this prefix
@@ -72,7 +80,7 @@ export class PrefixIndex {
     const part = parts[index];
     const child = node.children.get(part);
     
-    if (!child) return false;
+    if (!child) {return false;}
     
     const shouldRemoveChild = this.removeRecursive(child, parts, index + 1, fullPath);
     

@@ -15,23 +15,23 @@ export class MetadataCache {
     // Would create SQLite database here
   }
   
-  async get(path: string): Promise<CacheEntry | null> {
-    return this.cache.get(path) || null;
+  get(path: string): CacheEntry | null {
+    return this.cache.get(path) ?? null;
   }
   
-  async set(path: string, entry: CacheEntry): Promise<void> {
+  set(path: string, entry: CacheEntry): void {
     this.cache.set(path, entry);
   }
   
-  async getAll(): Promise<Map<string, CacheEntry>> {
+  getAll(): Map<string, CacheEntry> {
     return new Map(this.cache);
   }
   
-  async delete(path: string): Promise<void> {
+  delete(path: string): void {
     this.cache.delete(path);
   }
   
-  async clear(): Promise<void> {
+  clear(): void {
     this.cache.clear();
   }
   

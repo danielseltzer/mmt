@@ -28,7 +28,13 @@ export class QueryParser {
  * // Returns: { filesystem: { path: 'posts/**' }, frontmatter: { status: 'draft' } }
  */
 export function parseQuery(input: QueryInput): StructuredQuery {
-  const structured: any = {};
+  const structured: {
+    filesystem?: Record<string, unknown>;
+    frontmatter?: Record<string, unknown>;
+    content?: Record<string, unknown>;
+    inline?: Record<string, unknown>;
+    sort?: { field: string; order: 'asc' | 'desc' };
+  } = {};
   
   for (const [key, value] of Object.entries(input)) {
     if (key === 'sort' || key === 'order') {
@@ -36,7 +42,7 @@ export function parseQuery(input: QueryInput): StructuredQuery {
       if (input.sort) {
         structured.sort = { 
           field: input.sort, 
-          order: input.order || 'asc' 
+          order: input.order ?? 'asc' 
         };
       }
       continue;
@@ -44,7 +50,9 @@ export function parseQuery(input: QueryInput): StructuredQuery {
     
     // Parse namespace:property
     const colonIndex = key.indexOf(':');
-    if (colonIndex === -1) continue; // Skip invalid keys
+    if (colonIndex === -1) {
+      continue; // Skip invalid keys
+    }
     
     const namespace = key.substring(0, colonIndex);
     const property = key.substring(colonIndex + 1);
@@ -65,6 +73,9 @@ export function parseQuery(input: QueryInput): StructuredQuery {
       case 'inline':
         structured.inline ??= {};
         structured.inline[property] = value;
+        break;
+      default:
+        // Ignore unknown namespaces
         break;
     }
   }

@@ -181,6 +181,34 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
 
+  packages/document-set:
+    dependencies:
+      '@mmt/entities':
+        specifier: workspace:*
+        version: link:../entities
+      '@mmt/indexer':
+        specifier: workspace:*
+        version: link:../indexer
+      '@mmt/query-parser':
+        specifier: workspace:*
+        version: link:../query-parser
+      arquero:
+        specifier: ^8.0.3
+        version: 8.0.3
+    devDependencies:
+      '@jrwats/arquero-types':
+        specifier: ^5.4.1
+        version: 5.4.1
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.0
+      typescript:
+        specifier: ^5.3.2
+        version: 5.8.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+
   packages/entities:
     dependencies:
       zod:
@@ -271,6 +299,9 @@ importers:
       '@mmt/document-operations':
         specifier: workspace:*
         version: link:../document-operations
+      '@mmt/document-set':
+        specifier: workspace:*
+        version: link:../document-set
       '@mmt/entities':
         specifier: workspace:*
         version: link:../entities

@@ -6,9 +6,10 @@ import matter from 'gray-matter';
 import { createHash } from 'crypto';
 import { basename, relative } from 'path';
 import type { PageMetadata, Heading } from './types.js';
+import type { FileSystemAccess } from '@mmt/filesystem-access';
 
 export class MetadataExtractor {
-  constructor(private vaultPath: string, private fs?: any) {}
+  constructor(private vaultPath: string, private fs?: FileSystemAccess) {}
   
   /**
    * Extract metadata from a markdown file
@@ -75,26 +76,28 @@ export class MetadataExtractor {
    */
   private extractTitle(content: string, filename: string): string {
     // Look for first H1
-    const h1Match = content.match(/^#\s+(.+)$/m);
+    const h1Match = /^#\s+(.+)$/mu.exec(content);
     if (h1Match) {
       return h1Match[1].trim();
     }
     
     // Fall back to filename (prettified)
     return filename
-      .replace(/-/g, ' ')
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
+      .replace(/-/gu, ' ')
+      .replace(/_/gu, ' ')
+      .replace(/\b\w/gu, l => l.toUpperCase());
   }
   
   /**
    * Extract aliases from frontmatter
    */
-  private extractAliases(frontmatter: any): string[] {
-    if (!frontmatter.aliases) return [];
+  private extractAliases(frontmatter: Record<string, unknown>): string[] {
+    if (frontmatter.aliases === undefined || frontmatter.aliases === null) {
+      return [];
+    }
     
     if (Array.isArray(frontmatter.aliases)) {
-      return frontmatter.aliases;
+      return frontmatter.aliases as string[];
     }
     
     if (typeof frontmatter.aliases === 'string') {
@@ -107,11 +110,11 @@ export class MetadataExtractor {
   /**
    * Extract all tags (normalized, with hierarchy)
    */
-  private extractTags(frontmatter: any, content: string): string[] {
+  private extractTags(frontmatter: Record<string, unknown>, content: string): string[] {
     const tags = new Set<string>();
     
     // From frontmatter
-    if (frontmatter.tags) {
+    if (frontmatter.tags !== undefined && frontmatter.tags !== null) {
       const fmTags = Array.isArray(frontmatter.tags) 
         ? frontmatter.tags 
         : [frontmatter.tags];
@@ -122,7 +125,7 @@ export class MetadataExtractor {
     }
     
     // From content #tags
-    const tagMatches = content.matchAll(/#([\w\-\/]+)/g);
+    const tagMatches = content.matchAll(/#([\w\-/]+)/gu);
     for (const match of tagMatches) {
       this.addTagWithHierarchy(tags, match[1]);
     }
@@ -133,11 +136,11 @@ export class MetadataExtractor {
   /**
    * Extract exact tags as written
    */
-  private extractExactTags(frontmatter: any, content: string): string[] {
+  private extractExactTags(frontmatter: Record<string, unknown>, content: string): string[] {
     const tags = new Set<string>();
     
     // From frontmatter
-    if (frontmatter.tags) {
+    if (frontmatter.tags !== undefined && frontmatter.tags !== null) {
       const fmTags = Array.isArray(frontmatter.tags) 
         ? frontmatter.tags 
         : [frontmatter.tags];
@@ -148,7 +151,7 @@ export class MetadataExtractor {
     }
     
     // From content #tags
-    const tagMatches = content.matchAll(/#([\w\-\/]+)/g);
+    const tagMatches = content.matchAll(/#([\w\-/]+)/gu);
     for (const match of tagMatches) {
       tags.add(`#${match[1]}`);
     }
@@ -161,7 +164,7 @@ export class MetadataExtractor {
    * #parent/child -> #parent, #parent/child
    */
   private addTagWithHierarchy(tags: Set<string>, tag: string): void {
-    const normalized = tag.toLowerCase().replace(/^#/, '');
+    const normalized = tag.toLowerCase().replace(/^#/u, '');
     const parts = normalized.split('/');
     
     let current = '';
@@ -176,7 +179,7 @@ export class MetadataExtractor {
    */
   private extractHeadings(content: string): Heading[] {
     const headings: Heading[] = [];
-    const headingRegex = /^(#{1,6})\s+(.+)$/gm;
+    const headingRegex = /^(#{1,6})\s+(.+)$/gmu;
     
     let match;
     while ((match = headingRegex.exec(content)) !== null) {
@@ -196,9 +199,9 @@ export class MetadataExtractor {
   private slugify(text: string): string {
     return text
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
+      .replace(/[^\w\s-]/gu, '')
+      .replace(/\s+/gu, '-')
+      .replace(/-+/gu, '-')
       .trim();
   }
   
@@ -206,16 +209,16 @@ export class MetadataExtractor {
    * Count list items in content
    */
   private countLists(content: string): number {
-    const listRegex = /^[\s]*[-*+]\s+/gm;
-    return (content.match(listRegex) || []).length;
+    const listRegex = /^[\s]*[-*+]\s+/gmu;
+    return (content.match(listRegex) ?? []).length;
   }
   
   /**
    * Count task items in content
    */
   private countTasks(content: string): number {
-    const taskRegex = /^[\s]*[-*+]\s+\[[x\s]\]/gmi;
-    return (content.match(taskRegex) || []).length;
+    const taskRegex = /^[\s]*[-*+]\s+\[[x\s]\]/gmiu;
+    return (content.match(taskRegex) ?? []).length;
   }
   
   /**

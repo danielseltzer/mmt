@@ -7,8 +7,8 @@ import type { LinkEntry } from './types.js';
 
 export class LinkExtractor {
   // Maps for efficient link resolution
-  private pathToFile = new Map<string, string>();      // relative path -> full path
-  private nameToFiles = new Map<string, string[]>();   // basename -> possible full paths
+  private pathToFile = new Map<string, string>(); // relative path -> full path
+  private nameToFiles = new Map<string, string[]>(); // basename -> possible full paths
   
   constructor(private vaultPath: string) {}
   
@@ -27,7 +27,10 @@ export class LinkExtractor {
       if (!this.nameToFiles.has(name)) {
         this.nameToFiles.set(name, []);
       }
-      this.nameToFiles.get(name)!.push(fullPath);
+      const nameFiles = this.nameToFiles.get(name);
+      if (nameFiles) {
+        nameFiles.push(fullPath);
+      }
     }
   }
   
@@ -38,19 +41,19 @@ export class LinkExtractor {
     const links: LinkEntry[] = [];
     
     // Extract wikilinks [[target]] or [[target|display]]
-    const wikilinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+    const wikilinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gu;
     let match;
     
     while ((match = wikilinkRegex.exec(content)) !== null) {
       const target = match[1].trim();
-      const display = match[2]?.trim();
+      const display = match[2] ? match[2].trim() : undefined;
       
       const resolvedTarget = this.resolveLink(target, sourcePath);
       if (resolvedTarget) {
         links.push({
           source: sourcePath,
           target: resolvedTarget,
-          display: display || target,
+          display: display ?? target,
           type: 'wikilink',
           position: {
             start: match.index,
@@ -61,14 +64,14 @@ export class LinkExtractor {
     }
     
     // Extract markdown links [text](target)
-    const mdLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
+    const mdLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/gu;
     
     while ((match = mdLinkRegex.exec(content)) !== null) {
       const display = match[1].trim();
       const target = match[2].trim();
       
       // Only process internal links (not http://, etc.)
-      if (!target.match(/^[a-z]+:\/\//)) {
+      if (!(/^[a-z]+:\/\//u.exec(target))) {
         const resolvedTarget = this.resolveLink(target, sourcePath);
         if (resolvedTarget) {
           links.push({
@@ -94,10 +97,10 @@ export class LinkExtractor {
    */
   private resolveLink(link: string, sourcePath: string): string | null {
     // Remove .md extension if present
-    const linkWithoutExt = link.replace(/\.md$/i, '');
+    const linkWithoutExt = link.replace(/\.md$/iu, '');
     
     // 1. Try exact relative path match
-    const exactMatch = this.pathToFile.get(linkWithoutExt + '.md') || 
+    const exactMatch = this.pathToFile.get(`${linkWithoutExt }.md`) ?? 
                        this.pathToFile.get(linkWithoutExt);
     if (exactMatch) {
       return exactMatch;
@@ -105,7 +108,7 @@ export class LinkExtractor {
     
     // 2. Try relative to source file
     const sourceDir = dirname(sourcePath);
-    const relativePath = join(sourceDir, linkWithoutExt + '.md')
+    const relativePath = join(sourceDir, `${linkWithoutExt }.md`)
       .substring(this.vaultPath.length + 1);
     
     const relativeMatch = this.pathToFile.get(relativePath);
@@ -115,7 +118,7 @@ export class LinkExtractor {
     
     // 3. Try by basename
     const linkBasename = basename(linkWithoutExt);
-    const candidates = this.nameToFiles.get(linkBasename) || [];
+    const candidates = this.nameToFiles.get(linkBasename) ?? [];
     
     if (candidates.length === 0) {
       return null; // Link target not found

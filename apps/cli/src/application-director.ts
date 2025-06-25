@@ -87,7 +87,7 @@ export class ApplicationDirector {
       
       // 6. Load configuration
       const configService = new ConfigService();
-      const config = await configService.load(cliArgs.configPath);
+      const config = configService.load(cliArgs.configPath);
       
       debugLog('Config loaded:', config);
       
