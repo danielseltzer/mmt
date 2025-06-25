@@ -7,7 +7,7 @@
  * parts of the system.
  * 
  * Key features:
- * - Multiple builders (from query, documents, or table)
+ * - Multiple builders (from documents or table)
  * - Lazy evaluation with on-demand materialization
  * - Rich metadata about the set
  * - Operations for filtering and limiting
@@ -19,7 +19,6 @@ export { DocumentSet } from './document-set.js';
 
 // Builders
 export { fromDocuments, type FromDocumentsOptions } from './builders/from-documents.js';
-export { fromQuery, type FromQueryOptions } from './builders/from-query.js';
 export { fromTable, type FromTableOptions } from './builders/from-table.js';
 
 // Operations

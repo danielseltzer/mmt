@@ -1,13 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as aq from 'arquero';
 import {
   fromDocuments,
   fromTable,
-  fromQuery,
 } from '../src/index.js';
 import type { Document } from '@mmt/entities';
-import type { VaultIndexer, PageMetadata } from '@mmt/indexer';
-import { QueryParser } from '@mmt/query-parser';
 
 describe('builders', () => {
   // Helper to create test documents
@@ -122,91 +119,6 @@ describe('builders', () => {
       
       expect(docSet.size).toBe(50);
       expect(docSet.wasTruncated).toBe(false);
-    });
-  });
-  
-  describe('fromQuery', () => {
-    // Mock indexer
-    const createMockIndexer = (results: PageMetadata[]): VaultIndexer => ({
-      query: vi.fn().mockResolvedValue(results),
-      getOutgoingLinks: vi.fn().mockResolvedValue([]),
-      getBacklinks: vi.fn().mockResolvedValue([]),
-    } as any);
-    
-    const createMockMetadata = (count: number): PageMetadata[] => {
-      return Array.from({ length: count }, (_, i) => ({
-        path: `/vault/doc${i}.md`,
-        relativePath: `doc${i}.md`,
-        basename: `doc${i}`,
-        mtime: Date.now(),
-        size: 100 + i,
-        frontmatter: { index: i },
-        tags: [`tag${i}`],
-      } as PageMetadata));
-    };
-    
-    it('should create DocumentSet from query object', async () => {
-      const metadata = createMockMetadata(10);
-      const indexer = createMockIndexer(metadata);
-      const query = { conditions: [{ field: 'tag', operator: 'equals' as const, value: 'test' }] };
-      
-      const docSet = await fromQuery(query, indexer);
-      
-      expect(docSet.size).toBe(10);
-      expect(docSet.sourceQuery).toBe(query);
-      expect(indexer.query).toHaveBeenCalledWith(query);
-    });
-    
-    it('should parse string queries', async () => {
-      const metadata = createMockMetadata(5);
-      const indexer = createMockIndexer(metadata);
-      const queryParser = new QueryParser();
-      
-      const docSet = await fromQuery('tag:important', indexer, queryParser);
-      
-      expect(docSet.size).toBe(5);
-      expect(indexer.query).toHaveBeenCalled();
-    });
-    
-    it('should enforce query result limit', async () => {
-      const metadata = createMockMetadata(600);
-      const indexer = createMockIndexer(metadata);
-      const query = { conditions: [] };
-      
-      await expect(fromQuery(query, indexer)).rejects.toThrow(
-        'Query returned 600 documents, exceeding the limit of 500'
-      );
-    });
-    
-    it('should track query execution time', async () => {
-      const metadata = createMockMetadata(10);
-      const indexer = createMockIndexer(metadata);
-      const query = { conditions: [] };
-      
-      const docSet = await fromQuery(query, indexer);
-      
-      expect(docSet.metadata.queryExecutionTime).toBeGreaterThanOrEqual(0);
-    });
-    
-    it('should convert metadata to documents with links', async () => {
-      const metadata = createMockMetadata(1);
-      const indexer = createMockIndexer(metadata);
-      
-      // Mock link data
-      (indexer.getOutgoingLinks as any).mockResolvedValue([
-        { targetPath: 'other.md', linkType: 'wiki' },
-      ]);
-      (indexer.getBacklinks as any).mockResolvedValue([
-        { path: '/vault/referrer.md' },
-      ]);
-      
-      const docSet = await fromQuery({ conditions: [] }, indexer, undefined, {
-        materialize: true,
-      });
-      
-      const docs = docSet.documents!;
-      expect(docs[0].metadata.links).toEqual(['other.md']);
-      expect(docs[0].metadata.backlinks).toEqual(['/vault/referrer.md']);
     });
   });
 });
