@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@mmt/*": ["packages/*/src"]
+    }
+  },
+  "include": [],
+  "references": [
+    { "path": "./packages/entities" },
+    { "path": "./packages/filesystem-access" },
+    { "path": "./packages/config" },
+    { "path": "./packages/indexer" },
+    { "path": "./packages/core-operations" },
+    { "path": "./packages/document-operations" },
+    { "path": "./packages/document-set" },
+    { "path": "./packages/scripting" },
+    { "path": "./apps/cli" }
+  ]
+}

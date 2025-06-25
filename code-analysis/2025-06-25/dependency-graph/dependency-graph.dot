@@ -1,0 +1,495 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="ortho" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true" bgcolor="transparent"
+    node [shape="box" style="rounded,filled" height="0.2" color="#1f77b4" fillcolor="#e8f4fd" fontcolor="#1f77b4" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="vee" arrowsize="0.7" penwidth="2.0" color="#757575" fontname="Helvetica" fontsize="9" fontcolor="#757575"]
+
+    ".dependency-cruiser.cjs" [label=<.dependency-cruiser.cjs> tooltip=".dependency-cruiser.cjs" URL=".dependency-cruiser.cjs" fillcolor="#ccffcc"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/src" {label="src" "apps/cli/src/application-director.ts" [label=<application-director.ts> tooltip="application-director.ts" URL="apps/cli/src/application-director.ts" fillcolor="#ddfeff"] } } }
+    "apps/cli/src/application-director.ts" -> "apps/cli/src/cli-parser.ts"
+    "apps/cli/src/application-director.ts" -> "apps/cli/src/commands/help-command.ts"
+    "apps/cli/src/application-director.ts" -> "apps/cli/src/commands/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "apps/cli/src/application-director.ts" -> "apps/cli/src/commands/script-command.ts"
+    "apps/cli/src/application-director.ts" -> "apps/cli/src/schemas/cli.schema.ts"
+    "apps/cli/src/application-director.ts" -> "packages/config/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" fontcolor="blue" color="blue"]
+    "apps/cli/src/application-director.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "apps/cli/src/application-director.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "apps/cli/src/application-director.ts" -> "url" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/src" {label="src" "apps/cli/src/cli-parser.ts" [label=<cli-parser.ts> tooltip="cli-parser.ts" URL="apps/cli/src/cli-parser.ts" fillcolor="#ddfeff"] } } }
+    "apps/cli/src/cli-parser.ts" -> "apps/cli/src/schemas/cli.schema.ts"
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/src" {label="src" subgraph "cluster_apps/cli/src/commands" {label="commands" "apps/cli/src/commands/help-command.ts" [label=<help-command.ts> tooltip="help-command.ts" URL="apps/cli/src/commands/help-command.ts" fillcolor="#ddfeff"] } } } }
+    "apps/cli/src/commands/help-command.ts" -> "apps/cli/src/commands/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "apps/cli/src/commands/help-command.ts" -> "packages/entities/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" fontcolor="blue" color="blue"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/src" {label="src" subgraph "cluster_apps/cli/src/commands" {label="commands" "apps/cli/src/commands/index.ts" [label=<index.ts> tooltip="index.ts" URL="apps/cli/src/commands/index.ts" fillcolor="#ddfeff"] } } } }
+    "apps/cli/src/commands/index.ts" -> "packages/entities/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" arrowhead="onormal" penwidth="1.0" fontcolor="blue" color="blue"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/src" {label="src" subgraph "cluster_apps/cli/src/commands" {label="commands" "apps/cli/src/commands/script-command.ts" [label=<script-command.ts> tooltip="script-command.ts" URL="apps/cli/src/commands/script-command.ts" fillcolor="#ddfeff"] } } } }
+    "apps/cli/src/commands/script-command.ts" -> "apps/cli/src/schemas/cli.schema.ts"
+    "apps/cli/src/commands/script-command.ts" -> "apps/cli/src/commands/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "apps/cli/src/commands/script-command.ts" -> "packages/entities/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" fontcolor="blue" color="blue"]
+    "apps/cli/src/commands/script-command.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" fontcolor="blue" color="blue"]
+    "apps/cli/src/commands/script-command.ts" -> "packages/query-parser/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" fontcolor="blue" color="blue"]
+    "apps/cli/src/commands/script-command.ts" -> "packages/scripting/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" fontcolor="blue" color="blue"]
+    "apps/cli/src/commands/script-command.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/src" {label="src" "apps/cli/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="apps/cli/src/index.ts" fillcolor="#ddfeff"] } } }
+    "apps/cli/src/index.ts" -> "apps/cli/src/application-director.ts"
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/src" {label="src" subgraph "cluster_apps/cli/src/schemas" {label="schemas" "apps/cli/src/schemas/cli.schema.ts" [label=<cli.schema.ts> tooltip="cli.schema.ts" URL="apps/cli/src/schemas/cli.schema.ts" fillcolor="#ddfeff"] } } } }
+    "apps/cli/src/schemas/cli.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/test" {label="test" "apps/cli/test/application-director.test.ts" [label=<application-director.test.ts> tooltip="application-director.test.ts" URL="apps/cli/test/application-director.test.ts" fillcolor="#ddfeff"] } } }
+    "apps/cli/test/application-director.test.ts" -> "apps/cli/src/application-director.ts"
+    "apps/cli/test/application-director.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/test" {label="test" "apps/cli/test/cli-parser-config.test.ts" [label=<cli-parser-config.test.ts> tooltip="cli-parser-config.test.ts" URL="apps/cli/test/cli-parser-config.test.ts" fillcolor="#ddfeff"] } } }
+    "apps/cli/test/cli-parser-config.test.ts" -> "apps/cli/src/cli-parser.ts"
+    "apps/cli/test/cli-parser-config.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/test" {label="test" "apps/cli/test/cli-parser.test.ts" [label=<cli-parser.test.ts> tooltip="cli-parser.test.ts" URL="apps/cli/test/cli-parser.test.ts" fillcolor="#ddfeff"] } } }
+    "apps/cli/test/cli-parser.test.ts" -> "apps/cli/src/cli-parser.ts"
+    "apps/cli/test/cli-parser.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/test" {label="test" subgraph "cluster_apps/cli/test/commands" {label="commands" "apps/cli/test/commands/help-command.test.ts" [label=<help-command.test.ts> tooltip="help-command.test.ts" URL="apps/cli/test/commands/help-command.test.ts" fillcolor="#ddfeff"] } } } }
+    "apps/cli/test/commands/help-command.test.ts" -> "apps/cli/src/commands/help-command.ts"
+    "apps/cli/test/commands/help-command.test.ts" -> "packages/entities/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" arrowhead="onormal" penwidth="1.0" fontcolor="blue" color="blue"]
+    "apps/cli/test/commands/help-command.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/test" {label="test" subgraph "cluster_apps/cli/test/commands" {label="commands" "apps/cli/test/commands/script-command.test.ts" [label=<script-command.test.ts> tooltip="script-command.test.ts" URL="apps/cli/test/commands/script-command.test.ts" fillcolor="#ddfeff"] } } } }
+    "apps/cli/test/commands/script-command.test.ts" -> "apps/cli/src/commands/script-command.ts"
+    "apps/cli/test/commands/script-command.test.ts" -> "packages/entities/src/index.ts" [xlabel="apps-can-depend-on-packages" tooltip="apps-can-depend-on-packages" arrowhead="onormal" penwidth="1.0" fontcolor="blue" color="blue"]
+    "apps/cli/test/commands/script-command.test.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/commands/script-command.test.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/commands/script-command.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/commands/script-command.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/test" {label="test" subgraph "cluster_apps/cli/test/integration" {label="integration" "apps/cli/test/integration/cli.integration.test.ts" [label=<cli.integration.test.ts> tooltip="cli.integration.test.ts" URL="apps/cli/test/integration/cli.integration.test.ts" fillcolor="#ddfeff"] } } } }
+    "apps/cli/test/integration/cli.integration.test.ts" -> "apps/cli/test/test-utils.ts"
+    "apps/cli/test/integration/cli.integration.test.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/integration/cli.integration.test.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/integration/cli.integration.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/integration/cli.integration.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" subgraph "cluster_apps/cli/test" {label="test" "apps/cli/test/test-utils.ts" [label=<test-utils.ts> tooltip="test-utils.ts" URL="apps/cli/test/test-utils.ts" fillcolor="#ddfeff"] } } }
+    "apps/cli/test/test-utils.ts" -> "child_process" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/test-utils.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "apps/cli/test/test-utils.ts" -> "url" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" "apps/cli/vitest.config.ts" [label=<vitest.config.ts> tooltip="vitest.config.ts" URL="apps/cli/vitest.config.ts" fillcolor="#ddfeff"] } }
+    "apps/cli/vitest.config.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_apps" {label="apps" subgraph "cluster_apps/cli" {label="cli" "apps/cli/vitest.integration.config.ts" [label=<vitest.integration.config.ts> tooltip="vitest.integration.config.ts" URL="apps/cli/vitest.integration.config.ts" fillcolor="#ddfeff"] } }
+    "apps/cli/vitest.integration.config.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "arquero" [label=<arquero> tooltip="arquero" ]
+    "child_process" [label=<child_process> tooltip="child_process" URL="https://nodejs.org/api/child_process.html" color="grey" fontcolor="grey"]
+    "crypto" [label=<crypto> tooltip="crypto" URL="https://nodejs.org/api/crypto.html" color="grey" fontcolor="grey"]
+    "eslint.config.js" [label=<eslint.config.js> tooltip="eslint.config.js" URL="eslint.config.js" ]
+    "eslint.config.js" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "events" [label=<events> tooltip="events" URL="https://nodejs.org/api/events.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_examples" {label="examples" subgraph "cluster_examples/analysis" {label="analysis" "examples/analysis/document-type-analysis.mmt.ts" [label=<document-type-analysis.mmt.ts> tooltip="document-type-analysis.mmt.ts" URL="examples/analysis/document-type-analysis.mmt.ts" fillcolor="#ddfeff"] } }
+    "examples/analysis/document-type-analysis.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" subgraph "cluster_examples/analysis" {label="analysis" "examples/analysis/find-most-linked-documents.mmt.ts" [label=<find-most-linked-documents.mmt.ts> tooltip="find-most-linked-documents.mmt.ts" URL="examples/analysis/find-most-linked-documents.mmt.ts" fillcolor="#ddfeff"] } }
+    "examples/analysis/find-most-linked-documents.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" subgraph "cluster_examples/analysis" {label="analysis" "examples/analysis/find-orphaned-documents.mmt.ts" [label=<find-orphaned-documents.mmt.ts> tooltip="find-orphaned-documents.mmt.ts" URL="examples/analysis/find-orphaned-documents.mmt.ts" fillcolor="#ddfeff"] } }
+    "examples/analysis/find-orphaned-documents.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" subgraph "cluster_examples/analysis" {label="analysis" "examples/analysis/tag-analysis.mmt.ts" [label=<tag-analysis.mmt.ts> tooltip="tag-analysis.mmt.ts" URL="examples/analysis/tag-analysis.mmt.ts" fillcolor="#ddfeff"] } }
+    "examples/analysis/tag-analysis.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" subgraph "cluster_examples/analysis" {label="analysis" "examples/analysis/vault-link-statistics.mmt.ts" [label=<vault-link-statistics.mmt.ts> tooltip="vault-link-statistics.mmt.ts" URL="examples/analysis/vault-link-statistics.mmt.ts" fillcolor="#ddfeff"] } }
+    "examples/analysis/vault-link-statistics.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" "examples/archive-old-posts.mmt.ts" [label=<archive-old-posts.mmt.ts> tooltip="archive-old-posts.mmt.ts" URL="examples/archive-old-posts.mmt.ts" fillcolor="#ddfeff"] }
+    "examples/archive-old-posts.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" "examples/cherry-pick-files.mmt.ts" [label=<cherry-pick-files.mmt.ts> tooltip="cherry-pick-files.mmt.ts" URL="examples/cherry-pick-files.mmt.ts" fillcolor="#ddfeff"] }
+    "examples/cherry-pick-files.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" "examples/cleanup-drafts.mmt.ts" [label=<cleanup-drafts.mmt.ts> tooltip="cleanup-drafts.mmt.ts" URL="examples/cleanup-drafts.mmt.ts" fillcolor="#ddfeff"] }
+    "examples/cleanup-drafts.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_examples" {label="examples" "examples/list-files.mmt.ts" [label=<list-files.mmt.ts> tooltip="list-files.mmt.ts" URL="examples/list-files.mmt.ts" fillcolor="#ddfeff"] }
+    "examples/list-files.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "fs" [label=<fs> tooltip="fs" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_fs" {label="fs" "fs/promises" [label=<promises> tooltip="promises" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/.pnpm" [label=<.pnpm> tooltip=".pnpm" URL="https://www.npmjs.com/package/.pnpm" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    "os" [label=<os> tooltip="os" URL="https://nodejs.org/api/os.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/config" {label="config" subgraph "cluster_packages/config/src" {label="src" "packages/config/src/config-service.ts" [label=<config-service.ts> tooltip="config-service.ts" URL="packages/config/src/config-service.ts" fillcolor="#ddfeff"] } } }
+    "packages/config/src/config-service.ts" -> "packages/entities/src/index.ts"
+    "packages/config/src/config-service.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "packages/config/src/config-service.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "packages/config/src/config-service.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/config" {label="config" subgraph "cluster_packages/config/src" {label="src" "packages/config/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/config/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/config/src/index.ts" -> "packages/config/src/config-service.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/config/src/index.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/config" {label="config" subgraph "cluster_packages/config/test" {label="test" "packages/config/test/config-service.test.ts" [label=<config-service.test.ts> tooltip="config-service.test.ts" URL="packages/config/test/config-service.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/config/test/config-service.test.ts" -> "packages/config/src/config-service.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/config/test/config-service.test.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "packages/config/test/config-service.test.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/config/test/config-service.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/config/test/config-service.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/config" {label="config" "packages/config/vitest.config.ts" [label=<vitest.config.ts> tooltip="vitest.config.ts" URL="packages/config/vitest.config.ts" fillcolor="#ddfeff"] } }
+    "packages/config/vitest.config.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/core-operations" {label="core-operations" subgraph "cluster_packages/core-operations/src" {label="src" "packages/core-operations/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/core-operations/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/core-operations/src/index.ts" -> "packages/core-operations/src/vault-operations.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/core-operations/src/index.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/core-operations" {label="core-operations" subgraph "cluster_packages/core-operations/src" {label="src" "packages/core-operations/src/vault-operations.ts" [label=<vault-operations.ts> tooltip="vault-operations.ts" URL="packages/core-operations/src/vault-operations.ts" fillcolor="#ddfeff"] } } }
+    "packages/core-operations/src/vault-operations.ts" -> "packages/entities/src/index.ts"
+    "packages/core-operations/src/vault-operations.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/core-operations/src/vault-operations.ts" -> "packages/query-parser/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/core-operations/src/vault-operations.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "packages/core-operations/src/vault-operations.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/core-operations" {label="core-operations" subgraph "cluster_packages/core-operations/src" {label="src" "packages/core-operations/src/vault.test.ts" [label=<vault.test.ts> tooltip="vault.test.ts" URL="packages/core-operations/src/vault.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/core-operations/src/vault.test.ts" -> "packages/core-operations/test/test-utils.js" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/core-operations/src/vault.test.ts" -> "packages/core-operations/src/vault-operations.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/core-operations/src/vault.test.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/core-operations/src/vault.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/core-operations/src/vault.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/core-operations" {label="core-operations" subgraph "cluster_packages/core-operations/test" {label="test" "packages/core-operations/test/test-utils.d.ts" [label=<test-utils.d.ts> tooltip="test-utils.d.ts" URL="packages/core-operations/test/test-utils.d.ts" fillcolor="#ddfeff"] } } }
+    "packages/core-operations/test/test-utils.d.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/core-operations/test/test-utils.d.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/core-operations" {label="core-operations" subgraph "cluster_packages/core-operations/test" {label="test" "packages/core-operations/test/test-utils.js" [label=<test-utils.js> tooltip="test-utils.js" URL="packages/core-operations/test/test-utils.js" ] } } }
+    "packages/core-operations/test/test-utils.js" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/core-operations/test/test-utils.js" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/core-operations/test/test-utils.js" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/core-operations/test/test-utils.js" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/core-operations" {label="core-operations" subgraph "cluster_packages/core-operations/test" {label="test" "packages/core-operations/test/test-utils.ts" [label=<test-utils.ts> tooltip="test-utils.ts" URL="packages/core-operations/test/test-utils.ts" fillcolor="#ddfeff"] } } }
+    "packages/core-operations/test/test-utils.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/core-operations/test/test-utils.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/core-operations/test/test-utils.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/core-operations/test/test-utils.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/core-operations/test/test-utils.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/src" {label="src" subgraph "cluster_packages/document-operations/src/core" {label="core" "packages/document-operations/src/core/operation-registry.ts" [label=<operation-registry.ts> tooltip="operation-registry.ts" URL="packages/document-operations/src/core/operation-registry.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/src/core/operation-registry.ts" -> "packages/document-operations/src/operations/delete-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/src/core/operation-registry.ts" -> "packages/document-operations/src/operations/move-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/src/core/operation-registry.ts" -> "packages/document-operations/src/operations/rename-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/src/core/operation-registry.ts" -> "packages/document-operations/src/operations/update-frontmatter.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/src/core/operation-registry.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/src" {label="src" "packages/document-operations/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/document-operations/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/document-operations/src/index.ts" -> "packages/document-operations/src/core/operation-registry.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/document-operations/src/index.ts" -> "packages/document-operations/src/operations/delete-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/document-operations/src/index.ts" -> "packages/document-operations/src/operations/move-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/document-operations/src/index.ts" -> "packages/document-operations/src/operations/rename-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/document-operations/src/index.ts" -> "packages/document-operations/src/operations/update-frontmatter.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/document-operations/src/index.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/src" {label="src" subgraph "cluster_packages/document-operations/src/operations" {label="operations" "packages/document-operations/src/operations/delete-operation.ts" [label=<delete-operation.ts> tooltip="delete-operation.ts" URL="packages/document-operations/src/operations/delete-operation.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/src/operations/delete-operation.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/src/operations/delete-operation.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/src/operations/delete-operation.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/src" {label="src" subgraph "cluster_packages/document-operations/src/operations" {label="operations" "packages/document-operations/src/operations/move-operation.ts" [label=<move-operation.ts> tooltip="move-operation.ts" URL="packages/document-operations/src/operations/move-operation.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/src/operations/move-operation.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/src/operations/move-operation.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/src/operations/move-operation.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/src/operations/move-operation.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/src" {label="src" subgraph "cluster_packages/document-operations/src/operations" {label="operations" "packages/document-operations/src/operations/rename-operation.ts" [label=<rename-operation.ts> tooltip="rename-operation.ts" URL="packages/document-operations/src/operations/rename-operation.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/src/operations/rename-operation.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/src/operations/rename-operation.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/src/operations/rename-operation.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/src/operations/rename-operation.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/src" {label="src" subgraph "cluster_packages/document-operations/src/operations" {label="operations" "packages/document-operations/src/operations/update-frontmatter.ts" [label=<update-frontmatter.ts> tooltip="update-frontmatter.ts" URL="packages/document-operations/src/operations/update-frontmatter.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/src/operations/update-frontmatter.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/src/operations/update-frontmatter.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/src/operations/update-frontmatter.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/src" {label="src" "packages/document-operations/src/types.ts" [label=<types.ts> tooltip="types.ts" URL="packages/document-operations/src/types.ts" fillcolor="#ddfeff"] } } }
+    "packages/document-operations/src/types.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/src/types.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/src/types.ts" -> "packages/indexer/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/tests" {label="tests" "packages/document-operations/tests/operation-registry.test.ts" [label=<operation-registry.test.ts> tooltip="operation-registry.test.ts" URL="packages/document-operations/tests/operation-registry.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/document-operations/tests/operation-registry.test.ts" -> "packages/document-operations/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operation-registry.test.ts" -> "packages/document-operations/tests/test-utils.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operation-registry.test.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/tests/operation-registry.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/tests" {label="tests" subgraph "cluster_packages/document-operations/tests/operations" {label="operations" "packages/document-operations/tests/operations/delete.test.ts" [label=<delete.test.ts> tooltip="delete.test.ts" URL="packages/document-operations/tests/operations/delete.test.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/tests/operations/delete.test.ts" -> "packages/document-operations/src/operations/delete-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/delete.test.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/delete.test.ts" -> "packages/document-operations/tests/test-utils.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/delete.test.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/tests/operations/delete.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/operations/delete.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/tests" {label="tests" subgraph "cluster_packages/document-operations/tests/operations" {label="operations" "packages/document-operations/tests/operations/move.test.ts" [label=<move.test.ts> tooltip="move.test.ts" URL="packages/document-operations/tests/operations/move.test.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/tests/operations/move.test.ts" -> "packages/document-operations/src/operations/move-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/move.test.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/move.test.ts" -> "packages/document-operations/tests/test-utils.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/move.test.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/operations/move.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/operations/move.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/tests" {label="tests" subgraph "cluster_packages/document-operations/tests/operations" {label="operations" "packages/document-operations/tests/operations/rename.test.ts" [label=<rename.test.ts> tooltip="rename.test.ts" URL="packages/document-operations/tests/operations/rename.test.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/tests/operations/rename.test.ts" -> "packages/document-operations/src/operations/rename-operation.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/rename.test.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/rename.test.ts" -> "packages/document-operations/tests/test-utils.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/rename.test.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/operations/rename.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/operations/rename.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/tests" {label="tests" subgraph "cluster_packages/document-operations/tests/operations" {label="operations" "packages/document-operations/tests/operations/update-frontmatter.test.ts" [label=<update-frontmatter.test.ts> tooltip="update-frontmatter.test.ts" URL="packages/document-operations/tests/operations/update-frontmatter.test.ts" fillcolor="#ddfeff"] } } } }
+    "packages/document-operations/tests/operations/update-frontmatter.test.ts" -> "packages/document-operations/src/operations/update-frontmatter.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/update-frontmatter.test.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/update-frontmatter.test.ts" -> "packages/document-operations/tests/test-utils.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/operations/update-frontmatter.test.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/operations/update-frontmatter.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/tests" {label="tests" "packages/document-operations/tests/test-utils.ts" [label=<test-utils.ts> tooltip="test-utils.ts" URL="packages/document-operations/tests/test-utils.ts" fillcolor="#ddfeff"] } } }
+    "packages/document-operations/tests/test-utils.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/tests/test-utils.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/tests/test-utils.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/test-utils.ts" -> "packages/indexer/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/document-operations/tests/test-utils.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/test-utils.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/document-operations/tests/test-utils.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" subgraph "cluster_packages/document-operations/tests" {label="tests" "packages/document-operations/tests/types.test.ts" [label=<types.test.ts> tooltip="types.test.ts" URL="packages/document-operations/tests/types.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/document-operations/tests/types.test.ts" -> "packages/document-operations/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/document-operations/tests/types.test.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/document-operations/tests/types.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/document-operations" {label="document-operations" "packages/document-operations/vitest.config.ts" [label=<vitest.config.ts> tooltip="vitest.config.ts" URL="packages/document-operations/vitest.config.ts" fillcolor="#ddfeff"] } }
+    "packages/document-operations/vitest.config.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/cli.schema.ts" [label=<cli.schema.ts> tooltip="cli.schema.ts" URL="packages/entities/src/cli.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/cli.schema.ts" -> "packages/entities/src/config.schema.ts"
+    "packages/entities/src/cli.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/config.schema.ts" [label=<config.schema.ts> tooltip="config.schema.ts" URL="packages/entities/src/config.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/config.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/document-set.schema.ts" [label=<document-set.schema.ts> tooltip="document-set.schema.ts" URL="packages/entities/src/document-set.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/document-set.schema.ts" -> "packages/entities/src/document.schema.ts"
+    "packages/entities/src/document-set.schema.ts" -> "packages/entities/src/query.schema.ts"
+    "packages/entities/src/document-set.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/document.schema.ts" [label=<document.schema.ts> tooltip="document.schema.ts" URL="packages/entities/src/document.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/document.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/index.test.ts" [label=<index.test.ts> tooltip="index.test.ts" URL="packages/entities/src/index.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/index.test.ts" -> "packages/entities/src/index.ts"
+    "packages/entities/src/index.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/entities/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/index.ts" -> "packages/entities/src/cli.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/config.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/document-set.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/document.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/operation.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/query.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/scripting.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/ui.schema.ts"
+    "packages/entities/src/index.ts" -> "packages/entities/src/vault.schema.ts"
+    "packages/entities/src/index.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/operation.schema.ts" [label=<operation.schema.ts> tooltip="operation.schema.ts" URL="packages/entities/src/operation.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/operation.schema.ts" -> "packages/entities/src/document.schema.ts"
+    "packages/entities/src/operation.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/query.schema.ts" [label=<query.schema.ts> tooltip="query.schema.ts" URL="packages/entities/src/query.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/query.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/scripting.schema.ts" [label=<scripting.schema.ts> tooltip="scripting.schema.ts" URL="packages/entities/src/scripting.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/scripting.schema.ts" -> "packages/entities/src/document.schema.ts"
+    "packages/entities/src/scripting.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/ui.schema.ts" [label=<ui.schema.ts> tooltip="ui.schema.ts" URL="packages/entities/src/ui.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/ui.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/entities" {label="entities" subgraph "cluster_packages/entities/src" {label="src" "packages/entities/src/vault.schema.ts" [label=<vault.schema.ts> tooltip="vault.schema.ts" URL="packages/entities/src/vault.schema.ts" fillcolor="#ddfeff"] } } }
+    "packages/entities/src/vault.schema.ts" -> "packages/entities/src/document.schema.ts"
+    "packages/entities/src/vault.schema.ts" -> "packages/entities/src/operation.schema.ts"
+    "packages/entities/src/vault.schema.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/filesystem-access" {label="filesystem-access" subgraph "cluster_packages/filesystem-access/src" {label="src" "packages/filesystem-access/src/index.test.ts" [label=<index.test.ts> tooltip="index.test.ts" URL="packages/filesystem-access/src/index.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/filesystem-access/src/index.test.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/filesystem-access/src/index.test.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/filesystem-access/src/index.test.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/filesystem-access/src/index.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/filesystem-access/src/index.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/filesystem-access" {label="filesystem-access" subgraph "cluster_packages/filesystem-access/src" {label="src" "packages/filesystem-access/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/filesystem-access/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/filesystem-access/src/index.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "packages/filesystem-access/src/index.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/filesystem-access/src/index.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "packages/filesystem-access/src/index.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/file-watcher.ts" [label=<file-watcher.ts> tooltip="file-watcher.ts" URL="packages/indexer/src/file-watcher.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/file-watcher.ts" -> "events" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/index-storage.ts" [label=<index-storage.ts> tooltip="index-storage.ts" URL="packages/indexer/src/index-storage.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/index-storage.ts" -> "packages/indexer/src/prefix-index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/index-storage.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/indexer/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/index.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/index.ts" -> "packages/indexer/src/vault-indexer.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/link-extractor.ts" [label=<link-extractor.ts> tooltip="link-extractor.ts" URL="packages/indexer/src/link-extractor.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/link-extractor.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/link-extractor.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/metadata-cache.ts" [label=<metadata-cache.ts> tooltip="metadata-cache.ts" URL="packages/indexer/src/metadata-cache.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/metadata-cache.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/metadata-cache.ts" -> "fs" [style="dashed" penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/metadata-extractor.ts" [label=<metadata-extractor.ts> tooltip="metadata-extractor.ts" URL="packages/indexer/src/metadata-extractor.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/metadata-extractor.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/metadata-extractor.ts" -> "crypto" [style="dashed" penwidth="1.0"]
+    "packages/indexer/src/metadata-extractor.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "packages/indexer/src/metadata-extractor.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/prefix-index.ts" [label=<prefix-index.ts> tooltip="prefix-index.ts" URL="packages/indexer/src/prefix-index.ts" fillcolor="#ddfeff"] } } }
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/query-executor.ts" [label=<query-executor.ts> tooltip="query-executor.ts" URL="packages/indexer/src/query-executor.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/query-executor.ts" -> "packages/indexer/src/index-storage.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/query-executor.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/query-executor.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/types.ts" [label=<types.ts> tooltip="types.ts" URL="packages/indexer/src/types.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/types.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/vault-indexer.ts" [label=<vault-indexer.ts> tooltip="vault-indexer.ts" URL="packages/indexer/src/vault-indexer.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/file-watcher.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/index-storage.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/link-extractor.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/metadata-cache.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/metadata-extractor.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/query-executor.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/indexer/src/worker-pool.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/src/vault-indexer.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/src" {label="src" "packages/indexer/src/worker-pool.ts" [label=<worker-pool.ts> tooltip="worker-pool.ts" URL="packages/indexer/src/worker-pool.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/src/worker-pool.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" subgraph "cluster_packages/indexer/tests" {label="tests" "packages/indexer/tests/indexer.test.ts" [label=<indexer.test.ts> tooltip="indexer.test.ts" URL="packages/indexer/tests/indexer.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/indexer/tests/indexer.test.ts" -> "packages/indexer/src/types.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/indexer/tests/indexer.test.ts" -> "packages/indexer/src/vault-indexer.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/tests/indexer.test.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/indexer/tests/indexer.test.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "packages/indexer/tests/indexer.test.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/indexer/tests/indexer.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/indexer/tests/indexer.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/indexer" {label="indexer" "packages/indexer/vitest.config.ts" [label=<vitest.config.ts> tooltip="vitest.config.ts" URL="packages/indexer/vitest.config.ts" fillcolor="#ddfeff"] } }
+    "packages/indexer/vitest.config.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/query-parser" {label="query-parser" subgraph "cluster_packages/query-parser/src" {label="src" "packages/query-parser/src/index.test.ts" [label=<index.test.ts> tooltip="index.test.ts" URL="packages/query-parser/src/index.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/query-parser/src/index.test.ts" -> "packages/query-parser/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/query-parser/src/index.test.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/query-parser/src/index.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/query-parser" {label="query-parser" subgraph "cluster_packages/query-parser/src" {label="src" "packages/query-parser/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/query-parser/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/query-parser/src/index.ts" -> "packages/entities/src/index.ts"
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/src" {label="src" "packages/scripting/src/analysis-pipeline.ts" [label=<analysis-pipeline.ts> tooltip="analysis-pipeline.ts" URL="packages/scripting/src/analysis-pipeline.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/src/analysis-pipeline.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/scripting/src/analysis-pipeline.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/src" {label="src" "packages/scripting/src/analysis-runner.ts" [label=<analysis-runner.ts> tooltip="analysis-runner.ts" URL="packages/scripting/src/analysis-runner.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/src/analysis-runner.ts" -> "packages/scripting/src/analysis-pipeline.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/analysis-runner.ts" -> "packages/scripting/src/result-formatter.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/analysis-runner.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/scripting/src/analysis-runner.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "packages/scripting/src/analysis-runner.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/scripting/src/analysis-runner.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/src" {label="src" "packages/scripting/src/index.ts" [label=<index.ts> tooltip="index.ts" URL="packages/scripting/src/index.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/src/index.ts" -> "packages/scripting/src/analysis-pipeline.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/scripting/src/index.ts" -> "packages/scripting/src/analysis-runner.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/scripting/src/index.ts" -> "packages/scripting/src/markdown-report-generator.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/scripting/src/index.ts" -> "packages/scripting/src/result-formatter.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/scripting/src/index.ts" -> "packages/scripting/src/script-runner.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/scripting/src/index.ts" -> "packages/scripting/src/script.interface.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="inv" fontcolor="red" color="red"]
+    "packages/scripting/src/index.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/scripting/src/index.ts" -> "node_modules/.pnpm" [penwidth="1.0" arrowhead="inv"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/src" {label="src" "packages/scripting/src/markdown-report-generator.ts" [label=<markdown-report-generator.ts> tooltip="markdown-report-generator.ts" URL="packages/scripting/src/markdown-report-generator.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/src/markdown-report-generator.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/scripting/src/markdown-report-generator.ts" -> "node_modules/.pnpm" [penwidth="1.0" arrowhead="onormal"]
+    "packages/scripting/src/markdown-report-generator.ts" -> "child_process" [style="dashed" penwidth="1.0"]
+    "packages/scripting/src/markdown-report-generator.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/scripting/src/markdown-report-generator.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/scripting/src/markdown-report-generator.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/scripting/src/markdown-report-generator.ts" -> "util" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/src" {label="src" "packages/scripting/src/result-formatter.ts" [label=<result-formatter.ts> tooltip="result-formatter.ts" URL="packages/scripting/src/result-formatter.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/src/result-formatter.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/src" {label="src" "packages/scripting/src/script-runner.ts" [label=<script-runner.ts> tooltip="script-runner.ts" URL="packages/scripting/src/script-runner.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/src/script-runner.ts" -> "packages/scripting/src/analysis-pipeline.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/scripting/src/analysis-runner.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/scripting/src/markdown-report-generator.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/scripting/src/result-formatter.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/scripting/src/script.interface.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/document-operations/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/entities/src/index.ts"
+    "packages/scripting/src/script-runner.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/indexer/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "packages/query-parser/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/src/script-runner.ts" -> "node_modules/.pnpm" [penwidth="1.0" arrowhead="onormal"]
+    "packages/scripting/src/script-runner.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "packages/scripting/src/script-runner.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/scripting/src/script-runner.ts" -> "url" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/src" {label="src" "packages/scripting/src/script.interface.ts" [label=<script.interface.ts> tooltip="script.interface.ts" URL="packages/scripting/src/script.interface.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/src/script.interface.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/tests" {label="tests" "packages/scripting/tests/document-operations.test.ts" [label=<document-operations.test.ts> tooltip="document-operations.test.ts" URL="packages/scripting/tests/document-operations.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/tests/document-operations.test.ts" -> "packages/scripting/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/scripting/tests/document-operations.test.ts" -> "packages/scripting/src/script-runner.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/document-operations.test.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/document-operations.test.ts" -> "packages/indexer/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/document-operations.test.ts" -> "packages/query-parser/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/document-operations.test.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "packages/scripting/tests/document-operations.test.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/scripting/tests/document-operations.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/scripting/tests/document-operations.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/tests" {label="tests" "packages/scripting/tests/result-formatter.test.ts" [label=<result-formatter.test.ts> tooltip="result-formatter.test.ts" URL="packages/scripting/tests/result-formatter.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/tests/result-formatter.test.ts" -> "packages/scripting/src/result-formatter.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/result-formatter.test.ts" -> "packages/entities/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "packages/scripting/tests/result-formatter.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" subgraph "cluster_packages/scripting/tests" {label="tests" "packages/scripting/tests/script-runner.test.ts" [label=<script-runner.test.ts> tooltip="script-runner.test.ts" URL="packages/scripting/tests/script-runner.test.ts" fillcolor="#ddfeff"] } } }
+    "packages/scripting/tests/script-runner.test.ts" -> "packages/scripting/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" arrowhead="onormal" penwidth="1.0" fontcolor="red" color="red"]
+    "packages/scripting/tests/script-runner.test.ts" -> "packages/scripting/src/script-runner.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/script-runner.test.ts" -> "packages/filesystem-access/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/script-runner.test.ts" -> "packages/indexer/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/script-runner.test.ts" -> "packages/query-parser/src/index.ts" [xlabel="package-dependency-only-through-entities" tooltip="package-dependency-only-through-entities" fontcolor="red" color="red"]
+    "packages/scripting/tests/script-runner.test.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "packages/scripting/tests/script-runner.test.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "packages/scripting/tests/script-runner.test.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "packages/scripting/tests/script-runner.test.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/scripting" {label="scripting" "packages/scripting/vitest.config.ts" [label=<vitest.config.ts> tooltip="vitest.config.ts" URL="packages/scripting/vitest.config.ts" fillcolor="#ddfeff"] } }
+    "packages/scripting/vitest.config.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "path" [label=<path> tooltip="path" URL="https://nodejs.org/api/path.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_scripts" {label="scripts" "scripts/add-lint-scripts.js" [label=<add-lint-scripts.js> tooltip="add-lint-scripts.js" URL="scripts/add-lint-scripts.js" ] }
+    "scripts/add-lint-scripts.js" -> "fs" [style="dashed" penwidth="1.0"]
+    "scripts/add-lint-scripts.js" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "scripts/add-lint-scripts.js" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_scripts" {label="scripts" subgraph "cluster_scripts/analysis" {label="analysis" "scripts/analysis/run-code-analysis.mjs" [label=<run-code-analysis.mjs> tooltip="run-code-analysis.mjs" URL="scripts/analysis/run-code-analysis.mjs" ] } }
+    "scripts/analysis/run-code-analysis.mjs" -> "child_process" [style="dashed" penwidth="1.0"]
+    "scripts/analysis/run-code-analysis.mjs" -> "fs" [style="dashed" penwidth="1.0"]
+    "scripts/analysis/run-code-analysis.mjs" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "scripts/analysis/run-code-analysis.mjs" -> "path" [style="dashed" penwidth="1.0"]
+    "scripts/analysis/run-code-analysis.mjs" -> "url" [style="dashed" penwidth="1.0"]
+    "scripts/analysis/run-code-analysis.mjs" -> "util" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_scripts" {label="scripts" "scripts/query-syntax-report.mjs" [label=<query-syntax-report.mjs> tooltip="query-syntax-report.mjs" URL="scripts/query-syntax-report.mjs" ] }
+    "scripts/query-syntax-report.mjs" -> "fs" [style="dashed" penwidth="1.0"]
+    "scripts/query-syntax-report.mjs" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_scripts" {label="scripts" "scripts/test-report.mjs" [label=<test-report.mjs> tooltip="test-report.mjs" URL="scripts/test-report.mjs" ] }
+    "scripts/test-report.mjs" -> "fs" [style="dashed" penwidth="1.0"]
+    "scripts/test-report.mjs" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "scripts/test-report.mjs" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/analyze-links-demo.mmt.ts" [label=<analyze-links-demo.mmt.ts> tooltip="analyze-links-demo.mmt.ts" URL="test-scripts/analyze-links-demo.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/analyze-links-demo.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/analyze-links-fixed.mmt.ts" [label=<analyze-links-fixed.mmt.ts> tooltip="analyze-links-fixed.mmt.ts" URL="test-scripts/analyze-links-fixed.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/analyze-links-fixed.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "test-scripts/analyze-links-fixed.mmt.ts" -> "arquero"
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/analyze-links.mmt.ts" [label=<analyze-links.mmt.ts> tooltip="analyze-links.mmt.ts" URL="test-scripts/analyze-links.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/analyze-links.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/archive-old-drafts.mmt.ts" [label=<archive-old-drafts.mmt.ts> tooltip="archive-old-drafts.mmt.ts" URL="test-scripts/archive-old-drafts.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/archive-old-drafts.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/count-all.mmt.ts" [label=<count-all.mmt.ts> tooltip="count-all.mmt.ts" URL="test-scripts/count-all.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/count-all.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/count-by-type.mmt.ts" [label=<count-by-type.mmt.ts> tooltip="count-by-type.mmt.ts" URL="test-scripts/count-by-type.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/count-by-type.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/debug-frontmatter-columns.mmt.ts" [label=<debug-frontmatter-columns.mmt.ts> tooltip="debug-frontmatter-columns.mmt.ts" URL="test-scripts/debug-frontmatter-columns.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/debug-frontmatter-columns.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/debug-simple.mmt.ts" [label=<debug-simple.mmt.ts> tooltip="debug-simple.mmt.ts" URL="test-scripts/debug-simple.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/debug-simple.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/debug-table.mmt.ts" [label=<debug-table.mmt.ts> tooltip="debug-table.mmt.ts" URL="test-scripts/debug-table.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/debug-table.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/find-broken-links.mmt.ts" [label=<find-broken-links.mmt.ts> tooltip="find-broken-links.mmt.ts" URL="test-scripts/find-broken-links.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/find-broken-links.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/find-daily-notes.mmt.ts" [label=<find-daily-notes.mmt.ts> tooltip="find-daily-notes.mmt.ts" URL="test-scripts/find-daily-notes.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/find-daily-notes.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/find-in-path.mmt.ts" [label=<find-in-path.mmt.ts> tooltip="find-in-path.mmt.ts" URL="test-scripts/find-in-path.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/find-in-path.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/find-most-linked-with-ai.mmt.ts" [label=<find-most-linked-with-ai.mmt.ts> tooltip="find-most-linked-with-ai.mmt.ts" URL="test-scripts/find-most-linked-with-ai.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/find-most-linked-with-ai.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/find-most-linked.mmt.ts" [label=<find-most-linked.mmt.ts> tooltip="find-most-linked.mmt.ts" URL="test-scripts/find-most-linked.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/find-most-linked.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/find-orphans-demo.mmt.ts" [label=<find-orphans-demo.mmt.ts> tooltip="find-orphans-demo.mmt.ts" URL="test-scripts/find-orphans-demo.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/find-orphans-demo.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/find-orphans.mmt.ts" [label=<find-orphans.mmt.ts> tooltip="find-orphans.mmt.ts" URL="test-scripts/find-orphans.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/find-orphans.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/frontmatter-analysis-with-ai.mmt.ts" [label=<frontmatter-analysis-with-ai.mmt.ts> tooltip="frontmatter-analysis-with-ai.mmt.ts" URL="test-scripts/frontmatter-analysis-with-ai.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/frontmatter-analysis-with-ai.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/group-by-type.mmt.ts" [label=<group-by-type.mmt.ts> tooltip="group-by-type.mmt.ts" URL="test-scripts/group-by-type.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/group-by-type.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/link-analysis-full.mmt.ts" [label=<link-analysis-full.mmt.ts> tooltip="link-analysis-full.mmt.ts" URL="test-scripts/link-analysis-full.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/link-analysis-full.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/link-graph-summary.mmt.ts" [label=<link-graph-summary.mmt.ts> tooltip="link-graph-summary.mmt.ts" URL="test-scripts/link-graph-summary.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/link-graph-summary.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/list-by-tag.mmt.ts" [label=<list-by-tag.mmt.ts> tooltip="list-by-tag.mmt.ts" URL="test-scripts/list-by-tag.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/list-by-tag.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/query-combined.mmt.ts" [label=<query-combined.mmt.ts> tooltip="query-combined.mmt.ts" URL="test-scripts/query-combined.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/query-combined.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/show-all-types.mmt.ts" [label=<show-all-types.mmt.ts> tooltip="show-all-types.mmt.ts" URL="test-scripts/show-all-types.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/show-all-types.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/show-bidirectional-links.mmt.ts" [label=<show-bidirectional-links.mmt.ts> tooltip="show-bidirectional-links.mmt.ts" URL="test-scripts/show-bidirectional-links.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/show-bidirectional-links.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/tag-analysis-with-ai.mmt.ts" [label=<tag-analysis-with-ai.mmt.ts> tooltip="tag-analysis-with-ai.mmt.ts" URL="test-scripts/tag-analysis-with-ai.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/tag-analysis-with-ai.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/test-agent-analysis.mmt.ts" [label=<test-agent-analysis.mmt.ts> tooltip="test-agent-analysis.mmt.ts" URL="test-scripts/test-agent-analysis.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/test-agent-analysis.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/test-claude-prompts.mmt.ts" [label=<test-claude-prompts.mmt.ts> tooltip="test-claude-prompts.mmt.ts" URL="test-scripts/test-claude-prompts.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/test-claude-prompts.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "test-scripts/test-claude-prompts.mmt.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/test-multiple-outputs-v2.mmt.ts" [label=<test-multiple-outputs-v2.mmt.ts> tooltip="test-multiple-outputs-v2.mmt.ts" URL="test-scripts/test-multiple-outputs-v2.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/test-multiple-outputs-v2.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/test-multiple-outputs.mmt.ts" [label=<test-multiple-outputs.mmt.ts> tooltip="test-multiple-outputs.mmt.ts" URL="test-scripts/test-multiple-outputs.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/test-multiple-outputs.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/test-report-generation.mmt.ts" [label=<test-report-generation.mmt.ts> tooltip="test-report-generation.mmt.ts" URL="test-scripts/test-report-generation.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/test-report-generation.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_test-scripts" {label="test-scripts" "test-scripts/test-simple.mmt.ts" [label=<test-simple.mmt.ts> tooltip="test-simple.mmt.ts" URL="test-scripts/test-simple.mmt.ts" fillcolor="#ddfeff"] }
+    "test-scripts/test-simple.mmt.ts" -> "packages/scripting/src/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_tools" {label="tools" "tools/demo-link-extraction.ts" [label=<demo-link-extraction.ts> tooltip="demo-link-extraction.ts" URL="tools/demo-link-extraction.ts" fillcolor="#ddfeff"] }
+    "tools/demo-link-extraction.ts" -> "packages/filesystem-access/src/index.ts"
+    "tools/demo-link-extraction.ts" -> "packages/indexer/src/vault-indexer.ts"
+    "tools/demo-link-extraction.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_tools" {label="tools" "tools/generate-operations-report.ts" [label=<generate-operations-report.ts> tooltip="generate-operations-report.ts" URL="tools/generate-operations-report.ts" fillcolor="#ddfeff"] }
+    "tools/generate-operations-report.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "tools/generate-operations-report.ts" -> "node_modules/.pnpm" [penwidth="1.0"]
+    "tools/generate-operations-report.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "tools/generate-operations-report.ts" -> "url" [style="dashed" penwidth="1.0"]
+    "url" [label=<url> tooltip="url" URL="https://nodejs.org/api/url.html" color="grey" fontcolor="grey"]
+    "util" [label=<util> tooltip="util" URL="https://nodejs.org/api/util.html" color="grey" fontcolor="grey"]
+}
