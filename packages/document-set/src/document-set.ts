@@ -114,7 +114,7 @@ export class DocumentSet implements OperationReadyDocumentSet {
       
       // Parse array fields back from strings
       const parseTags = (tags: any): string[] => {
-        if (Array.isArray(tags)) return tags;
+        if (Array.isArray(tags)) {return tags;}
         if (typeof tags === 'string' && tags) {
           return tags.split(', ').filter(Boolean);
         }
@@ -122,7 +122,7 @@ export class DocumentSet implements OperationReadyDocumentSet {
       };
       
       const parseLinks = (links: any): string[] => {
-        if (Array.isArray(links)) return links;
+        if (Array.isArray(links)) {return links;}
         if (typeof links === 'string' && links) {
           return links.split(', ').filter(Boolean);
         }
@@ -144,7 +144,7 @@ export class DocumentSet implements OperationReadyDocumentSet {
       };
     });
     
-    return this._documents!;
+    return this._documents;
   }
   
   /**
