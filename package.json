@@ -19,7 +19,7 @@
     "dep:folder": "depcruise --config .dependency-cruiser.cjs --output-type ddot . | dot -T svg > code-analysis/dependency-folder.svg",
     "dep:all": "pnpm run dep:detailed && pnpm run dep:architecture && pnpm run dep:folder",
     "dep:validate": "depcruise --config .dependency-cruiser.cjs .",
-    "dep:clean": "depcruise --config .dependency-cruiser.cjs --output-type archi --include-only \"^(packages|apps)/[^/]+/src\" . | dot -T svg > code-analysis/dependency-clean.svg",
+    "dep:packages": "depcruise --config .dependency-cruiser.cjs --output-type archi --do-not-follow \"^node_modules\" --include-only \"^packages/[^/]+/src/index\\.ts$\" . | dot -T svg > code-analysis/dependency-packages.svg",
     "analyze:all": "node scripts/analysis/run-code-analysis.mjs"
   },
   "devDependencies": {

@@ -53,6 +53,7 @@ pnpm run dep:all          # Generate all dependency graphs
 pnpm run dep:architecture # Generate architecture-level graph
 pnpm run dep:detailed     # Generate detailed file-level graph
 pnpm run dep:folder       # Generate folder-level graph
+pnpm run dep:packages     # Generate package entry points only graph
 ```
 
 ## Dependency Rules
