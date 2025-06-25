@@ -13,7 +13,16 @@
     "clean": "turbo clean && rm -rf node_modules",
     "test:report": "node scripts/test-report.mjs",
     "query:report": "node scripts/query-syntax-report.mjs",
-    "report:operations": "tsx tools/generate-operations-report.ts"
+    "report:operations": "tsx tools/generate-operations-report.ts",
+    "dep:detailed": "depcruise --config .dependency-cruiser.cjs --output-type dot . | dot -T svg > code-analysis/dependency-detailed.svg",
+    "dep:architecture": "depcruise --config .dependency-cruiser.cjs --output-type archi . | dot -T svg > code-analysis/dependency-architecture.svg",
+    "dep:folder": "depcruise --config .dependency-cruiser.cjs --output-type ddot . | dot -T svg > code-analysis/dependency-folder.svg",
+    "dep:all": "pnpm run dep:detailed && pnpm run dep:architecture && pnpm run dep:folder",
+    "dep:validate": "depcruise --config .dependency-cruiser.cjs .",
+    "dep:packages": "depcruise --config .dependency-cruiser.cjs --output-type archi --do-not-follow \"^node_modules\" --include-only \"^packages/[^/]+/src/index\\.ts$\" . | dot -T svg > code-analysis/dependency-packages.svg",
+    "dep:summary": "depcruise --config .dependency-cruiser.cjs --output-type archi --collapse \"^(packages|apps)/[^/]+/(src|test)\" . | dot -T svg > code-analysis/dependency-summary.svg",
+    "analyze:all": "node scripts/analysis/run-code-analysis.mjs",
+    "analyze:packages": "node scripts/analysis/analyze-package-dependencies.mjs"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -23,6 +32,7 @@
     "@types/node": "^20.14.0",
     "@vitejs/plugin-react": "^4.5.2",
     "@vitest/ui": "^3.2.3",
+    "dependency-cruiser": "^16.10.3",
     "electron": "^36.4.0",
     "electron-vite": "^3.1.0",
     "eslint": "^9.14.0",

@@ -1,0 +1,5910 @@
+{
+  "modules": [
+    {
+      "source": ".dependency-cruiser.cjs",
+      "dependencies": [],
+      "dependents": [],
+      "orphan": true,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/src/application-director.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./cli-parser.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "apps/cli/src/cli-parser.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./commands/help-command.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "apps/cli/src/commands/help-command.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./commands/index.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "apps/cli/src/commands/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./commands/script-command.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "apps/cli/src/commands/script-command.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./schemas/cli.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "apps/cli/src/schemas/cli.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/config",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/config/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "url",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "url",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "fs",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "apps/cli/src/application-director.ts",
+        "packages/filesystem-access/src/index.ts",
+        "packages/indexer/src/metadata-cache.ts",
+        "packages/config/src/config-service.ts",
+        "scripts/add-lint-scripts.js",
+        "scripts/analysis/run-code-analysis.mjs",
+        "scripts/query-syntax-report.mjs",
+        "tools/generate-operations-report.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "path",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "apps/cli/src/application-director.ts",
+        "apps/cli/src/commands/script-command.ts",
+        "packages/filesystem-access/src/index.ts",
+        "packages/scripting/src/analysis-runner.ts",
+        "packages/scripting/src/markdown-report-generator.ts",
+        "packages/scripting/src/script-runner.ts",
+        "packages/document-operations/src/operations/delete-operation.ts",
+        "packages/indexer/src/vault-indexer.ts",
+        "packages/indexer/src/link-extractor.ts",
+        "packages/indexer/src/metadata-extractor.ts",
+        "packages/document-operations/src/operations/move-operation.ts",
+        "packages/document-operations/src/operations/rename-operation.ts",
+        "packages/document-operations/src/operations/update-frontmatter.ts",
+        "packages/config/src/config-service.ts",
+        "packages/core-operations/src/vault-operations.ts",
+        "scripts/add-lint-scripts.js",
+        "scripts/analysis/run-code-analysis.mjs",
+        "tools/demo-link-extraction.ts",
+        "tools/generate-operations-report.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "url",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "apps/cli/src/application-director.ts",
+        "packages/scripting/src/script-runner.ts",
+        "scripts/analysis/run-code-analysis.mjs",
+        "tools/generate-operations-report.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/src/cli-parser.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./schemas/cli.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "apps/cli/src/schemas/cli.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/application-director.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/src/schemas/cli.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/application-director.ts",
+        "apps/cli/src/cli-parser.ts",
+        "apps/cli/src/commands/script-command.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "apps/cli/src/schemas/cli.schema.ts",
+        "packages/entities/src/index.ts",
+        "packages/entities/src/cli.schema.ts",
+        "packages/entities/src/config.schema.ts",
+        "packages/entities/src/document-set.schema.ts",
+        "packages/entities/src/document.schema.ts",
+        "packages/entities/src/query.schema.ts",
+        "packages/entities/src/operation.schema.ts",
+        "packages/entities/src/scripting.schema.ts",
+        "packages/entities/src/ui.schema.ts",
+        "packages/entities/src/vault.schema.ts",
+        "packages/config/src/config-service.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/src/commands/help-command.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./index.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "apps/cli/src/commands/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/application-director.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/src/commands/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/application-director.ts",
+        "apps/cli/src/commands/help-command.ts",
+        "apps/cli/src/commands/script-command.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./cli.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/cli.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./config.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/config.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./document-set.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/document-set.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./document.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/document.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./operation.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/operation.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./query.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/query.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./scripting.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/scripting.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./ui.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/ui.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./vault.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/vault.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/commands/help-command.ts",
+        "apps/cli/src/commands/index.ts",
+        "apps/cli/src/commands/script-command.ts",
+        "packages/query-parser/src/index.ts",
+        "packages/scripting/src/index.ts",
+        "packages/scripting/src/analysis-pipeline.ts",
+        "packages/scripting/src/analysis-runner.ts",
+        "packages/scripting/src/result-formatter.ts",
+        "packages/scripting/src/markdown-report-generator.ts",
+        "packages/scripting/src/script-runner.ts",
+        "packages/scripting/src/script.interface.ts",
+        "packages/document-operations/src/operations/delete-operation.ts",
+        "packages/document-operations/src/types.ts",
+        "packages/indexer/src/types.ts",
+        "packages/document-operations/src/operations/move-operation.ts",
+        "packages/document-operations/src/operations/rename-operation.ts",
+        "packages/document-operations/src/operations/update-frontmatter.ts",
+        "packages/config/src/index.ts",
+        "packages/config/src/config-service.ts",
+        "packages/core-operations/src/index.ts",
+        "packages/core-operations/src/vault-operations.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/cli.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./config.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/config.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/config.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts",
+        "packages/entities/src/cli.schema.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/document-set.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./document.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/document.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./query.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/query.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/document.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts",
+        "packages/entities/src/document-set.schema.ts",
+        "packages/entities/src/operation.schema.ts",
+        "packages/entities/src/scripting.schema.ts",
+        "packages/entities/src/vault.schema.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/query.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts",
+        "packages/entities/src/document-set.schema.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/operation.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./document.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/document.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts",
+        "packages/entities/src/vault.schema.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/scripting.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./document.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/document.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/ui.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/entities/src/vault.schema.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./document.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/document.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./operation.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/operation.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/entities/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/src/commands/script-command.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../schemas/cli.schema.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "apps/cli/src/schemas/cli.schema.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./index.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "apps/cli/src/commands/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/filesystem-access",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/filesystem-access/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/query-parser",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/query-parser/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "info",
+              "name": "apps-can-depend-on-packages"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/application-director.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/filesystem-access/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "type-only",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "gray-matter",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/gray-matter@4.0.3/node_modules/gray-matter/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/commands/script-command.ts",
+        "packages/scripting/src/script-runner.ts",
+        "packages/document-operations/src/types.ts",
+        "packages/indexer/src/vault-indexer.ts",
+        "packages/core-operations/src/vault-operations.ts",
+        "tools/demo-link-extraction.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "fs/promises",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/filesystem-access/src/index.ts",
+        "packages/scripting/src/analysis-runner.ts",
+        "packages/scripting/src/markdown-report-generator.ts",
+        "packages/scripting/src/script-runner.ts",
+        "packages/document-operations/src/operations/move-operation.ts",
+        "packages/document-operations/src/operations/rename-operation.ts",
+        "scripts/analysis/run-code-analysis.mjs",
+        "scripts/query-syntax-report.mjs"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/gray-matter@4.0.3/node_modules/gray-matter/index.js",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/filesystem-access/src/index.ts",
+        "packages/indexer/src/metadata-extractor.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/query-parser/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/commands/script-command.ts",
+        "packages/scripting/src/script-runner.ts",
+        "packages/core-operations/src/vault-operations.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/scripting/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./analysis-pipeline.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/scripting/src/analysis-pipeline.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./analysis-runner.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/scripting/src/analysis-runner.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./markdown-report-generator.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/scripting/src/markdown-report-generator.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./result-formatter.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/scripting/src/result-formatter.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./script-runner.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/scripting/src/script-runner.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./script.interface.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/scripting/src/script.interface.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "export"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "arquero",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "export"
+          ],
+          "resolved": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/commands/script-command.ts",
+        "examples/analysis/document-type-analysis.mmt.ts",
+        "examples/analysis/find-most-linked-documents.mmt.ts",
+        "examples/analysis/find-orphaned-documents.mmt.ts",
+        "examples/analysis/tag-analysis.mmt.ts",
+        "examples/analysis/vault-link-statistics.mmt.ts",
+        "examples/archive-old-posts.mmt.ts",
+        "examples/cherry-pick-files.mmt.ts",
+        "examples/cleanup-drafts.mmt.ts",
+        "examples/list-files.mmt.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm",
+        "export"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/scripting/src/index.ts",
+        "packages/scripting/src/analysis-pipeline.ts",
+        "packages/scripting/src/analysis-runner.ts",
+        "packages/scripting/src/markdown-report-generator.ts",
+        "packages/scripting/src/script-runner.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/scripting/src/analysis-pipeline.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "arquero",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "arquero",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "type-only",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/index.ts",
+        "packages/scripting/src/analysis-runner.ts",
+        "packages/scripting/src/script-runner.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/scripting/src/analysis-runner.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./analysis-pipeline.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/analysis-pipeline.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./result-formatter.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/result-formatter.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "arquero",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "arquero",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "type-only",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/index.ts",
+        "packages/scripting/src/script-runner.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/scripting/src/result-formatter.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/index.ts",
+        "packages/scripting/src/analysis-runner.ts",
+        "packages/scripting/src/script-runner.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/scripting/src/markdown-report-generator.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "arquero",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "type-only",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "child_process",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "child_process",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "os",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "os",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "util",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "util",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/index.ts",
+        "packages/scripting/src/script-runner.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "child_process",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/scripting/src/markdown-report-generator.ts",
+        "scripts/analysis/run-code-analysis.mjs"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "os",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/scripting/src/markdown-report-generator.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "util",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/scripting/src/markdown-report-generator.ts",
+        "scripts/analysis/run-code-analysis.mjs"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/scripting/src/script-runner.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./analysis-pipeline.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/analysis-pipeline.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./analysis-runner.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/analysis-runner.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./markdown-report-generator.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/markdown-report-generator.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./result-formatter.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/result-formatter.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./script.interface.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/script.interface.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/document-operations",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/document-operations",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/filesystem-access",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/filesystem-access/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/indexer",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/indexer",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/query-parser",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/query-parser/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "arquero",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "type-only",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/arquero@8.0.3/node_modules/arquero/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "url",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "url",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/scripting/src/script.interface.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/index.ts",
+        "packages/scripting/src/script-runner.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/document-operations/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./core/operation-registry.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/document-operations/src/core/operation-registry.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./operations/delete-operation.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/document-operations/src/operations/delete-operation.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./operations/move-operation.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/document-operations/src/operations/move-operation.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./operations/rename-operation.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/document-operations/src/operations/rename-operation.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./operations/update-frontmatter.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/document-operations/src/operations/update-frontmatter.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/document-operations/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/script-runner.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/document-operations/src/core/operation-registry.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../operations/delete-operation.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/operations/delete-operation.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "../operations/move-operation.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/operations/move-operation.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "../operations/rename-operation.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/operations/rename-operation.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "../operations/update-frontmatter.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/operations/update-frontmatter.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "../types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "packages/document-operations/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/document-operations/src/operations/delete-operation.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/document-operations/src/index.ts",
+        "packages/document-operations/src/core/operation-registry.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/document-operations/src/types.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/filesystem-access",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/filesystem-access/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/indexer",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "packages/document-operations/src/index.ts",
+        "packages/document-operations/src/core/operation-registry.ts",
+        "packages/document-operations/src/operations/delete-operation.ts",
+        "packages/document-operations/src/operations/move-operation.ts",
+        "packages/document-operations/src/operations/rename-operation.ts",
+        "packages/document-operations/src/operations/update-frontmatter.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "export"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./vault-indexer.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/indexer/src/vault-indexer.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "packages/scripting/src/script-runner.ts",
+        "packages/document-operations/src/types.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/types.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/index.ts",
+        "packages/indexer/src/vault-indexer.ts",
+        "packages/indexer/src/index-storage.ts",
+        "packages/indexer/src/link-extractor.ts",
+        "packages/indexer/src/metadata-cache.ts",
+        "packages/indexer/src/metadata-extractor.ts",
+        "packages/indexer/src/query-executor.ts",
+        "packages/indexer/src/worker-pool.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/vault-indexer.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./file-watcher.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/file-watcher.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./index-storage.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/index-storage.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./link-extractor.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/link-extractor.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./metadata-cache.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/metadata-cache.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./metadata-extractor.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/metadata-extractor.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./query-executor.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/query-executor.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./worker-pool.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/worker-pool.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/filesystem-access",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/filesystem-access/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/index.ts",
+        "tools/demo-link-extraction.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/file-watcher.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "events",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "events",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/vault-indexer.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "events",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/indexer/src/file-watcher.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/index-storage.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./prefix-index.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/prefix-index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/vault-indexer.ts",
+        "packages/indexer/src/query-executor.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/prefix-index.ts",
+      "dependencies": [],
+      "dependents": [
+        "packages/indexer/src/index-storage.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/link-extractor.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/vault-indexer.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/metadata-cache.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "type-only",
+            "import"
+          ],
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/vault-indexer.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/metadata-extractor.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "crypto",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "crypto",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "gray-matter",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/gray-matter@4.0.3/node_modules/gray-matter/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/vault-indexer.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "crypto",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/indexer/src/metadata-extractor.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/query-executor.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./index-storage.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/index-storage.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "minimatch",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/minimatch@9.0.5/node_modules/minimatch/dist/esm/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/vault-indexer.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/minimatch@9.0.5/node_modules/minimatch/dist/esm/index.d.ts",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/indexer/src/query-executor.ts",
+        "packages/core-operations/src/vault-operations.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/indexer/src/worker-pool.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "packages/indexer/src/vault-indexer.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/document-operations/src/operations/move-operation.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/document-operations/src/index.ts",
+        "packages/document-operations/src/core/operation-registry.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/document-operations/src/operations/rename-operation.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/document-operations/src/index.ts",
+        "packages/document-operations/src/core/operation-registry.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/document-operations/src/operations/update-frontmatter.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../types.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/document-operations/src/types.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/document-operations/src/index.ts",
+        "packages/document-operations/src/core/operation-registry.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/config/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./config-service.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/config/src/config-service.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "export"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "apps/cli/src/application-director.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/config/src/config-service.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "js-yaml",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/js-yaml@4.1.0/node_modules/js-yaml/dist/js-yaml.mjs",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "zod",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/zod@3.25.62/node_modules/zod/dist/types/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/config/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/js-yaml@4.1.0/node_modules/js-yaml/dist/js-yaml.mjs",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "packages/config/src/config-service.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./application-director.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "apps/cli/src/application-director.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "apps/cli/vitest.integration.config.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "vitest/config",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm-dev",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.0_@vitest+ui@3.2.3_happy-dom@18.0.1/node_modules/vitest/config.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.0_@vitest+ui@3.2.3_happy-dom@18.0.1/node_modules/vitest/config.d.ts",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm-dev",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "apps/cli/vitest.integration.config.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "eslint.config.js",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@eslint/js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm-dev",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/@eslint+js@9.29.0/node_modules/@eslint/js/src/index.js",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "typescript-eslint",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm-dev",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/typescript-eslint@8.35.0_eslint@9.29.0_typescript@5.8.3/node_modules/typescript-eslint/dist/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/@eslint+js@9.29.0/node_modules/@eslint/js/src/index.js",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm-dev",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "eslint.config.js"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/typescript-eslint@8.35.0_eslint@9.29.0_typescript@5.8.3/node_modules/typescript-eslint/dist/index.d.ts",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm-dev",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "eslint.config.js"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/analysis/document-type-analysis.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/analysis/find-most-linked-documents.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/analysis/find-orphaned-documents.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/analysis/tag-analysis.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/analysis/vault-link-statistics.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/archive-old-posts.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/cherry-pick-files.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/cleanup-drafts.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "examples/list-files.mmt.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/scripting",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/scripting/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/core-operations/src/index.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./vault-operations.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "export"
+          ],
+          "resolved": "packages/core-operations/src/vault-operations.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "export"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "packages/core-operations/src/vault-operations.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/entities",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "type-only",
+            "import"
+          ],
+          "resolved": "packages/entities/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/filesystem-access",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/filesystem-access/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "@mmt/query-parser",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "aliased",
+            "aliased-tsconfig",
+            "aliased-tsconfig-paths",
+            "local",
+            "import"
+          ],
+          "resolved": "packages/query-parser/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "package-dependency-only-through-entities"
+            }
+          ]
+        },
+        {
+          "dynamic": false,
+          "module": "minimatch",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/minimatch@9.0.5/node_modules/minimatch/dist/esm/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "packages/core-operations/src/index.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "scripts/add-lint-scripts.js",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "glob",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm-dev",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/glob@11.0.3/node_modules/glob/dist/esm/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "node_modules/.pnpm/glob@11.0.3/node_modules/glob/dist/esm/index.d.ts",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": true,
+      "dependencyTypes": [
+        "npm-dev",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "scripts/add-lint-scripts.js",
+        "tools/generate-operations-report.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "scripts/analysis/run-code-analysis.mjs",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "child_process",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "child_process",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "url",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "url",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "util",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "util",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "scripts/query-syntax-report.mjs",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "fs/promises",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "fs/promises",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "tools/demo-link-extraction.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../packages/filesystem-access/src/index.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/filesystem-access/src/index.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "../packages/indexer/src/vault-indexer.js",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "packages/indexer/src/vault-indexer.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "tools/generate-operations-report.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "fs",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "fs",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "glob",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "npm-dev",
+            "import"
+          ],
+          "resolved": "node_modules/.pnpm/glob@11.0.3/node_modules/glob/dist/esm/index.d.ts",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": true,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "path",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "path",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "url",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "resolved": "url",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "type": "dependency",
+        "from": "packages/config/src/index.ts",
+        "to": "packages/config/src/config-service.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/core-operations/src/index.ts",
+        "to": "packages/core-operations/src/vault-operations.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/core-operations/src/vault-operations.ts",
+        "to": "packages/filesystem-access/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/core-operations/src/vault-operations.ts",
+        "to": "packages/query-parser/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/core/operation-registry.ts",
+        "to": "packages/document-operations/src/operations/delete-operation.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/core/operation-registry.ts",
+        "to": "packages/document-operations/src/operations/move-operation.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/core/operation-registry.ts",
+        "to": "packages/document-operations/src/operations/rename-operation.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/core/operation-registry.ts",
+        "to": "packages/document-operations/src/operations/update-frontmatter.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/core/operation-registry.ts",
+        "to": "packages/document-operations/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/index.ts",
+        "to": "packages/document-operations/src/core/operation-registry.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/index.ts",
+        "to": "packages/document-operations/src/operations/delete-operation.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/index.ts",
+        "to": "packages/document-operations/src/operations/move-operation.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/index.ts",
+        "to": "packages/document-operations/src/operations/rename-operation.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/index.ts",
+        "to": "packages/document-operations/src/operations/update-frontmatter.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/index.ts",
+        "to": "packages/document-operations/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/operations/delete-operation.ts",
+        "to": "packages/document-operations/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/operations/move-operation.ts",
+        "to": "packages/document-operations/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/operations/rename-operation.ts",
+        "to": "packages/document-operations/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/operations/update-frontmatter.ts",
+        "to": "packages/document-operations/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/types.ts",
+        "to": "packages/filesystem-access/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/document-operations/src/types.ts",
+        "to": "packages/indexer/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/index-storage.ts",
+        "to": "packages/indexer/src/prefix-index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/index-storage.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/index.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/index.ts",
+        "to": "packages/indexer/src/vault-indexer.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/link-extractor.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/metadata-cache.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/metadata-extractor.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/query-executor.ts",
+        "to": "packages/indexer/src/index-storage.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/query-executor.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/filesystem-access/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/file-watcher.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/index-storage.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/link-extractor.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/metadata-cache.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/metadata-extractor.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/query-executor.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/vault-indexer.ts",
+        "to": "packages/indexer/src/worker-pool.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/indexer/src/worker-pool.ts",
+        "to": "packages/indexer/src/types.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/analysis-runner.ts",
+        "to": "packages/scripting/src/analysis-pipeline.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/analysis-runner.ts",
+        "to": "packages/scripting/src/result-formatter.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/index.ts",
+        "to": "packages/scripting/src/analysis-pipeline.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/index.ts",
+        "to": "packages/scripting/src/analysis-runner.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/index.ts",
+        "to": "packages/scripting/src/markdown-report-generator.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/index.ts",
+        "to": "packages/scripting/src/result-formatter.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/index.ts",
+        "to": "packages/scripting/src/script-runner.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/index.ts",
+        "to": "packages/scripting/src/script.interface.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/document-operations/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/filesystem-access/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/indexer/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/query-parser/src/index.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/scripting/src/analysis-pipeline.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/scripting/src/analysis-runner.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/scripting/src/markdown-report-generator.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/scripting/src/result-formatter.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "packages/scripting/src/script-runner.ts",
+        "to": "packages/scripting/src/script.interface.ts",
+        "rule": {
+          "severity": "error",
+          "name": "package-dependency-only-through-entities"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "apps/cli/src/application-director.ts",
+        "to": "packages/config/src/index.ts",
+        "rule": {
+          "severity": "info",
+          "name": "apps-can-depend-on-packages"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "apps/cli/src/commands/help-command.ts",
+        "to": "packages/entities/src/index.ts",
+        "rule": {
+          "severity": "info",
+          "name": "apps-can-depend-on-packages"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "apps/cli/src/commands/index.ts",
+        "to": "packages/entities/src/index.ts",
+        "rule": {
+          "severity": "info",
+          "name": "apps-can-depend-on-packages"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "apps/cli/src/commands/script-command.ts",
+        "to": "packages/entities/src/index.ts",
+        "rule": {
+          "severity": "info",
+          "name": "apps-can-depend-on-packages"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "apps/cli/src/commands/script-command.ts",
+        "to": "packages/filesystem-access/src/index.ts",
+        "rule": {
+          "severity": "info",
+          "name": "apps-can-depend-on-packages"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "apps/cli/src/commands/script-command.ts",
+        "to": "packages/query-parser/src/index.ts",
+        "rule": {
+          "severity": "info",
+          "name": "apps-can-depend-on-packages"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "apps/cli/src/commands/script-command.ts",
+        "to": "packages/scripting/src/index.ts",
+        "rule": {
+          "severity": "info",
+          "name": "apps-can-depend-on-packages"
+        }
+      }
+    ],
+    "error": 57,
+    "warn": 0,
+    "info": 7,
+    "ignore": 0,
+    "totalCruised": 83,
+    "totalDependenciesCruised": 202,
+    "optionsUsed": {
+      "baseDir": "/Users/danielseltzer/code/mmt",
+      "combinedDependencies": false,
+      "detectJSDocImports": false,
+      "doNotFollow": {
+        "path": "node_modules|dist|build|.turbo|coverage"
+      },
+      "enhancedResolveOptions": {
+        "exportsFields": [
+          "exports"
+        ],
+        "conditionNames": [
+          "import",
+          "require",
+          "node",
+          "default",
+          "types"
+        ],
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".ts",
+          ".tsx",
+          ".d.ts",
+          ".mjs",
+          ".cjs"
+        ]
+      },
+      "exclude": {
+        "path": "\\.test\\.[tj]sx?$|\\.spec\\.[tj]sx?$|\\btest\\b|\\btests\\b|\\b__tests__\\b|\\.test\\.d\\.ts$|test-utils|vitest\\.config"
+      },
+      "exoticRequireStrings": [],
+      "externalModuleResolutionStrategy": "node_modules",
+      "metrics": false,
+      "moduleSystems": [
+        "es6",
+        "cjs",
+        "tsd",
+        "amd"
+      ],
+      "outputTo": "-",
+      "outputType": "json",
+      "preserveSymlinks": false,
+      "reporterOptions": {
+        "dot": {
+          "collapsePattern": "node_modules/(@[^/]+/[^/]+|[^/]+)",
+          "theme": {
+            "graph": {
+              "bgcolor": "transparent",
+              "splines": "ortho"
+            },
+            "node": {
+              "fillcolor": "#e8f4fd",
+              "color": "#1f77b4",
+              "fontcolor": "#1f77b4",
+              "shape": "box",
+              "style": "rounded,filled"
+            },
+            "edge": {
+              "color": "#757575",
+              "fontcolor": "#757575",
+              "arrowhead": "vee",
+              "arrowsize": "0.7"
+            }
+          }
+        },
+        "archi": {
+          "collapsePattern": "^(packages|apps)/[^/]+",
+          "theme": {
+            "graph": {
+              "bgcolor": "transparent",
+              "splines": "ortho",
+              "rankdir": "TB",
+              "ranksep": "1.5"
+            },
+            "node": {
+              "fillcolor": "#c6e9ff",
+              "color": "#0066cc",
+              "fontcolor": "#0066cc",
+              "shape": "box3d",
+              "style": "rounded,filled"
+            },
+            "edge": {
+              "color": "#0066cc",
+              "fontcolor": "#0066cc",
+              "penwidth": "2",
+              "arrowhead": "vee",
+              "arrowsize": "1"
+            }
+          }
+        },
+        "ddot": {
+          "collapsePattern": "^(packages|apps)/[^/]+",
+          "theme": {
+            "graph": {
+              "bgcolor": "transparent",
+              "splines": "ortho",
+              "rankdir": "LR",
+              "ranksep": "2"
+            },
+            "node": {
+              "fillcolor": "#ffeaa7",
+              "color": "#2d3436",
+              "fontcolor": "#2d3436",
+              "shape": "folder",
+              "style": "filled"
+            },
+            "edge": {
+              "color": "#636e72",
+              "fontcolor": "#636e72",
+              "penwidth": "1.5",
+              "arrowhead": "open",
+              "arrowsize": "0.9"
+            }
+          }
+        }
+      },
+      "rulesFile": ".dependency-cruiser.cjs",
+      "skipAnalysisNotInRules": false,
+      "tsConfig": {
+        "fileName": "tsconfig.json"
+      },
+      "tsPreCompilationDeps": true,
+      "args": "."
+    },
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "no-circular",
+          "severity": "error",
+          "comment": "This dependency is part of a circular relationship. You might want to revise your solution (i.e. use dependency inversion, make sure the modules have a single responsibility) ",
+          "from": {},
+          "to": {
+            "circular": true
+          },
+          "scope": "module"
+        },
+        {
+          "name": "no-orphans",
+          "comment": "This is an orphan module - it's likely not used (anymore?). Either use it or remove it. If it's logical this module is an orphan (i.e. it's a config file), add an exception for it in your dependency-cruiser configuration. By default this rule does not scrutinize dot-files (e.g. .eslintrc.js), TypeScript declaration files (.d.ts), tsconfig.json and some of the babel and webpack configs.",
+          "severity": "warn",
+          "from": {
+            "orphan": true,
+            "pathNot": "(^|/)[.][^/]+[.](?:js|cjs|mjs|ts|cts|mts|json)$|[.]d[.]ts$|(^|/)tsconfig[.]json$|(^|/)(?:babel|webpack)[.]config[.](?:js|cjs|mjs|ts|cts|mts|json)$|(^|/)vitest[.]config[.](?:js|ts|mjs|mts)$"
+          },
+          "to": {},
+          "scope": "module"
+        },
+        {
+          "name": "no-deprecated-core",
+          "comment": "A module depends on a node core module that has been deprecated. Find an alternative - these are bound to exist - node doesn't deprecate lightly.",
+          "severity": "warn",
+          "from": {},
+          "to": {
+            "dependencyTypes": [
+              "core"
+            ],
+            "path": "^v8/tools/codemap$|^v8/tools/consarray$|^v8/tools/csvparser$|^v8/tools/logreader$|^v8/tools/profile_view$|^v8/tools/profile$|^v8/tools/SourceMap$|^v8/tools/splaytree$|^v8/tools/tickprocessor-driver$|^v8/tools/tickprocessor$|^node-inspect/lib/_inspect$|^node-inspect/lib/internal/inspect_client$|^node-inspect/lib/internal/inspect_repl$|^async_hooks$|^punycode$|^domain$|^constants$|^sys$|^_linklist$|^_stream_wrap$"
+          },
+          "scope": "module"
+        },
+        {
+          "name": "not-to-deprecated",
+          "comment": "This module uses a (version of an) npm module that has been deprecated. Either upgrade to a later version of that module, or find an alternative. Deprecated modules are a security risk.",
+          "severity": "warn",
+          "from": {},
+          "to": {
+            "dependencyTypes": [
+              "deprecated"
+            ]
+          },
+          "scope": "module"
+        },
+        {
+          "name": "no-non-package-json",
+          "severity": "error",
+          "comment": "This module depends on an npm package that isn't in the 'dependencies' section of your package.json. That's problematic as the package either (1) won't be available on live (2 - worse) will be available on live with an non-guaranteed version. Fix it by adding the package to the dependencies in your package.json.",
+          "from": {},
+          "to": {
+            "dependencyTypes": [
+              "npm-no-pkg",
+              "npm-unknown"
+            ]
+          },
+          "scope": "module"
+        },
+        {
+          "name": "package-dependency-only-through-entities",
+          "severity": "error",
+          "comment": "Packages should only depend on other packages through the @mmt/entities schemas, not directly on implementations",
+          "from": {
+            "path": "^packages/(?!entities)"
+          },
+          "to": {
+            "path": "^packages/(?!entities)",
+            "pathNot": "$1"
+          },
+          "scope": "module"
+        },
+        {
+          "name": "apps-can-depend-on-packages",
+          "severity": "info",
+          "comment": "Apps are allowed to depend on packages",
+          "from": {
+            "path": "^apps/"
+          },
+          "to": {
+            "path": "^packages/"
+          },
+          "scope": "module"
+        }
+      ]
+    }
+  }
+}

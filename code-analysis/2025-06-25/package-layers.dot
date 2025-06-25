@@ -1,0 +1,144 @@
+digraph PackageLayers {
+  rankdir=BT;  // Bottom to top for better layering visualization
+  ranksep=2.5; // Much more vertical space between ranks
+  nodesep=1.0; // More horizontal space between nodes
+  
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, height=0.8];
+  edge [color="#666666", penwidth=1.5];
+  
+  // Force vertical alignment of layers using invisible edges
+  edge [style=invis];
+  
+  // Layer 0 nodes
+  subgraph cluster_0 {
+    label="Layer 0: Core (No dependencies)";
+    style=filled;
+    fillcolor="#e8f4fd";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    margin=20;
+    
+    entities [label="@mmt/entities\n(schemas/contracts)", fillcolor="#ffffff", width=3];
+    filesystem [label="@mmt/filesystem-access\n(file system abstraction)", fillcolor="#ffffff", width=3];
+    
+    // Keep layer 0 nodes together
+    { rank=same; entities; filesystem; }
+  }
+  
+  // Layer 1 nodes
+  subgraph cluster_1 {
+    label="Layer 1: Foundation";
+    style=filled;
+    fillcolor="#d4e8fc";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    margin=20;
+    
+    config [label="@mmt/config", fillcolor="#ffffff", width=2.5];
+    queryparser [label="@mmt/query-parser", fillcolor="#ffffff", width=2.5];
+    documentset [label="@mmt/document-set", fillcolor="#ffffff", width=2.5];
+    
+    // Keep layer 1 nodes together
+    { rank=same; config; queryparser; documentset; }
+  }
+  
+  // Layer 2 nodes
+  subgraph cluster_2 {
+    label="Layer 2: Services";
+    style=filled;
+    fillcolor="#c0dcfb";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    margin=20;
+    
+    indexer [label="@mmt/indexer", fillcolor="#ffffff", width=2.5];
+    coreops [label="@mmt/core-operations", fillcolor="#ffffff", width=2.5];
+    
+    // Keep layer 2 nodes together
+    { rank=same; indexer; coreops; }
+  }
+  
+  // Layer 3 nodes
+  subgraph cluster_3 {
+    label="Layer 3: Operations";
+    style=filled;
+    fillcolor="#acd0fa";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    margin=20;
+    
+    docops [label="@mmt/document-operations", fillcolor="#ffffff", width=3];
+    
+    // Single node layer
+    { rank=same; docops; }
+  }
+  
+  // Layer 4 nodes
+  subgraph cluster_4 {
+    label="Layer 4: Applications";
+    style=filled;
+    fillcolor="#98c4f9";
+    color="#1f77b4";
+    fontsize=14;
+    fontname="Arial Bold";
+    margin=20;
+    
+    scripting [label="@mmt/scripting", fillcolor="#ffffff", width=2.5];
+    cli [label="app:cli", fillcolor="#ffffff", width=2.5];
+    
+    // Keep layer 4 nodes together
+    { rank=same; scripting; cli; }
+  }
+  
+  // Invisible edges to enforce layer ordering
+  entities -> config [style=invis];
+  entities -> queryparser [style=invis];
+  entities -> documentset [style=invis];
+  
+  config -> indexer [style=invis];
+  queryparser -> coreops [style=invis];
+  
+  indexer -> docops [style=invis];
+  coreops -> docops [style=invis];
+  
+  docops -> scripting [style=invis];
+  docops -> cli [style=invis];
+  
+  // Now add the actual visible dependencies
+  edge [style=solid, constraint=false];
+  
+  // Layer 1 dependencies
+  config -> entities [color="#4a90e2"];
+  queryparser -> entities [color="#4a90e2"];
+  documentset -> entities [color="#4a90e2"];
+  
+  // Layer 2 dependencies
+  indexer -> entities [color="#5a9fd4"];
+  indexer -> filesystem [color="#5a9fd4"];
+  
+  coreops -> entities [color="#5a9fd4"];
+  coreops -> filesystem [color="#5a9fd4"];
+  coreops -> queryparser [color="#5a9fd4"];
+  
+  // Layer 3 dependencies
+  docops -> entities [color="#6aaec6"];
+  docops -> filesystem [color="#6aaec6"];
+  docops -> indexer [color="#6aaec6"];
+  
+  // Layer 4 dependencies
+  scripting -> entities [color="#7abdb8"];
+  scripting -> filesystem [color="#7abdb8"];
+  scripting -> queryparser [color="#7abdb8"];
+  scripting -> indexer [color="#7abdb8"];
+  scripting -> docops [color="#7abdb8"];
+  
+  cli -> entities [color="#7abdb8"];
+  cli -> filesystem [color="#7abdb8"];
+  cli -> queryparser [color="#7abdb8"];
+  cli -> config [color="#7abdb8"];
+  cli -> scripting [color="#7abdb8"];
+}
