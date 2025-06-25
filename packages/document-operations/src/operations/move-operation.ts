@@ -1,4 +1,4 @@
-import { join, dirname, relative, isAbsolute, basename } from 'path';
+import { dirname, relative, isAbsolute, basename } from 'path';
 import { rename, copyFile } from 'fs/promises';
 import type { Document } from '@mmt/entities';
 import type { 
@@ -62,7 +62,7 @@ export class MoveOperation implements DocumentOperation {
     } catch (error) {
       return {
         valid: false,
-        error: `Failed to check target directory: ${error}`
+        error: `Failed to check target directory: ${String(error)}`
       };
     }
     
@@ -78,7 +78,7 @@ export class MoveOperation implements DocumentOperation {
     } catch (error) {
       return {
         valid: false,
-        error: `Failed to check target file: ${error}`
+        error: `Failed to check target file: ${String(error)}`
       };
     }
     
@@ -136,14 +136,14 @@ export class MoveOperation implements DocumentOperation {
       if (!validation.valid) {
         return {
           success: false,
-          error: validation.error || 'Validation failed'
+          error: validation.error ?? 'Validation failed'
         };
       }
       
       // Create backup if requested
       let backup;
       if (options.createBackup) {
-        const backupPath = `${doc.path}.backup.${Date.now()}`;
+        const backupPath = `${doc.path}.backup.${String(Date.now())}`;
         await copyFile(doc.path, backupPath);
         backup = {
           originalPath: doc.path,
@@ -169,7 +169,7 @@ export class MoveOperation implements DocumentOperation {
         try {
           // Get the relative paths
           const oldRelativePath = relative(context.vault.path, doc.path);
-          const newRelativePath = relative(context.vault.path, targetPath);
+          // const newRelativePath = relative(context.vault.path, targetPath); // Not used yet
           
           // Get documents that link to this document
           const linkingDocs = await indexer.getBacklinks(oldRelativePath);
@@ -183,25 +183,25 @@ export class MoveOperation implements DocumentOperation {
             const oldName = basename(doc.path, '.md');
             const newName = basename(targetPath, '.md');
             
-            // Get relative paths
-            const oldRelativePath = relative(context.vault.path, doc.path).replace(/\.md$/, '');
-            const newRelativePath = relative(context.vault.path, targetPath).replace(/\.md$/, '');
+            // Get relative paths without extension
+            const oldRelativePathNoExt = relative(context.vault.path, doc.path).replace(/\.md$/u, '');
+            const newRelativePathNoExt = relative(context.vault.path, targetPath).replace(/\.md$/u, '');
             
             // Try to replace vault-relative paths like [[notes/doc1]]
-            if (content.includes(`[[${oldRelativePath}]]`)) {
+            if (content.includes(`[[${oldRelativePathNoExt}]]`)) {
               content = content.replace(
-                new RegExp(`\\[\\[${oldRelativePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\]`, 'g'),
-                `[[${newRelativePath}]]`
+                new RegExp(`\\[\\[${oldRelativePathNoExt.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\]\\]`, 'gu'),
+                `[[${newRelativePathNoExt}]]`
               );
             }
             
             // Try to replace paths relative to the linking document
-            const oldRelativeFromLinking = relative(dirname(linkingDoc.path), doc.path).replace(/\.md$/, '');
-            const newRelativeFromLinking = relative(dirname(linkingDoc.path), targetPath).replace(/\.md$/, '');
+            const oldRelativeFromLinking = relative(dirname(linkingDoc.path), doc.path).replace(/\.md$/u, '');
+            const newRelativeFromLinking = relative(dirname(linkingDoc.path), targetPath).replace(/\.md$/u, '');
             
             if (oldRelativeFromLinking !== oldRelativePath && content.includes(`[[${oldRelativeFromLinking}]]`)) {
               content = content.replace(
-                new RegExp(`\\[\\[${oldRelativeFromLinking.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\]`, 'g'),
+                new RegExp(`\\[\\[${oldRelativeFromLinking.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\]\\]`, 'gu'),
                 `[[${newRelativeFromLinking}]]`
               );
             }
@@ -211,13 +211,13 @@ export class MoveOperation implements DocumentOperation {
               // If moving to different directory, use relative path
               if (dirname(doc.path) !== dirname(targetPath)) {
                 content = content.replace(
-                  new RegExp(`\\[\\[${oldName}\\]\\]`, 'g'),
+                  new RegExp(`\\[\\[${oldName}\\]\\]`, 'gu'),
                   `[[${newRelativeFromLinking}]]`
                 );
               } else {
                 // Same directory, just update the name
                 content = content.replace(
-                  new RegExp(`\\[\\[${oldName}\\]\\]`, 'g'),
+                  new RegExp(`\\[\\[${oldName}\\]\\]`, 'gu'),
                   `[[${newName}]]`
                 );
               }
@@ -250,7 +250,7 @@ export class MoveOperation implements DocumentOperation {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to move file: ${error}`
+        error: `Failed to move file: ${String(error)}`
       };
     }
   }

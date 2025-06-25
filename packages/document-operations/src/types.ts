@@ -114,4 +114,4 @@ export interface DocumentOperation {
 /**
  * Factory function for creating operations
  */
-export type OperationFactory<T = any> = (options: T) => DocumentOperation;
+export type OperationFactory<T = unknown> = (options: T) => DocumentOperation;

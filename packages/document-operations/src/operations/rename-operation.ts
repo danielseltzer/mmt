@@ -69,7 +69,7 @@ export class RenameOperation implements DocumentOperation {
     } catch (error) {
       return {
         valid: false,
-        error: `Failed to check target file: ${error}`
+        error: `Failed to check target file: ${String(error)}`
       };
     }
     
@@ -94,7 +94,7 @@ export class RenameOperation implements DocumentOperation {
         const newBaseName = basename(this.newName, '.md');
         
         // Get all documents to check for links
-        const allDocs = await indexer.getAllDocuments();
+        // const allDocs = await indexer.getAllDocuments(); // Not used
         
         // Use backlinks to find documents that link to this one
         const relativePathForIndex = context.vault.path ? 
@@ -134,14 +134,14 @@ export class RenameOperation implements DocumentOperation {
       if (!validation.valid) {
         return {
           success: false,
-          error: validation.error || 'Validation failed'
+          error: validation.error ?? 'Validation failed'
         };
       }
       
       // Create backup if requested
       let backup;
       if (options.createBackup) {
-        const backupPath = `${doc.path}.backup.${Date.now()}`;
+        const backupPath = `${doc.path}.backup.${String(Date.now())}`;
         await copyFile(doc.path, backupPath);
         backup = {
           originalPath: doc.path,
@@ -173,7 +173,7 @@ export class RenameOperation implements DocumentOperation {
       // Update self-references in the document being renamed
       if (options.updateLinks && content.includes(`[[${oldBaseName}]]`)) {
         content = content.replace(
-          new RegExp(`\\[\\[${oldBaseName}\\]\\]`, 'g'),
+          new RegExp(`\\[\\[${oldBaseName}\\]\\]`, 'gu'),
           `[[${newBaseName}]]`
         );
         contentUpdated = true;
@@ -200,7 +200,7 @@ export class RenameOperation implements DocumentOperation {
               if (linkingContent.includes(`[[${oldBaseName}]]`)) {
                 // Replace the links
                 linkingContent = linkingContent.replace(
-                  new RegExp(`\\[\\[${oldBaseName}\\]\\]`, 'g'),
+                  new RegExp(`\\[\\[${oldBaseName}\\]\\]`, 'gu'),
                   `[[${newBaseName}]]`
                 );
                 
@@ -237,7 +237,7 @@ export class RenameOperation implements DocumentOperation {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to rename file: ${error}`
+        error: `Failed to rename file: ${String(error)}`
       };
     }
   }
