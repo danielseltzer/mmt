@@ -20,7 +20,9 @@
     "dep:all": "pnpm run dep:detailed && pnpm run dep:architecture && pnpm run dep:folder",
     "dep:validate": "depcruise --config .dependency-cruiser.cjs .",
     "dep:packages": "depcruise --config .dependency-cruiser.cjs --output-type archi --do-not-follow \"^node_modules\" --include-only \"^packages/[^/]+/src/index\\.ts$\" . | dot -T svg > code-analysis/dependency-packages.svg",
-    "analyze:all": "node scripts/analysis/run-code-analysis.mjs"
+    "dep:summary": "depcruise --config .dependency-cruiser.cjs --output-type archi --collapse \"^(packages|apps)/[^/]+/(src|test)\" . | dot -T svg > code-analysis/dependency-summary.svg",
+    "analyze:all": "node scripts/analysis/run-code-analysis.mjs",
+    "analyze:packages": "node scripts/analysis/analyze-package-dependencies.mjs"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
