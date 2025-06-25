@@ -1,9 +1,19 @@
-import type { Table } from 'arquero';
 import type {
   Document,
   OperationReadyDocumentSet,
+  Query,
 } from '@mmt/entities';
-import type { Query as IndexerQuery } from '@mmt/indexer';
+import type { ParsedArrayField } from './types.js';
+import { 
+  getDocumentRows, 
+  getRowCount, 
+  getColumnNames,
+  sliceTable 
+} from './table-utils.js';
+import * as aq from 'arquero';
+
+// Arquero doesn't export Table type properly, so we use the instance type
+type Table = ReturnType<typeof aq.table>;
 
 /**
  * Core DocumentSet class that represents a collection of documents
@@ -19,7 +29,7 @@ import type { Query as IndexerQuery } from '@mmt/indexer';
  */
 export class DocumentSet implements OperationReadyDocumentSet {
   readonly _type = 'DocumentSet' as const;
-  readonly sourceQuery?: any; // Can be IndexerQuery or entities QueryInput
+  readonly sourceQuery?: Query; // Can be IndexerQuery or entities QueryInput
   readonly documentCount: number;
   readonly limit: number;
   readonly tableRef: Table;
@@ -34,13 +44,13 @@ export class DocumentSet implements OperationReadyDocumentSet {
   
   constructor(data: {
     tableRef: Table;
-    sourceQuery?: any;
+    sourceQuery?: Query;
     limit?: number;
     executionTime?: number;
   }) {
     this.tableRef = data.tableRef;
     this.sourceQuery = data.sourceQuery;
-    this.documentCount = data.tableRef.numRows();
+    this.documentCount = getRowCount(data.tableRef);
     this.limit = data.limit ?? 500;
     
     // Check if we're at or over the limit
@@ -50,7 +60,7 @@ export class DocumentSet implements OperationReadyDocumentSet {
       createdAt: new Date(),
       queryExecutionTime: data.executionTime ?? 0,
       isComplete,
-      fields: data.tableRef.columnNames(),
+      fields: getColumnNames(data.tableRef),
     };
   }
   
@@ -96,16 +106,16 @@ export class DocumentSet implements OperationReadyDocumentSet {
    * 
    * @returns The materialized documents array
    */
-  async materialize(): Promise<Document[]> {
+  materialize(): Promise<Document[]> {
     if (this._documents) {
-      return this._documents;
+      return Promise.resolve(this._documents);
     }
     
-    const rows = this.tableRef.objects();
+    const rows = getDocumentRows(this.tableRef);
     
-    this._documents = rows.map((row: any) => {
+    this._documents = rows.map((row) => {
       // Reconstruct frontmatter from fm_ prefixed fields
-      const frontmatter: Record<string, any> = {};
+      const frontmatter: Record<string, unknown> = {};
       Object.entries(row).forEach(([key, value]) => {
         if (key.startsWith('fm_')) {
           frontmatter[key.slice(3)] = value;
@@ -113,16 +123,20 @@ export class DocumentSet implements OperationReadyDocumentSet {
       });
       
       // Parse array fields back from strings
-      const parseTags = (tags: any): string[] => {
-        if (Array.isArray(tags)) {return tags;}
+      const parseTags = (tags: ParsedArrayField): string[] => {
+        if (Array.isArray(tags)) {
+          return tags;
+        }
         if (typeof tags === 'string' && tags) {
           return tags.split(', ').filter(Boolean);
         }
         return [];
       };
       
-      const parseLinks = (links: any): string[] => {
-        if (Array.isArray(links)) {return links;}
+      const parseLinks = (links: ParsedArrayField): string[] => {
+        if (Array.isArray(links)) {
+          return links;
+        }
         if (typeof links === 'string' && links) {
           return links.split(', ').filter(Boolean);
         }
@@ -135,16 +149,16 @@ export class DocumentSet implements OperationReadyDocumentSet {
         metadata: {
           name: row.name,
           modified: row.modified instanceof Date ? row.modified : new Date(row.modified),
-          size: row.size || 0,
+          size: typeof row.size === 'number' ? row.size : 0,
           frontmatter,
           tags: parseTags(row.tags),
           links: parseLinks(row.links),
-          backlinks: row.backlinks ? parseLinks(row.backlinks) : undefined,
+          backlinks: row.backlinks !== undefined ? parseLinks(row.backlinks) : undefined,
         },
       };
     });
     
-    return this._documents;
+    return Promise.resolve(this._documents);
   }
   
   /**
@@ -164,7 +178,7 @@ export class DocumentSet implements OperationReadyDocumentSet {
    * Apply a limit to this DocumentSet, creating a new set.
    */
   withLimit(newLimit: number): DocumentSet {
-    const limited = (this.tableRef as any).slice(0, newLimit);
+    const limited = sliceTable(this.tableRef, 0, newLimit);
     return new DocumentSet({
       tableRef: limited,
       sourceQuery: this.sourceQuery,

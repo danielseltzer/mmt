@@ -1,6 +1,8 @@
 import * as aq from 'arquero';
-import type { Table } from 'arquero';
 import type { Document } from '@mmt/entities';
+
+// Arquero doesn't export Table type properly, so we use the instance type
+type Table = ReturnType<typeof aq.table>;
 
 /**
  * Converts an array of documents to an Arquero table for analysis.
@@ -14,7 +16,7 @@ import type { Document } from '@mmt/entities';
 export function documentsToTable(documents: Document[]): Table {
   // Transform documents into a flat structure for Arquero
   const rows = documents.map(doc => {
-    const row: Record<string, any> = {
+    const row: Record<string, unknown> = {
       // File system properties
       path: doc.path,
       name: doc.metadata.name,
@@ -22,21 +24,19 @@ export function documentsToTable(documents: Document[]): Table {
       size: doc.metadata.size,
       
       // Convert arrays to counts and joined strings for analysis
-      tags_count: doc.metadata.tags?.length || 0,
-      tags: doc.metadata.tags?.join(', ') || '',
-      links_count: doc.metadata.links?.length || 0,
-      links: doc.metadata.links?.join(', ') || '',
-      backlinks_count: doc.metadata.backlinks?.length || 0,
-      backlinks: doc.metadata.backlinks?.join(', ') || '',
+      tags_count: doc.metadata.tags.length,
+      tags: doc.metadata.tags.join(', '),
+      links_count: doc.metadata.links.length,
+      links: doc.metadata.links.join(', '),
+      backlinks_count: doc.metadata.backlinks?.length ?? 0,
+      backlinks: doc.metadata.backlinks?.join(', ') ?? '',
     };
     
     // Add frontmatter fields at top level with fm_ prefix
-    if (doc.metadata.frontmatter) {
-      for (const [key, value] of Object.entries(doc.metadata.frontmatter)) {
-        // Skip arrays and complex objects for now
-        if (!Array.isArray(value) && typeof value !== 'object') {
-          row[`fm_${key}`] = value;
-        }
+    for (const [key, value] of Object.entries(doc.metadata.frontmatter)) {
+      // Skip arrays and complex objects for now
+      if (!Array.isArray(value) && typeof value !== 'object') {
+        row[`fm_${key}`] = value;
       }
     }
     

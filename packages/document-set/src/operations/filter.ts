@@ -1,11 +1,12 @@
 import type { DocumentSet } from '../document-set.js';
-import * as aq from 'arquero';
+import type { DocumentRow } from '../types.js';
+import { filterDocuments } from '../table-utils.js';
 
 /**
  * Filter function that operates on table rows.
  * Returns true to keep the row, false to exclude it.
  */
-export type FilterFunction = (row: Record<string, any>) => boolean;
+export type FilterFunction = (row: DocumentRow) => boolean;
 
 /**
  * Filters a DocumentSet based on a predicate function.
@@ -20,8 +21,8 @@ export function filter(
   docSet: DocumentSet,
   predicate: FilterFunction
 ): DocumentSet {
-  // Apply filter to the table using escaped function for Arquero
-  const filtered = (docSet.tableRef as any).filter(aq.escape(predicate));
+  // Apply filter to the table using typed utility
+  const filtered = filterDocuments(docSet.tableRef, predicate);
   
   // Create new DocumentSet with filtered table
   return docSet.withTable(filtered);
@@ -36,14 +37,20 @@ export const filters = {
    */
   hasTag: (tag: string): FilterFunction => 
     (row) => {
-      const tags = row.tags || '';
-      return tags.includes(tag);
+      const { tags } = row;
+      if (typeof tags === 'string') {
+        return tags.includes(tag);
+      }
+      if (Array.isArray(tags)) {
+        return tags.includes(tag);
+      }
+      return false;
     },
   
   /**
    * Filter by frontmatter field value.
    */
-  frontmatter: (field: string, value: any): FilterFunction =>
+  frontmatter: (field: string, value: unknown): FilterFunction =>
     (row) => row[`fm_${field}`] === value,
   
   /**
@@ -56,7 +63,16 @@ export const filters = {
    * Filter by modification date.
    */
   modifiedAfter: (date: Date): FilterFunction =>
-    (row) => new Date(row.modified) > date,
+    (row) => {
+      const { modified } = row;
+      if (modified instanceof Date) {
+        return modified > date;
+      }
+      if (typeof modified === 'string') {
+        return new Date(modified) > date;
+      }
+      return false;
+    },
   
   /**
    * Filter by path pattern.

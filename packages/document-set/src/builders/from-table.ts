@@ -1,6 +1,9 @@
-import type { Table } from 'arquero';
-import type { Query as IndexerQuery } from '@mmt/indexer';
+import * as aq from 'arquero';
 import { DocumentSet } from '../document-set.js';
+import { getRowCount, sliceTable } from '../table-utils.js';
+
+// Arquero doesn't export Table type properly, so we use the instance type
+type Table = ReturnType<typeof aq.table>;
 
 export interface FromTableOptions {
   /**
@@ -18,7 +21,7 @@ export interface FromTableOptions {
   /**
    * The original query that produced this table (if any).
    */
-  sourceQuery?: IndexerQuery;
+  sourceQuery?: import('@mmt/entities').Query;
   
   /**
    * Query execution time in milliseconds.
@@ -54,11 +57,11 @@ export async function fromTable(
     materialize = false,
   } = options;
   
-  const rowCount = table.numRows();
+  const rowCount = getRowCount(table);
   
   // Apply limit if needed
   const limitedTable = rowCount > limit && !overrideLimit 
-    ? (table as any).slice(0, limit) 
+    ? sliceTable(table, 0, limit)
     : table;
   
   // Create the document set

@@ -1,4 +1,3 @@
-import type { Table } from 'arquero';
 import type {
   Document,
   ScriptOperation,
@@ -9,6 +8,9 @@ import type {
 } from '@mmt/entities';
 import { DocumentSet, fromDocuments, fromTable } from '@mmt/document-set';
 import * as aq from 'arquero';
+
+// Arquero doesn't export Table type properly, so we use the instance type
+type Table = ReturnType<typeof aq.table>;
 import { ResultFormatter } from './result-formatter.js';
 import { writeFile } from 'fs/promises';
 import { dirname } from 'path';

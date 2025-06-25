@@ -29,6 +29,19 @@ export { materialize, isMaterialized } from './operations/materialize.js';
 // Converters
 export { documentsToTable } from './converters/documents-to-table.js';
 
+// Type definitions for working with Arquero tables
+export type { DocumentRow, ParsedArrayField } from './types.js';
+
+// Table utilities for type-safe Arquero operations
+export {
+  getDocumentRows,
+  filterDocuments,
+  sliceTable,
+  getRowCount,
+  getColumnCount,
+  getColumnNames,
+} from './table-utils.js';
+
 // Re-export types from entities that are commonly used with DocumentSet
 export type {
   Document,

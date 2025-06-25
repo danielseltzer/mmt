@@ -45,7 +45,7 @@ export async function fromDocuments(
   // Check document count against limit
   if (documents.length > limit && !overrideLimit) {
     throw new Error(
-      `Document array contains ${documents.length} documents, exceeding the limit of ${limit}. ` +
+      `Document array contains ${String(documents.length)} documents, exceeding the limit of ${String(limit)}. ` +
       `Use overrideLimit: true to proceed anyway.`
     );
   }
