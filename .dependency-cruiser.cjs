@@ -129,6 +129,18 @@ module.exports = {
     doNotFollow: {
       path: ['node_modules', 'dist', 'build', '.turbo', 'coverage']
     },
+    exclude: {
+      path: [
+        '\\.test\\.[tj]sx?$',   // .test.ts, .test.js, etc.
+        '\\.spec\\.[tj]sx?$',   // .spec.ts, .spec.js, etc.
+        '\\btest\\b',           // test directories
+        '\\btests\\b',          // tests directories
+        '\\b__tests__\\b',      // __tests__ directories
+        '\\.test\\.d\\.ts$',    // .test.d.ts files
+        'test-utils',           // test utility files
+        'vitest\\.config'       // vitest config files
+      ]
+    },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {
       exportsFields: ['exports'],

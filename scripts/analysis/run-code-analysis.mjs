@@ -202,6 +202,40 @@ async function generateSummaryReport() {
       report += '\n';
     }
     
+    // Add violations details
+    if (analysisData.summary.violations.length > 0) {
+      report += `## Violation Details\n\n`;
+      
+      // Group violations by rule name
+      const violationsByRule = {};
+      for (const violation of analysisData.summary.violations) {
+        const ruleName = violation.rule.name;
+        if (!violationsByRule[ruleName]) {
+          violationsByRule[ruleName] = [];
+        }
+        violationsByRule[ruleName].push(violation);
+      }
+      
+      // Display violations by rule
+      for (const [ruleName, violations] of Object.entries(violationsByRule)) {
+        report += `### ${ruleName} (${violations.length} violations)\n\n`;
+        
+        // Show first 10 violations as examples
+        const examples = violations.slice(0, 10);
+        report += `| From | To |\n`;
+        report += `|------|----|\n`;
+        
+        for (const violation of examples) {
+          report += `| ${violation.from} | ${violation.to} |\n`;
+        }
+        
+        if (violations.length > 10) {
+          report += `\n_...and ${violations.length - 10} more violations_\n`;
+        }
+        report += '\n';
+      }
+    }
+    
     report += `## Visualizations\n\n`;
     report += `- [Architecture Overview](./dependency-graph/dependency-architecture.svg)\n`;
     report += `- [Detailed Dependencies](./dependency-graph/dependency-detailed.svg)\n`;
