@@ -249,100 +249,137 @@ report += `  - 1 = Maximally unstable (nothing depends on it, it depends on many
 report += `\n### Suggested Package Layers\n\n`;
 report += `Based on the dependency analysis, here's the suggested layered architecture:\n\n`;
 
-// Generate DOT file for layer diagram
+// Generate DOT file for layer diagram with better structure
 let dotContent = `digraph PackageLayers {
-  rankdir=TB;
-  node [shape=box, style="rounded,filled", fontname="Arial"];
-  edge [color="#666666"];
+  rankdir=BT;
+  ranksep=2.0;     // Much more vertical space
+  nodesep=1.2;     // More horizontal space
+  splines=ortho;   // Use orthogonal edges for cleaner look
   
-  // Define layers with subgraphs
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, height=0.9, width=3.5];
+  edge [penwidth=2];
+  
+  // Create invisible structure nodes to align layers
+  node [style=invis, width=0, height=0];
+  l0 -> l1 -> l2 -> l3 -> l4 [style=invis];
+  
+  // Layer 0: Core
   subgraph cluster_0 {
     label="Layer 0: Core (No dependencies)";
-    style=filled;
+    style="filled,rounded";
     fillcolor="#e8f4fd";
     color="#1f77b4";
-    fontsize=14;
+    fontsize=16;
     fontname="Arial Bold";
+    margin=25;
     
-    entities [label="@mmt/entities\\n(schemas/contracts)", fillcolor="#ffffff"];
-    filesystem [label="@mmt/filesystem-access\\n(file system abstraction)", fillcolor="#ffffff"];
+    node [style="filled", fillcolor="#ffffff"];
+    { rank=same; l0;
+      entities [label="@mmt/entities\\n(schemas/contracts)"];
+      filesystem [label="@mmt/filesystem-access\\n(file system abstraction)"];
+    }
   }
   
+  // Layer 1: Foundation
   subgraph cluster_1 {
     label="Layer 1: Foundation";
-    style=filled;
+    style="filled,rounded";
     fillcolor="#d4e8fc";
     color="#1f77b4";
-    fontsize=14;
+    fontsize=16;
     fontname="Arial Bold";
+    margin=25;
     
-    config [label="@mmt/config", fillcolor="#ffffff"];
-    queryparser [label="@mmt/query-parser", fillcolor="#ffffff"];
-    documentset [label="@mmt/document-set", fillcolor="#ffffff"];
+    node [style="filled", fillcolor="#ffffff"];
+    { rank=same; l1;
+      config [label="@mmt/config"];
+      queryparser [label="@mmt/query-parser"];
+      documentset [label="@mmt/document-set"];
+    }
   }
   
+  // Layer 2: Services
   subgraph cluster_2 {
     label="Layer 2: Services";
-    style=filled;
+    style="filled,rounded";
     fillcolor="#c0dcfb";
     color="#1f77b4";
-    fontsize=14;
+    fontsize=16;
     fontname="Arial Bold";
+    margin=25;
     
-    indexer [label="@mmt/indexer", fillcolor="#ffffff"];
-    coreops [label="@mmt/core-operations", fillcolor="#ffffff"];
+    node [style="filled", fillcolor="#ffffff"];
+    { rank=same; l2;
+      indexer [label="@mmt/indexer"];
+      coreops [label="@mmt/core-operations"];
+    }
   }
   
+  // Layer 3: Operations
   subgraph cluster_3 {
     label="Layer 3: Operations";
-    style=filled;
+    style="filled,rounded";
     fillcolor="#acd0fa";
     color="#1f77b4";
-    fontsize=14;
+    fontsize=16;
     fontname="Arial Bold";
+    margin=25;
     
-    docops [label="@mmt/document-operations", fillcolor="#ffffff"];
+    node [style="filled", fillcolor="#ffffff"];
+    { rank=same; l3;
+      docops [label="@mmt/document-operations"];
+    }
   }
   
+  // Layer 4: Applications
   subgraph cluster_4 {
     label="Layer 4: Applications";
-    style=filled;
+    style="filled,rounded";
     fillcolor="#98c4f9";
     color="#1f77b4";
-    fontsize=14;
+    fontsize=16;
     fontname="Arial Bold";
+    margin=25;
     
-    scripting [label="@mmt/scripting", fillcolor="#ffffff"];
-    cli [label="app:cli", fillcolor="#ffffff"];
+    node [style="filled", fillcolor="#ffffff"];
+    { rank=same; l4;
+      scripting [label="@mmt/scripting"];
+      cli [label="app:cli"];
+    }
   }
   
-  // Add actual dependencies as edges
-  config -> entities;
-  queryparser -> entities;
-  documentset -> entities;
+  // Dependencies with proper coloring by layer
+  edge [constraint=true];
   
-  indexer -> entities;
-  indexer -> filesystem;
+  // From Layer 1 to Layer 0
+  config -> entities [color="#4a90e2"];
+  queryparser -> entities [color="#4a90e2"];
+  documentset -> entities [color="#4a90e2"];
   
-  coreops -> entities;
-  coreops -> filesystem;
-  coreops -> queryparser;
+  // From Layer 2 to Layers 0-1
+  indexer -> entities [color="#5a9fd4"];
+  indexer -> filesystem [color="#5a9fd4"];
+  coreops -> entities [color="#5a9fd4"];
+  coreops -> filesystem [color="#5a9fd4"];
+  coreops -> queryparser [color="#5a9fd4"];
   
-  docops -> entities;
-  docops -> filesystem;
-  docops -> indexer;
+  // From Layer 3 to Layers 0-2
+  docops -> entities [color="#6aaec6"];
+  docops -> filesystem [color="#6aaec6"];
+  docops -> indexer [color="#6aaec6"];
   
-  scripting -> entities;
-  scripting -> filesystem;
-  scripting -> queryparser;
-  scripting -> indexer;
-  scripting -> docops;
+  // From Layer 4 to all lower layers
+  scripting -> entities [color="#7abdb8"];
+  scripting -> filesystem [color="#7abdb8"];
+  scripting -> queryparser [color="#7abdb8"];
+  scripting -> indexer [color="#7abdb8"];
+  scripting -> docops [color="#7abdb8"];
   
-  cli -> entities;
-  cli -> filesystem;
-  cli -> queryparser;
-  cli -> config;
-  cli -> scripting;
+  cli -> entities [color="#7abdb8"];
+  cli -> filesystem [color="#7abdb8"];
+  cli -> queryparser [color="#7abdb8"];
+  cli -> config [color="#7abdb8"];
+  cli -> scripting [color="#7abdb8"];
 }`;
 
 // Write DOT file
