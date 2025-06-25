@@ -22,19 +22,19 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
     this.mode = options.mode ?? 'merge';
   }
 
-  validate(_doc: Document, _context: OperationContext): ValidationResult {
+  validate(_doc: Document, _context: OperationContext): Promise<ValidationResult> {
     // Check if updates is empty
     if (Object.keys(this.options.updates).length === 0) {
-      return {
+      return Promise.resolve({
         valid: false,
         error: 'No updates provided'
-      };
+      });
     }
 
-    return { valid: true };
+    return Promise.resolve({ valid: true });
   }
 
-  preview(doc: Document, _context: OperationContext): OperationPreview {
+  preview(doc: Document, _context: OperationContext): Promise<OperationPreview> {
     const changes: FileChange[] = [];
     
     // Show frontmatter update
@@ -78,11 +78,11 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
       after: afterYaml
     });
     
-    return {
+    return Promise.resolve({
       type: 'updateFrontmatter',
       source: doc.path,
       changes
-    };
+    });
   }
 
   async execute(doc: Document, context: OperationContext): Promise<OperationResult> {

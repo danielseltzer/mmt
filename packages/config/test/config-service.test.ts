@@ -34,7 +34,7 @@ describe('ConfigService', () => {
   });
 
   describe('successful loading', () => {
-    it('should load valid config with absolute paths', async () => {
+    it('should load valid config with absolute paths', () => {
       // Create vault directory
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
@@ -45,14 +45,14 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
       
       // Load config
-      const config = await configService.load(configPath);
+      const config = configService.load(configPath);
       
       // Verify
       expect(config.vaultPath).toBe(vaultPath);
       expect(config.indexPath).toBe(indexPath);
     });
 
-    it('should load config when index path does not exist', async () => {
+    it('should load config when index path does not exist', () => {
       // Create vault directory
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
@@ -63,107 +63,107 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
       
       // Should succeed - index path will be created by indexer
-      const config = await configService.load(configPath);
+      const config = configService.load(configPath);
       expect(config.indexPath).toBe(indexPath);
     });
   });
 
   describe('config path validation', () => {
-    it('should exit when config path is empty', async () => {
-      await expect(configService.load('')).rejects.toThrow('Process exited with code 1');
+    it('should exit when config path is empty', () => {
+      expect(() => configService.load('')).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration path is required'));
     });
 
-    it('should exit when config path is relative', async () => {
-      await expect(configService.load('./config.yaml')).rejects.toThrow('Process exited with code 1');
+    it('should exit when config path is relative', () => {
+      expect(() => configService.load('./config.yaml')).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config path must be absolute'));
     });
 
-    it('should exit when config file does not exist', async () => {
+    it('should exit when config file does not exist', () => {
       const configPath = join(tempDir, 'missing.yaml');
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config file not found'));
     });
   });
 
   describe('YAML parsing', () => {
-    it('should exit on invalid YAML', async () => {
+    it('should exit on invalid YAML', () => {
       const configPath = join(tempDir, 'invalid.yaml');
       writeFileSync(configPath, '{ invalid yaml content ]');
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid YAML'));
     });
 
-    it('should exit on empty config file', async () => {
+    it('should exit on empty config file', () => {
       const configPath = join(tempDir, 'empty.yaml');
       writeFileSync(configPath, '');
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration validation failed'));
     });
   });
 
   describe('schema validation', () => {
-    it('should exit when vaultPath is missing', async () => {
+    it('should exit when vaultPath is missing', () => {
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `indexPath: ${join(tempDir, 'index')}`);
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('vaultPath: Required'));
     });
 
-    it('should exit when indexPath is missing', async () => {
+    it('should exit when indexPath is missing', () => {
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `vaultPath: ${join(tempDir, 'vault')}`);
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('indexPath: Required'));
     });
 
-    it('should exit when extra fields are present', async () => {
+    it('should exit when extra fields are present', () => {
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\nextraField: value`);
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized fields'));
     });
   });
 
   describe('path validation', () => {
-    it('should exit when vaultPath is relative', async () => {
+    it('should exit when vaultPath is relative', () => {
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `vaultPath: ./vault\nindexPath: ${join(tempDir, 'index')}`);
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault path must be absolute'));
     });
 
-    it('should exit when indexPath is relative', async () => {
+    it('should exit when indexPath is relative', () => {
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ./index`);
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Index path must be absolute'));
     });
 
-    it('should exit when vault directory does not exist', async () => {
+    it('should exit when vault directory does not exist', () => {
       const configPath = join(tempDir, 'config.yaml');
       const vaultPath = join(tempDir, 'non-existent-vault');
       const indexPath = join(tempDir, 'index');
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault directory not found'));
     });
 
-    it('should exit when vault path is a file', async () => {
+    it('should exit when vault path is a file', () => {
       // Create a file instead of directory
       const vaultPath = join(tempDir, 'vault.txt');
       writeFileSync(vaultPath, 'not a directory');
@@ -172,14 +172,14 @@ describe('ConfigService', () => {
       const indexPath = join(tempDir, 'index');
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
       
-      await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault path is not a directory'));
     });
   });
 
   describe('error message format', () => {
-    it('should show example config on any error', async () => {
-      await expect(configService.load('')).rejects.toThrow();
+    it('should show example config on any error', () => {
+      expect(() => configService.load('')).toThrow();
       
       expect(consoleErrorSpy).toHaveBeenCalledWith('Example config format:');
       expect(consoleErrorSpy).toHaveBeenCalledWith('---');

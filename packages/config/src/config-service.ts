@@ -24,7 +24,7 @@ export class ConfigService {
    * @returns Validated configuration object
    * @throws Exits process with code 1 on any error
    */
-  async load(configPath: string): Promise<Config> {
+  load(configPath: string): Config {
     // Validate config path is provided
     if (!configPath) {
       this.exitWithError('Configuration path is required');
@@ -65,7 +65,8 @@ export class ConfigService {
         const issues = error.issues.map(issue => {
           // Provide helpful context for unrecognized keys
           if (issue.code === 'unrecognized_keys') {
-            const unrecognized = (issue as any).keys || [];
+            const zodIssue = issue as z.ZodIssue & { keys?: string[] };
+            const unrecognized = zodIssue.keys ?? [];
             return `  - Unrecognized fields: ${unrecognized.join(', ')}\n    Allowed fields: vaultPath, indexPath`;
           }
           return `  - ${issue.path.join('.')}: ${issue.message}`;

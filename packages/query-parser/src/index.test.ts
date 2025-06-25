@@ -52,10 +52,10 @@ describe('parseQuery', () => {
     // GIVEN: A query with invalid keys
     // WHEN: Parsing a query containing keys without namespace prefixes
     // THEN: Invalid keys are ignored (namespace requirement enforced)
-    const input = {
+    const input: Query = {
       'fs:path': 'posts/**',
       invalidKey: 'value', // No namespace
-    } as any;
+    };
     
     // WHEN: Parsing the query
     const structured = parseQuery(input);

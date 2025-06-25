@@ -18,7 +18,7 @@ export class OperationRegistry {
   /**
    * Register an operation factory
    */
-  register<T = unknown>(type: OperationType, factory: OperationFactory<T>): void {
+  register(type: OperationType, factory: OperationFactory): void {
     if (this.factories.has(type)) {
       throw new Error(`Operation type "${type}" is already registered`);
     }
