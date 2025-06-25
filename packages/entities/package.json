@@ -12,11 +12,12 @@
   },
   "scripts": {
     "build": "tsc",
+    "clean": "rm -rf dist",
     "dev": "tsc --watch",
+    "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run",
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "^3.23.0"

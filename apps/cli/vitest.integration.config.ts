@@ -4,9 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-    ],
+    include: ['test/integration/**/*.test.ts'],
+    testTimeout: 30000, // Integration tests may take longer
   },
 });

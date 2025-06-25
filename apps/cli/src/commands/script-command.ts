@@ -1,4 +1,5 @@
-import type { AppContext } from '@mmt/entities';
+import type { AppContext, CommandResult } from '@mmt/entities';
+import { CommandResults } from '@mmt/entities';
 import type { CommandHandler } from './index.js';
 import { ScriptRunner } from '@mmt/scripting';
 import { NodeFileSystem } from '@mmt/filesystem-access';
@@ -20,10 +21,12 @@ import { resolve, isAbsolute } from 'path';
 export class ScriptCommand implements CommandHandler {
   static readonly COMMAND_NAME = 'script';
   
-  async execute(context: AppContext, args: string[]): Promise<void> {
+  async execute(context: AppContext, args: string[]): Promise<CommandResult> {
     // Check for script path before parsing
     if (!args[0]) {
-      throw new Error('Script path required. Usage: mmt --config=<path> script <script-path> [--execute]');
+      return CommandResults.failure(
+        'Script path required. Usage: mmt --config=<path> script <script-path> [--execute]'
+      );
     }
     
     // Parse and validate script arguments
@@ -82,9 +85,12 @@ export class ScriptCommand implements CommandHandler {
     try {
       // Execute the script
       await runner.runScript(absoluteScriptPath, cliOptions);
+      return CommandResults.success();
     } catch (error) {
-      console.error(`Script execution failed: ${error instanceof Error ? error.message : String(error)}`);
-      process.exit(1);
+      if (error instanceof Error) {
+        return CommandResults.error(error);
+      }
+      return CommandResults.failure(String(error));
     }
   }
 }

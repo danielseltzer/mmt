@@ -5,7 +5,7 @@ import type {
   ValidationResult, 
   OperationPreview, 
   OperationResult,
-  PreviewChange
+  FileChange
 } from '../types.js';
 import { join, dirname } from 'path';
 
@@ -35,7 +35,7 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
   }
 
   async preview(doc: Document, context: OperationContext): Promise<OperationPreview> {
-    const changes: PreviewChange[] = [];
+    const changes: FileChange[] = [];
     
     // Show frontmatter update
     const currentFrontmatter = doc.metadata.frontmatter || {};
@@ -140,7 +140,7 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
     } catch (error) {
       return {
         success: false,
-        error: error as Error
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }

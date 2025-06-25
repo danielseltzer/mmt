@@ -453,7 +453,7 @@ describe('UpdateFrontmatterOperation', () => {
       
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
-      expect(result.error?.message).toContain('ENOENT');
+      expect(result.error).toContain('ENOENT');
     });
   });
 });

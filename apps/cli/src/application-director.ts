@@ -72,7 +72,8 @@ export class ApplicationDirector {
       // 4. Help doesn't require config
       if (cliArgs.command === 'help') {
         const handler = this.commands.get('help');
-        await handler!.execute({} as AppContext, cliArgs.commandArgs);
+        const result = await handler!.execute({} as AppContext, cliArgs.commandArgs);
+        // Help command always succeeds, just return
         return;
       }
       
@@ -101,7 +102,20 @@ export class ApplicationDirector {
       debugLog(`Executing command: ${cliArgs.command}`);
       
       // 9. Execute command
-      await handler.execute(context, cliArgs.commandArgs);
+      const result = await handler.execute(context, cliArgs.commandArgs);
+      
+      // 10. Handle command result
+      if (!result.success) {
+        if (result.message) {
+          console.error(result.message);
+        }
+        process.exit(result.exitCode);
+      }
+      
+      // Success - exit normally
+      if (result.exitCode !== 0) {
+        process.exit(result.exitCode);
+      }
       
     } catch (error) {
       // ConfigService already handles its own errors and exits

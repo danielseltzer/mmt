@@ -129,7 +129,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\nextraField: value`);
       
       await expect(configService.load(configPath)).rejects.toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized key'));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized fields'));
     });
   });
 

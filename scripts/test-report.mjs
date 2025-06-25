@@ -31,7 +31,7 @@ async function extractTests(filePath) {
     }
     
     // Find it blocks
-    const itMatch = line.match(/it\s*\(\s*['"`](.+?)['"`]/);
+    const itMatch = line.match(/^\s*it\s*\(\s*['"`](.+?)['"`]/);
     if (itMatch && currentSuite) {
       let testName = itMatch[1];
       

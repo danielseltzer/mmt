@@ -6,8 +6,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "dev": "tsc -p tsconfig.build.json --watch",
+    "build": "tsc",
+    "dev": "tsc --watch",
     "test": "vitest",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
@@ -21,7 +21,6 @@
   "devDependencies": {
     "@types/node": "^20.14.0",
     "@vitest/ui": "^1.6.0",
-    "eslint": "^8.56.0",
     "typescript": "^5.5.0",
     "vitest": "^1.6.0"
   }

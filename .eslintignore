@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.turbo
+build
+*.d.ts
+packages/*/dist
+apps/*/dist
+scripts/*.mjs
+scripts/*.js
+tools/*.js
+*.config.js
+*.config.mjs
+*.config.cjs
