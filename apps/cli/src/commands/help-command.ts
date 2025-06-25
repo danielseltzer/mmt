@@ -1,4 +1,5 @@
-import type { AppContext } from '@mmt/entities';
+import type { AppContext, CommandResult } from '@mmt/entities';
+import { CommandResults } from '@mmt/entities';
 import type { CommandHandler } from './index.js';
 
 /**
@@ -8,7 +9,7 @@ import type { CommandHandler } from './index.js';
 export class HelpCommand implements CommandHandler {
   static readonly COMMAND_NAME = 'help';
   
-  async execute(context: AppContext, args: string[]): Promise<void> {
+  async execute(context: AppContext, args: string[]): Promise<CommandResult> {
     console.log('MMT - Markdown Management Toolkit');
     console.log('');
     console.log('Usage: mmt [options] <command> [command-args]');
@@ -27,5 +28,7 @@ export class HelpCommand implements CommandHandler {
     console.log('  mmt --config=./vault.yaml script ./hello.js');
     console.log('  mmt --version');
     console.log('  mmt help');
+    
+    return CommandResults.success();
   }
 }

@@ -106,7 +106,7 @@ describe('CliParser', () => {
     });
 
     it('should parse unknown commands', () => {
-      const result = parser.parse(['random', '--config=./test.yaml']);
+      const result = parser.parse(['--config=./test.yaml', 'random']);
       expect(result.command).toBe('random');
       expect(result.configPath).toBe('./test.yaml');
     });

@@ -4,7 +4,7 @@
  */
 
 import { promises as fs } from 'node:fs';
-import { relative, join } from 'node:path';
+import { relative, join, basename } from 'node:path';
 import { glob } from 'glob';
 
 /**
@@ -31,9 +31,15 @@ async function extractTests(filePath) {
     }
     
     // Find it blocks
-    const itMatch = line.match(/it\s*\(\s*['"`](.+?)['"`]/);
+    const itMatch = line.match(/^\s*it\s*\(\s*['"`](.+?)['"`]/);
     if (itMatch && currentSuite) {
-      const testName = itMatch[1];
+      let testName = itMatch[1];
+      
+      // Clean up test name - remove literal newlines and trim
+      testName = testName.replace(/\\n/g, ' ').trim();
+      if (testName === '') {
+        testName = '(empty test name)';
+      }
       
       // Extract GIVEN/WHEN/THEN from comments
       let given = '', when = '', then = '';
@@ -70,7 +76,7 @@ async function extractTests(filePath) {
 }
 
 /**
- * Generate markdown report
+ * Generate hierarchical markdown report
  */
 function generateMarkdown(allTests) {
   const lines = [];
@@ -80,27 +86,60 @@ function generateMarkdown(allTests) {
   lines.push(`Generated: ${new Date().toLocaleString()}`);
   lines.push('');
   
-  // Check for tests without documentation
-  const undocumentedTests = allTests.filter(test => !test.given && !test.when && !test.then);
+  // Summary section
+  // A test is only fully documented if it has all three: GIVEN, WHEN, and THEN
+  const undocumentedTests = allTests.filter(test => !test.given || !test.when || !test.then);
+  const documentedCount = allTests.length - undocumentedTests.length;
+  const percentage = Math.round((documentedCount / allTests.length) * 100);
+  
+  lines.push('## Summary');
+  lines.push('');
+  lines.push(`- **Total Tests**: ${allTests.length}`);
+  lines.push(`- **Documented**: ${documentedCount} (${percentage}%)`);
+  lines.push(`- **Missing Documentation**: ${undocumentedTests.length}`);
+  lines.push('');
+  
+  // Tests needing documentation
   if (undocumentedTests.length > 0) {
     lines.push('## ⚠️ Tests Needing Documentation');
     lines.push('');
-    lines.push(`Found ${undocumentedTests.length} tests without GIVEN/WHEN/THEN comments:`);
-    lines.push('');
+    lines.push('| Test | Location | Issue |');
+    lines.push('|------|----------|-------|');
     
     for (const test of undocumentedTests) {
-      lines.push(`- 🚨 **${test.suite}** → ${test.test}`);
-      lines.push(`  <sub>${test.file}:${test.line}</sub>`);
+      const packageName = test.file.match(/packages\/([^/]+)\//)?.[1] || 'unknown';
+      let testName = test.test;
+      
+      // Handle empty or whitespace-only test names
+      if (!testName || testName.trim() === '' || testName === '(empty test name)') {
+        testName = '*(empty test name)*';
+      }
+      
+      const location = `${test.file}:${test.line}`;
+      
+      // Determine what's missing
+      const issues = [];
+      if (!test.test || test.test.trim() === '' || test.test === '(empty test name)') {
+        issues.push('Missing test name');
+      }
+      if (!test.given && !test.when && !test.then) {
+        issues.push('No GIVEN/WHEN/THEN documentation');
+      } else {
+        if (!test.given) issues.push('Missing GIVEN');
+        if (!test.when) issues.push('Missing WHEN');
+        if (!test.then) issues.push('Missing THEN');
+      }
+      
+      const issue = issues.join(', ');
+      const breadcrumb = `${packageName} › ${basename(test.file)} › ${test.suite}`;
+      
+      lines.push(`| ${testName}<br><sub>${breadcrumb}</sub> | \`${location}\` | ${issue} |`);
     }
+    
     lines.push('');
   }
   
-  lines.push('## What This System Does');
-  lines.push('');
-  lines.push('Based on verified test cases, MMT provides the following functionality:');
-  lines.push('');
-  
-  // Group by package
+  // Group tests hierarchically
   const byPackage = new Map();
   
   for (const test of allTests) {
@@ -108,71 +147,141 @@ function generateMarkdown(allTests) {
     const pkg = packageMatch ? packageMatch[1] : 'unknown';
     
     if (!byPackage.has(pkg)) {
-      byPackage.set(pkg, []);
+      byPackage.set(pkg, new Map());
     }
-    byPackage.get(pkg).push(test);
+    
+    const byFile = byPackage.get(pkg);
+    const fileName = basename(test.file);
+    
+    if (!byFile.has(fileName)) {
+      byFile.set(fileName, {
+        path: test.file,
+        suites: new Map()
+      });
+    }
+    
+    const fileSuites = byFile.get(fileName).suites;
+    
+    if (!fileSuites.has(test.suite)) {
+      fileSuites.set(test.suite, []);
+    }
+    
+    fileSuites.get(test.suite).push(test);
   }
   
-  // Generate functionality statements
-  for (const [pkg, tests] of byPackage) {
-    lines.push(`### ${pkg}`);
+  // Generate package coverage overview
+  lines.push('## Package Coverage Overview');
+  lines.push('');
+  lines.push('| Package | Files | Tests | Documented | Coverage |');
+  lines.push('|---------|-------|-------|------------|----------|');
+  
+  for (const [pkg, files] of byPackage) {
+    let totalTests = 0;
+    let documentedTests = 0;
+    
+    for (const [, fileData] of files) {
+      for (const [, tests] of fileData.suites) {
+        totalTests += tests.length;
+        documentedTests += tests.filter(t => t.given && t.when && t.then).length;
+      }
+    }
+    
+    const pkgPercentage = Math.round((documentedTests / totalTests) * 100);
+    const status = pkgPercentage === 100 ? '✅' : pkgPercentage >= 80 ? '⚠️' : '❌';
+    
+    lines.push(`| ${pkg} | ${files.size} | ${totalTests} | ${documentedTests} | ${pkgPercentage}% ${status} |`);
+  }
+  
+  lines.push('');
+  
+  // Detailed test documentation
+  lines.push('## Test Documentation');
+  lines.push('');
+  
+  // Sort packages alphabetically
+  const sortedPackages = Array.from(byPackage.keys()).sort();
+  
+  for (const pkg of sortedPackages) {
+    lines.push(`### Package: ${pkg}`);
     lines.push('');
     
-    // Group by suite
-    const bySuite = new Map();
-    for (const test of tests) {
-      if (!bySuite.has(test.suite)) {
-        bySuite.set(test.suite, []);
-      }
-      bySuite.get(test.suite).push(test);
-    }
+    const files = byPackage.get(pkg);
+    const sortedFiles = Array.from(files.keys()).sort();
     
-    for (const [suite, suiteTests] of bySuite) {
-      // Get the file path from the first test in this suite
-      const filePath = suiteTests[0].file;
-      
-      lines.push(`**${suite}**`);
-      lines.push(`<sub>${filePath}</sub>`);
+    for (const fileName of sortedFiles) {
+      const fileData = files.get(fileName);
+      lines.push(`#### File: ${fileName}`);
+      lines.push(`<sub>${fileData.path}</sub>`);
       lines.push('');
       
-      for (const test of suiteTests) {
-        const hasDocumentation = test.given || test.when || test.then;
-        const icon = hasDocumentation ? '✓' : '📝';
-        const description = test.then || test.test;
+      const sortedSuites = Array.from(fileData.suites.keys()).sort();
+      
+      for (const suite of sortedSuites) {
+        const tests = fileData.suites.get(suite);
+        lines.push(`##### Suite: ${suite}`);
+        lines.push('');
         
-        lines.push(`- ${icon} ${description}`);
-        
-        // Add warning if missing documentation
-        if (!hasDocumentation) {
-          lines.push(`  <sub>⚠️ Missing GIVEN/WHEN/THEN at line ${test.line}</sub>`);
+        for (const test of tests) {
+          // Test is only fully documented if it has all three parts
+          const hasDocumentation = test.given && test.when && test.then;
+          
+          if (hasDocumentation) {
+            lines.push(`###### ✓ ${test.test}`);
+            lines.push(`<sub>${pkg} › ${fileName} › ${suite}</sub>`);
+            lines.push('');
+            
+            if (test.given) {
+              lines.push(`- **Given**: ${test.given}`);
+            }
+            if (test.when) {
+              lines.push(`- **When**: ${test.when}`);
+            }
+            if (test.then) {
+              lines.push(`- **Then**: ${test.then}`);
+            }
+          } else {
+            lines.push(`###### 📝 ${test.test}`);
+            lines.push(`<sub>${pkg} › ${fileName} › ${suite}</sub>`);
+            lines.push('');
+            lines.push('> ⚠️ Missing GIVEN/WHEN/THEN documentation');
+          }
+          
+          lines.push('');
         }
       }
-      lines.push('');
     }
   }
   
-  // Summary statistics
-  lines.push('## Test Statistics');
+  // Functionality summary
+  lines.push('## Functionality Summary');
   lines.push('');
-  lines.push(`- Total tests: ${allTests.length}`);
-  lines.push(`- Documented tests: ${allTests.filter(t => t.given || t.when || t.then).length}`);
-  lines.push(`- Missing documentation: ${undocumentedTests.length}`);
-  lines.push(`- Packages tested: ${byPackage.size}`);
+  lines.push('Quick reference of what each package can do:');
+  lines.push('');
   
-  // Coverage matrix
-  lines.push('');
-  lines.push('## Coverage Matrix');
-  lines.push('');
-  lines.push('| Package | Suite | Tests | Documented | Status |');
-  lines.push('|---------|-------|-------|------------|--------|');
-  
-  for (const [pkg, tests] of byPackage) {
-    const suites = new Set(tests.map(t => t.suite));
-    const documented = tests.filter(t => t.given || t.when || t.then).length;
-    const percentage = Math.round((documented / tests.length) * 100);
-    const status = percentage === 100 ? '✅' : percentage >= 80 ? '⚠️' : '❌';
+  for (const pkg of sortedPackages) {
+    const capabilities = new Set();
+    const files = byPackage.get(pkg);
     
-    lines.push(`| ${pkg} | ${suites.size} suites | ${tests.length} tests | ${documented}/${tests.length} (${percentage}%) | ${status} |`);
+    for (const [, fileData] of files) {
+      for (const [, tests] of fileData.suites) {
+        for (const test of tests) {
+          if (test.then) {
+            capabilities.add(test.then);
+          }
+        }
+      }
+    }
+    
+    if (capabilities.size > 0) {
+      lines.push(`### Package: ${pkg}`);
+      lines.push('');
+      
+      for (const capability of Array.from(capabilities).sort()) {
+        lines.push(`- ${capability}`);
+      }
+      
+      lines.push('');
+    }
   }
   
   return lines.join('\n');
@@ -185,7 +294,7 @@ async function main() {
   console.log('Scanning for test files...\n');
   
   // Find all test files
-  const testFiles = await glob('packages/*/src/**/*.test.{ts,js}', {
+  const testFiles = await glob('packages/*/{src,tests}/**/*.test.{ts,js}', {
     cwd: process.cwd()
   });
   

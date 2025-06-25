@@ -1,48 +1,27 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { HelpCommand } from '../../src/commands/help-command.js';
 import type { AppContext } from '@mmt/entities';
 
 describe('HelpCommand', () => {
   let command: HelpCommand;
-  let consoleLogSpy: any;
 
   beforeEach(() => {
     command = new HelpCommand();
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleLogSpy.mockRestore();
   });
 
   it('should have correct command name', () => {
     expect(HelpCommand.COMMAND_NAME).toBe('help');
   });
 
-  it('should display help text', async () => {
+  it('should return success result', async () => {
     const context = {} as AppContext;
     
-    await command.execute(context, []);
+    const result = await command.execute(context, []);
     
-    expect(consoleLogSpy).toHaveBeenCalledWith('MMT - Markdown Management Toolkit');
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Usage:'));
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Options:'));
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Commands:'));
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Examples:'));
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBe(0);
   });
 
-  it('should list available commands', async () => {
-    await command.execute({} as AppContext, []);
-    
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('script'));
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('help'));
-  });
-
-  it('should show example usage', async () => {
-    await command.execute({} as AppContext, []);
-    
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining('mmt --config=./vault.yaml script ./hello.js')
-    );
-  });
+  // Note: We don't test console output without mocks.
+  // The integration tests verify the actual output.
 });

@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { pathToFileURL } from 'url';
+import { join, basename } from 'path';
 import type { Table } from 'arquero';
 import type {
   ScriptContext,
@@ -20,6 +21,8 @@ import type { FileSystemAccess } from '@mmt/filesystem-access';
 import { VaultIndexer } from '@mmt/indexer';
 import type { Query, PageMetadata } from '@mmt/indexer';
 import { QueryParser } from '@mmt/query-parser';
+import { OperationRegistry } from '@mmt/document-operations';
+import type { OperationContext, OperationOptions, OperationResult } from '@mmt/document-operations';
 import type { Script } from './script.interface.js';
 import { ResultFormatter } from './result-formatter.js';
 import { AnalysisRunner } from './analysis-runner.js';
@@ -47,6 +50,7 @@ export class ScriptRunner {
   private readonly formatter: ResultFormatter;
   private readonly analysisRunner: AnalysisRunner;
   private readonly reportGenerator: MarkdownReportGenerator;
+  private readonly operationRegistry: OperationRegistry;
   private indexer?: VaultIndexer;
 
   constructor(options: ScriptRunnerOptions) {
@@ -57,6 +61,7 @@ export class ScriptRunner {
     this.formatter = new ResultFormatter();
     this.analysisRunner = new AnalysisRunner();
     this.reportGenerator = new MarkdownReportGenerator();
+    this.operationRegistry = new OperationRegistry();
   }
 
   /**
@@ -191,14 +196,37 @@ export class ScriptRunner {
         }
       }
     } else {
-      // Preview mode - all operations are "successful" but not executed
+      // Preview mode - generate previews for each operation
       for (const doc of documents) {
         for (const operation of pipeline.operations) {
-          succeeded.push({
-            item: doc,
-            operation,
-            details: { preview: true },
-          });
+          try {
+            const preview = await this.previewOperation(doc, operation);
+            if (preview.skipped) {
+              skipped.push({
+                item: doc,
+                operation,
+                reason: preview.reason!,
+              });
+            } else {
+              succeeded.push({
+                item: doc,
+                operation,
+                details: preview.details,
+              });
+            }
+          } catch (error) {
+            failed.push({
+              item: doc,
+              operation,
+              error: error instanceof Error ? error : new Error(String(error)),
+            });
+            if (options.failFast) {
+              break;
+            }
+          }
+        }
+        if (options.failFast && failed.length > 0) {
+          break;
         }
       }
     }
@@ -380,25 +408,228 @@ export class ScriptRunner {
   }
 
   /**
-   * Execute a single operation on a document.
-   * 
-   * @throws Error for all operations until they are implemented
+   * Execute a single operation on a document using the document-operations package.
    */
   private async executeOperation(
     doc: Document,
     operation: ScriptOperation
   ): Promise<{ skipped?: boolean; reason?: string; details?: any }> {
-    // All operations are not yet implemented
-    // They will be added as the corresponding packages are built:
-    // - 'move' requires @mmt/file-relocator package
-    // - 'delete' requires integration with @mmt/filesystem-access
-    // - 'updateFrontmatter' requires @mmt/document-operations package
-    // - 'rename' requires @mmt/file-relocator package
+    // Analysis operations are handled separately
+    if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
+      throw new Error(`Analysis operation '${operation.type}' should be handled by executeAnalysisPipeline`);
+    }
+
+    // Legacy custom operations not supported
+    if (operation.type === 'custom') {
+      throw new Error('Custom operations are not supported. Use built-in operations instead.');
+    }
+
+    // Initialize indexer if needed
+    if (!this.indexer) {
+      throw new Error('Indexer not initialized');
+    }
+
+    // Create operation context
+    const operationContext: OperationContext = {
+      vault: {
+        path: this.config.vaultPath
+      },
+      fs: this.fs,
+      indexer: this.indexer,
+      options: {
+        dryRun: false, // Already handled by pipeline executor
+        updateLinks: true,
+        createBackup: true,
+        continueOnError: false
+      }
+    };
+
+    // Create the appropriate operation based on type
+    let docOperation;
+    try {
+      switch (operation.type) {
+        case 'move':
+          if (!operation.destination) {
+            throw new Error('Move operation requires destination');
+          }
+          // Build full target path by combining destination directory with filename
+          const moveTargetPath = join(operation.destination as string, basename(doc.path));
+          docOperation = this.operationRegistry.create('move', {
+            targetPath: moveTargetPath
+          });
+          break;
+
+        case 'rename':
+          if (!operation.newName) {
+            throw new Error('Rename operation requires newName');
+          }
+          docOperation = this.operationRegistry.create('rename', {
+            newName: operation.newName
+          });
+          break;
+
+        case 'updateFrontmatter':
+          if (!operation.updates) {
+            throw new Error('UpdateFrontmatter operation requires updates');
+          }
+          docOperation = this.operationRegistry.create('updateFrontmatter', {
+            updates: operation.updates,
+            mode: operation.mode || 'merge'
+          });
+          break;
+
+        case 'delete':
+          docOperation = this.operationRegistry.create('delete', {
+            permanent: operation.permanent || false
+          });
+          break;
+
+        default:
+          throw new Error(`Unknown operation type: ${operation.type}`);
+      }
+    } catch (error) {
+      return {
+        skipped: true,
+        reason: error instanceof Error ? error.message : String(error)
+      };
+    }
+
+    // Validate the operation
+    const validation = await docOperation.validate(doc, operationContext);
+    if (!validation.valid) {
+      return {
+        skipped: true,
+        reason: validation.error || 'Validation failed'
+      };
+    }
+
+    // Execute the operation
+    const result: OperationResult = await docOperation.execute(doc, operationContext);
     
-    throw new Error(
-      `Operation '${operation.type}' is not yet implemented. ` +
-      `This operation will be available once the required packages are built.`
-    );
+    if (!result.success) {
+      throw new Error(result.error || 'Operation failed');
+    }
+
+    return {
+      details: {
+        document: result.document,
+        backup: result.backup,
+        dryRun: result.dryRun
+      }
+    };
+  }
+
+  /**
+   * Preview a single operation on a document without executing it.
+   */
+  private async previewOperation(
+    doc: Document,
+    operation: ScriptOperation
+  ): Promise<{ skipped?: boolean; reason?: string; details?: any }> {
+    // Analysis operations don't have preview
+    if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
+      return { details: { preview: true, operation: operation.type } };
+    }
+
+    // Legacy custom operations not supported
+    if (operation.type === 'custom') {
+      return {
+        skipped: true,
+        reason: 'Custom operations are not supported'
+      };
+    }
+
+    // Initialize indexer if needed
+    if (!this.indexer) {
+      throw new Error('Indexer not initialized');
+    }
+
+    // Create operation context
+    const operationContext: OperationContext = {
+      vault: {
+        path: this.config.vaultPath
+      },
+      fs: this.fs,
+      indexer: this.indexer,
+      options: {
+        dryRun: true, // Preview mode
+        updateLinks: true,
+        createBackup: true,
+        continueOnError: false
+      }
+    };
+
+    // Create the appropriate operation based on type
+    let docOperation;
+    try {
+      switch (operation.type) {
+        case 'move':
+          if (!operation.destination) {
+            throw new Error('Move operation requires destination');
+          }
+          // Build full target path by combining destination directory with filename
+          const moveTargetPath = join(operation.destination as string, basename(doc.path));
+          docOperation = this.operationRegistry.create('move', {
+            targetPath: moveTargetPath
+          });
+          break;
+
+        case 'rename':
+          if (!operation.newName) {
+            throw new Error('Rename operation requires newName');
+          }
+          docOperation = this.operationRegistry.create('rename', {
+            newName: operation.newName
+          });
+          break;
+
+        case 'updateFrontmatter':
+          if (!operation.updates) {
+            throw new Error('UpdateFrontmatter operation requires updates');
+          }
+          docOperation = this.operationRegistry.create('updateFrontmatter', {
+            updates: operation.updates,
+            mode: operation.mode || 'merge'
+          });
+          break;
+
+        case 'delete':
+          docOperation = this.operationRegistry.create('delete', {
+            permanent: operation.permanent || false
+          });
+          break;
+
+        default:
+          throw new Error(`Unknown operation type: ${operation.type}`);
+      }
+    } catch (error) {
+      return {
+        skipped: true,
+        reason: error instanceof Error ? error.message : String(error)
+      };
+    }
+
+    // Validate the operation
+    const validation = await docOperation.validate(doc, operationContext);
+    if (!validation.valid) {
+      return {
+        skipped: true,
+        reason: validation.error || 'Validation failed'
+      };
+    }
+
+    // Preview the operation
+    const preview = await docOperation.preview(doc, operationContext);
+    
+    return {
+      details: {
+        preview: true,
+        type: preview.type,
+        source: preview.source,
+        target: preview.target,
+        changes: preview.changes
+      }
+    };
   }
 
   /**

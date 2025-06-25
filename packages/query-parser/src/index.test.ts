@@ -9,6 +9,8 @@ import { parseQuery } from './index.js';
 describe('parseQuery', () => {
   it('should parse query into structured format', () => {
     // GIVEN: A query with namespace:property format
+    // WHEN: Parsing the query to extract namespace-based structure
+    // THEN: Properties are organized into separate namespace objects
     const input: Query = {
       'fs:path': 'posts/**',
       'fm:status': 'published',
@@ -28,6 +30,8 @@ describe('parseQuery', () => {
 
   it('should handle sort options', () => {
     // GIVEN: A query with sort options
+    // WHEN: Parsing a query that includes sort and order fields
+    // THEN: Sort options are structured into a sort object with field and order
     const input: Query = {
       'fs:path': 'posts/**',
       sort: 'modified',
@@ -46,6 +50,8 @@ describe('parseQuery', () => {
 
   it('should skip invalid keys without namespace', () => {
     // GIVEN: A query with invalid keys
+    // WHEN: Parsing a query containing keys without namespace prefixes
+    // THEN: Invalid keys are ignored (namespace requirement enforced)
     const input = {
       'fs:path': 'posts/**',
       invalidKey: 'value', // No namespace
@@ -62,6 +68,8 @@ describe('parseQuery', () => {
 
   it('should handle all namespaces', () => {
     // GIVEN: A query using all namespaces
+    // WHEN: Parsing a query with fs:, fm:, content:, and inline: prefixes
+    // THEN: All namespaces are parsed into their respective objects
     const input: Query = {
       'fs:path': 'posts/**',
       'fs:name': 'README',

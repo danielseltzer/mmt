@@ -31,6 +31,9 @@ describe('FileSystemAccess', () => {
 
   describe('readFile', () => {
     it('should read a text file', async () => {
+      // GIVEN: A file exists with known content
+      // WHEN: Reading the file using readFile
+      // THEN: Returns the exact file content as a string
       const filePath = join(testDir, 'test.md');
       const content = '# Test\n\nThis is a test file.';
       
@@ -43,6 +46,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should throw error for non-existent file', async () => {
+      // GIVEN: A file path that doesn't exist
+      // WHEN: Attempting to read the non-existent file
+      // THEN: Throws an error (fail-fast principle, no silent failures)
       const filePath = join(testDir, 'does-not-exist.md');
       
       await expect(fs.readFile(filePath)).rejects.toThrow();
@@ -51,6 +57,9 @@ describe('FileSystemAccess', () => {
 
   describe('writeFile', () => {
     it('should write content to a file', async () => {
+      // GIVEN: A file path and content to write
+      // WHEN: Writing content to a new file
+      // THEN: File is created with the exact content provided
       const filePath = join(testDir, 'new-file.md');
       const content = '# New File\n\nContent here.';
       
@@ -62,6 +71,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should overwrite existing file', async () => {
+      // GIVEN: A file exists with content
+      // WHEN: Writing new content to the same path
+      // THEN: File is completely replaced with new content (destructive operation)
       const filePath = join(testDir, 'existing.md');
       const originalContent = 'Original content';
       const newContent = 'New content';
@@ -74,6 +86,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should create parent directories if they do not exist', async () => {
+      // GIVEN: A file path with non-existent parent directories
+      // WHEN: Writing a file to a nested path
+      // THEN: Creates all necessary parent directories automatically
       const filePath = join(testDir, 'nested', 'deep', 'file.md');
       const content = 'Nested file content';
       
@@ -86,6 +101,9 @@ describe('FileSystemAccess', () => {
 
   describe('exists', () => {
     it('should return true for existing file', async () => {
+      // GIVEN: A file that exists in the filesystem
+      // WHEN: Checking if the file exists
+      // THEN: Returns true to confirm file presence
       const filePath = join(testDir, 'exists.md');
       await fs.writeFile(filePath, 'content');
       
@@ -94,6 +112,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should return false for non-existent file', async () => {
+      // GIVEN: A file path that doesn't exist
+      // WHEN: Checking if the file exists
+      // THEN: Returns false without throwing error (safe check)
       const filePath = join(testDir, 'does-not-exist.md');
       
       const result = await fs.exists(filePath);
@@ -101,6 +122,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should return true for directory', async () => {
+      // GIVEN: A directory that exists
+      // WHEN: Checking if the directory exists
+      // THEN: Returns true (works for both files and directories)
       const dirPath = join(testDir, 'subdir');
       await fs.mkdir(dirPath);
       
@@ -111,6 +135,9 @@ describe('FileSystemAccess', () => {
 
   describe('mkdir', () => {
     it('should create a directory', async () => {
+      // GIVEN: A path for a new directory
+      // WHEN: Creating the directory
+      // THEN: Directory is created and accessible
       const dirPath = join(testDir, 'new-dir');
       
       await fs.mkdir(dirPath);
@@ -120,6 +147,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should create nested directories with recursive option', async () => {
+      // GIVEN: A deeply nested directory path
+      // WHEN: Creating with recursive: true option
+      // THEN: Creates all parent directories in the path
       const dirPath = join(testDir, 'a', 'b', 'c');
       
       await fs.mkdir(dirPath, { recursive: true });
@@ -129,6 +159,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should not throw if directory already exists with recursive option', async () => {
+      // GIVEN: A directory that already exists
+      // WHEN: Creating it again with recursive: true
+      // THEN: Succeeds silently (idempotent operation)
       const dirPath = join(testDir, 'existing-dir');
       await fs.mkdir(dirPath);
       
@@ -142,6 +175,9 @@ describe('FileSystemAccess', () => {
 
   describe('readdir', () => {
     it('should list files in directory', async () => {
+      // GIVEN: A directory with files and subdirectories
+      // WHEN: Reading directory contents
+      // THEN: Returns array of all entry names (files and directories)
       // Create some test files
       await fs.writeFile(join(testDir, 'file1.md'), 'content1');
       await fs.writeFile(join(testDir, 'file2.md'), 'content2');
@@ -156,6 +192,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should return empty array for empty directory', async () => {
+      // GIVEN: An empty directory
+      // WHEN: Reading its contents
+      // THEN: Returns empty array (not null or undefined)
       const emptyDir = join(testDir, 'empty');
       await fs.mkdir(emptyDir);
       
@@ -165,6 +204,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should throw for non-existent directory', async () => {
+      // GIVEN: A directory path that doesn't exist
+      // WHEN: Attempting to read directory contents
+      // THEN: Throws error (unlike exists() which returns false)
       const fakePath = join(testDir, 'does-not-exist');
       
       await expect(fs.readdir(fakePath)).rejects.toThrow();
@@ -173,6 +215,9 @@ describe('FileSystemAccess', () => {
 
   describe('stat', () => {
     it('should return stats for a file', async () => {
+      // GIVEN: A file with known content
+      // WHEN: Getting file statistics
+      // THEN: Returns metadata including size, type, and modification time
       const filePath = join(testDir, 'test.md');
       const content = 'Test content';
       await fs.writeFile(filePath, content);
@@ -186,6 +231,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should return stats for a directory', async () => {
+      // GIVEN: A directory
+      // WHEN: Getting directory statistics
+      // THEN: Returns metadata with isDirectory() true
       const dirPath = join(testDir, 'subdir');
       await fs.mkdir(dirPath);
       
@@ -196,6 +244,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should throw for non-existent path', async () => {
+      // GIVEN: A path that doesn't exist
+      // WHEN: Attempting to get statistics
+      // THEN: Throws error (use exists() to check first)
       const fakePath = join(testDir, 'does-not-exist');
       
       await expect(fs.stat(fakePath)).rejects.toThrow();
@@ -204,6 +255,9 @@ describe('FileSystemAccess', () => {
 
   describe('unlink', () => {
     it('should delete a file', async () => {
+      // GIVEN: A file that exists
+      // WHEN: Deleting the file
+      // THEN: File is removed from filesystem permanently
       const filePath = join(testDir, 'to-delete.md');
       await fs.writeFile(filePath, 'delete me');
       
@@ -214,6 +268,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should throw when deleting non-existent file', async () => {
+      // GIVEN: A file that doesn't exist
+      // WHEN: Attempting to delete it
+      // THEN: Throws error (not idempotent - use exists() to check first)
       const fakePath = join(testDir, 'does-not-exist.md');
       
       await expect(fs.unlink(fakePath)).rejects.toThrow();
@@ -222,6 +279,9 @@ describe('FileSystemAccess', () => {
 
   describe('rename', () => {
     it('should move a file', async () => {
+      // GIVEN: A file at one location
+      // WHEN: Renaming/moving to a new location
+      // THEN: File is moved atomically with content preserved
       const oldPath = join(testDir, 'old.md');
       const newPath = join(testDir, 'new.md');
       const content = 'File content';
@@ -239,6 +299,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should move file to different directory', async () => {
+      // GIVEN: A file and a target directory
+      // WHEN: Moving file to different directory
+      // THEN: File is relocated with same name and content
       const oldPath = join(testDir, 'file.md');
       const newDir = join(testDir, 'subdir');
       const newPath = join(newDir, 'file.md');
@@ -258,6 +321,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should overwrite existing file', async () => {
+      // GIVEN: Source and target files both exist
+      // WHEN: Renaming source to target path
+      // THEN: Target is overwritten with source content (destructive)
       const oldPath = join(testDir, 'source.md');
       const newPath = join(testDir, 'target.md');
       const sourceContent = 'Source content';
@@ -277,6 +343,9 @@ describe('FileSystemAccess', () => {
 
   describe('hardLink', () => {
     it('should create a hard link to a file', async () => {
+      // GIVEN: A file with content
+      // WHEN: Creating a hard link to it
+      // THEN: Both paths share same inode (changes to one affect the other)
       const originalPath = join(testDir, 'original.md');
       const linkPath = join(testDir, 'link.md');
       const content = 'Shared content';
@@ -300,6 +369,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should throw when source does not exist', async () => {
+      // GIVEN: A source path that doesn't exist
+      // WHEN: Attempting to create hard link
+      // THEN: Throws error (source must exist for hard linking)
       const fakePath = join(testDir, 'does-not-exist.md');
       const linkPath = join(testDir, 'link.md');
       
@@ -309,6 +381,9 @@ describe('FileSystemAccess', () => {
 
   describe('copyFile', () => {
     it('should copy a file', async () => {
+      // GIVEN: A source file with content
+      // WHEN: Copying to a new location
+      // THEN: Creates independent copy (changes don't affect original)
       const sourcePath = join(testDir, 'source.md');
       const destPath = join(testDir, 'dest.md');
       const content = 'Copy this content';
@@ -331,6 +406,9 @@ describe('FileSystemAccess', () => {
     });
 
     it('should overwrite existing destination', async () => {
+      // GIVEN: Source and destination files both exist
+      // WHEN: Copying source to destination
+      // THEN: Destination is replaced with source content
       const sourcePath = join(testDir, 'source.md');
       const destPath = join(testDir, 'dest.md');
       const sourceContent = 'Source content';
@@ -347,6 +425,9 @@ describe('FileSystemAccess', () => {
 
   describe('readMarkdownFile', () => {
     it('should parse markdown with frontmatter', async () => {
+      // GIVEN: A markdown file with YAML frontmatter
+      // WHEN: Reading as markdown
+      // THEN: Separates frontmatter object from content string
       const filePath = join(testDir, 'with-frontmatter.md');
       const content = `---
 title: Test Document
@@ -370,6 +451,9 @@ This is the content.`;
     });
 
     it('should handle markdown without frontmatter', async () => {
+      // GIVEN: A markdown file with no frontmatter
+      // WHEN: Reading as markdown
+      // THEN: Returns full content with empty frontmatter object
       const filePath = join(testDir, 'no-frontmatter.md');
       const content = '# Just Content\n\nNo frontmatter here.';
       
@@ -381,6 +465,9 @@ This is the content.`;
     });
 
     it('should handle empty frontmatter', async () => {
+      // GIVEN: Markdown with empty frontmatter block
+      // WHEN: Reading as markdown
+      // THEN: Removes empty frontmatter block and returns empty object
       const filePath = join(testDir, 'empty-frontmatter.md');
       const content = `---
 ---
@@ -397,6 +484,9 @@ This is the content.`;
 
   describe('writeMarkdownFile', () => {
     it('should write markdown with frontmatter', async () => {
+      // GIVEN: Content and frontmatter object
+      // WHEN: Writing as markdown file
+      // THEN: Creates file with YAML frontmatter block followed by content
       const filePath = join(testDir, 'output.md');
       const frontmatter = {
         title: 'Generated Document',
@@ -418,6 +508,9 @@ This is the content.`;
     });
 
     it('should write markdown without frontmatter', async () => {
+      // GIVEN: Content only (no frontmatter)
+      // WHEN: Writing as markdown
+      // THEN: Writes content directly without frontmatter block
       const filePath = join(testDir, 'no-fm.md');
       const content = '# Plain Document';
       
@@ -429,6 +522,9 @@ This is the content.`;
     });
 
     it('should handle empty frontmatter object', async () => {
+      // GIVEN: Content with empty frontmatter object
+      // WHEN: Writing as markdown
+      // THEN: Omits frontmatter block when object is empty
       const filePath = join(testDir, 'empty-fm.md');
       const content = '# Document';
       

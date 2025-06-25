@@ -20,6 +20,13 @@
     },
     "clean": {
       "cache": false
+    },
+    "lint": {
+      "outputs": []
+    },
+    "type-check": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   }
 }

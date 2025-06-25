@@ -8,14 +8,26 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc",
+    "postbuild": "chmod +x dist/index.js",
     "clean": "rm -rf dist",
+    "lint": "eslint src",
+    "pretest": "pnpm build",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:run": "pnpm build && vitest run",
+    "test:unit": "vitest --config vitest.config.ts",
+    "test:integration": "pnpm build && vitest run --config vitest.integration.config.ts",
+    "test:complete": "pnpm build && vitest run && vitest run --config vitest.integration.config.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

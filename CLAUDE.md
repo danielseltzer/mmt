@@ -83,6 +83,7 @@ The project is documented but not yet implemented. Follow these steps:
 - **IPC**: Use electron-trpc for all main-renderer communication
 - **Errors**: Fail fast with clear messages, no silent failures
 - **Performance**: Keep indexing under 5 seconds for 5000 files
+- **NO BACKWARD COMPATIBILITY**: I am the only user. Never add backward compatibility, aliases, or legacy support. Keep the codebase clean and simple.
 
 ## MUST READ: Critical Documentation
 

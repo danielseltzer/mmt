@@ -17,6 +17,7 @@ export * from './operation.schema.js';
 export * from './vault.schema.js';
 export * from './ui.schema.js';
 export * from './scripting.schema.js';
+export * from './cli.schema.js';
 
 // Import schemas needed for cross-references
 import { DocumentSchema } from './document.schema.js';
@@ -99,6 +100,10 @@ import {
   OperationReadyDocumentSetSchema,
   ToDocumentSetOptionsSchema,
 } from './document-set.schema.js';
+import {
+  CommandResultSchema,
+  CommandResults,
+} from './cli.schema.js';
 
 /**
  * Convenience export of all schemas grouped by domain.
@@ -160,4 +165,10 @@ export const schemas = {
   // Document sets
   OperationReadyDocumentSet: OperationReadyDocumentSetSchema,
   ToDocumentSetOptions: ToDocumentSetOptionsSchema,
+  
+  // CLI
+  CommandResult: CommandResultSchema,
 } as const;
+
+// Also export the CommandResults helper
+export { CommandResults };

@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
+    "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run",
     "type-check": "tsc --noEmit"
@@ -26,6 +27,7 @@
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
     "@mmt/query-parser": "workspace:*",
+    "@mmt/document-operations": "workspace:*",
     "arquero": "^8.0.3",
     "zod": "^3.22.4"
   },

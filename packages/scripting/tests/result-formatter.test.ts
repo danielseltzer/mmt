@@ -34,6 +34,9 @@ describe('ResultFormatter', () => {
 
   describe('summary format', () => {
     it('should format preview mode summary', () => {
+      // GIVEN: Execution results in preview mode
+      // WHEN: Formatting as summary
+      // THEN: Shows preview warning and would-be actions
       const output = formatter.format(mockResult, {
         format: 'summary',
         isPreview: true,
@@ -48,6 +51,9 @@ describe('ResultFormatter', () => {
     });
 
     it('should format execution summary', () => {
+      // GIVEN: Execution results from actual run
+      // WHEN: Formatting as summary
+      // THEN: Shows completion status without preview warnings
       const output = formatter.format(mockResult, {
         format: 'summary',
         isPreview: false,
@@ -62,6 +68,9 @@ describe('ResultFormatter', () => {
 
   describe('detailed format', () => {
     it('should format detailed preview', () => {
+      // GIVEN: Mixed success/failure results
+      // WHEN: Formatting as detailed preview
+      // THEN: Groups by operation type with success/failure indicators
       const output = formatter.format(mockResult, {
         format: 'detailed',
         isPreview: true,
@@ -76,6 +85,9 @@ describe('ResultFormatter', () => {
     });
 
     it('should group operations by type', () => {
+      // GIVEN: Multiple operations of different types
+      // WHEN: Formatting detailed output
+      // THEN: Groups files by operation type for clarity
       const multiOpResult: ScriptExecutionResult = {
         ...mockResult,
         succeeded: [
@@ -107,6 +119,9 @@ describe('ResultFormatter', () => {
     });
 
     it('should show skipped operations', () => {
+      // GIVEN: Operations skipped for safety reasons
+      // WHEN: Formatting detailed output
+      // THEN: Shows skipped files with clear reasons
       const skipResult: ScriptExecutionResult = {
         ...mockResult,
         skipped: [
@@ -130,6 +145,9 @@ describe('ResultFormatter', () => {
 
   describe('JSON format', () => {
     it('should output valid JSON', () => {
+      // GIVEN: Script execution results
+      // WHEN: Formatting as JSON
+      // THEN: Outputs parseable JSON with all result details
       const output = formatter.format(mockResult, {
         format: 'json',
         isPreview: false,
@@ -154,6 +172,9 @@ describe('ResultFormatter', () => {
 
   describe('CSV format', () => {
     it('should output valid CSV', () => {
+      // GIVEN: Script execution results
+      // WHEN: Formatting as CSV
+      // THEN: Outputs CSV with path, operation, status columns
       const output = formatter.format(mockResult, {
         format: 'csv',
         isPreview: false,
@@ -166,6 +187,9 @@ describe('ResultFormatter', () => {
     });
 
     it('should handle empty results', () => {
+      // GIVEN: No files matched selection criteria
+      // WHEN: Formatting empty results as CSV
+      // THEN: Outputs header row only
       const emptyResult: ScriptExecutionResult = {
         attempted: [],
         succeeded: [],

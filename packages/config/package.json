@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
+    "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run",
     "type-check": "tsc --noEmit"
