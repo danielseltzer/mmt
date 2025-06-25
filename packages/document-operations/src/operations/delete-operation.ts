@@ -56,14 +56,14 @@ export class DeleteOperation implements DocumentOperation {
       });
     } else {
       // Calculate trash path
-      const trashPath = this.options.trashPath || join(vaultPath, '.trash');
-      const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').split('.')[0];
+      const trashPath = this.options.trashPath ?? join(vaultPath, '.trash');
+      const [timestamp] = new Date().toISOString().replace(/[-:]/gu, '').replace('T', '-').split('.');
       const fileName = basename(doc.path);
       const trashFileName = `${timestamp}-${fileName}`;
       
       let targetPath: string;
       if (this.options.organizeTrashdByDate) {
-        const dateFolder = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const [dateFolder] = new Date().toISOString().split('T'); // YYYY-MM-DD
         targetPath = join(trashPath, dateFolder, trashFileName);
       } else {
         targetPath = join(trashPath, trashFileName);
@@ -102,7 +102,7 @@ export class DeleteOperation implements DocumentOperation {
       if (!validation.valid) {
         return {
           success: false,
-          error: validation.error || 'Validation failed'
+          error: validation.error ?? 'Validation failed'
         };
       }
 
@@ -132,7 +132,7 @@ export class DeleteOperation implements DocumentOperation {
         await context.fs.unlink(doc.path);
       } else {
         // Move to trash
-        const trashPath = await this.moveToTrash(doc.path, context);
+        await this.moveToTrash(doc.path, context);
       }
 
       return {
@@ -151,17 +151,17 @@ export class DeleteOperation implements DocumentOperation {
   }
 
   private getTrashPath(filePath: string, vaultPath: string): string {
-    const trashPath = this.options.trashPath || join(vaultPath, '.trash');
-    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').split('.')[0];
+    const trashPath = this.options.trashPath ?? join(vaultPath, '.trash');
+    const [timestamp] = new Date().toISOString().replace(/[-:]/gu, '').replace('T', '-').split('.');
     const fileName = basename(filePath);
     const trashFileName = `${timestamp}-${fileName}`;
     
     if (this.options.organizeTrashdByDate) {
-      const dateFolder = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const [dateFolder] = new Date().toISOString().split('T'); // YYYY-MM-DD
       return join(trashPath, dateFolder, trashFileName);
-    } else {
+    } 
       return join(trashPath, trashFileName);
-    }
+    
   }
 
   private async moveToTrash(filePath: string, context: OperationContext): Promise<string> {
@@ -181,7 +181,7 @@ export class DeleteOperation implements DocumentOperation {
     const backupDir = join(context.vault.path, '.backups');
     await context.fs.mkdir(backupDir, { recursive: true });
 
-    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').split('.')[0];
+    const [timestamp] = new Date().toISOString().replace(/[-:]/gu, '').replace('T', '-').split('.');
     const fileName = basename(doc.path);
     const backupPath = join(backupDir, `${fileName.replace('.md', '')}-${timestamp}.backup`);
 
@@ -200,14 +200,14 @@ export class DeleteOperation implements DocumentOperation {
     let updatedContent = content;
     
     // Escape special regex characters in filename
-    const escapedName = deletedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedName = deletedName.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
     
     // Replace [[deleted-file]] and [[deleted-file|alias]] with [[deleted-file|❌ DELETED]]
-    const wikiLinkRegex = new RegExp(`\\[\\[${escapedName}(?:\\|[^\\]]+)?\\]\\]`, 'g');
+    const wikiLinkRegex = new RegExp(`\\[\\[${escapedName}(?:\\|[^\\]]+)?\\]\\]`, 'gu');
     updatedContent = updatedContent.replace(wikiLinkRegex, `[[${deletedName}|❌ DELETED]]`);
     
     // Replace ![[deleted-file]] and ![[deleted-file|alias]] with ![[deleted-file|❌ DELETED]]
-    const embedRegex = new RegExp(`!\\[\\[${escapedName}(?:\\|[^\\]]+)?\\]\\]`, 'g');
+    const embedRegex = new RegExp(`!\\[\\[${escapedName}(?:\\|[^\\]]+)?\\]\\]`, 'gu');
     updatedContent = updatedContent.replace(embedRegex, `![[${deletedName}|❌ DELETED]]`);
 
     if (updatedContent !== content) {

@@ -1,8 +1,8 @@
 import type { OperationType, DocumentOperation, OperationFactory } from '../types.js';
-import { MoveOperation } from '../operations/move-operation.js';
-import { RenameOperation } from '../operations/rename-operation.js';
-import { UpdateFrontmatterOperation } from '../operations/update-frontmatter.js';
-import { DeleteOperation } from '../operations/delete-operation.js';
+import { MoveOperation, type MoveOperationOptions } from '../operations/move-operation.js';
+import { RenameOperation, type RenameOperationOptions } from '../operations/rename-operation.js';
+import { UpdateFrontmatterOperation, type UpdateFrontmatterOperationOptions } from '../operations/update-frontmatter.js';
+import { DeleteOperation, type DeleteOperationOptions } from '../operations/delete-operation.js';
 
 /**
  * Registry for document operations
@@ -18,7 +18,7 @@ export class OperationRegistry {
   /**
    * Register an operation factory
    */
-  register<T = any>(type: OperationType, factory: OperationFactory<T>): void {
+  register<T = unknown>(type: OperationType, factory: OperationFactory<T>): void {
     if (this.factories.has(type)) {
       throw new Error(`Operation type "${type}" is already registered`);
     }
@@ -42,7 +42,7 @@ export class OperationRegistry {
   /**
    * Create an operation instance
    */
-  create<T = any>(type: OperationType, options: T): DocumentOperation {
+  create(type: OperationType, options: unknown): DocumentOperation {
     const factory = this.factories.get(type);
     if (!factory) {
       throw new Error(`Unknown operation type: ${type}`);
@@ -55,9 +55,9 @@ export class OperationRegistry {
    */
   private registerDefaults(): void {
     // These will be implemented in the next phase
-    this.register('move', (options) => new MoveOperation(options));
-    this.register('rename', (options) => new RenameOperation(options));
-    this.register('updateFrontmatter', (options) => new UpdateFrontmatterOperation(options));
-    this.register('delete', (options) => new DeleteOperation(options));
+    this.register('move', (options) => new MoveOperation(options as MoveOperationOptions));
+    this.register('rename', (options) => new RenameOperation(options as RenameOperationOptions));
+    this.register('updateFrontmatter', (options) => new UpdateFrontmatterOperation(options as UpdateFrontmatterOperationOptions));
+    this.register('delete', (options) => new DeleteOperation(options as DeleteOperationOptions));
   }
 }

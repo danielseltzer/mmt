@@ -10,7 +10,7 @@ import type {
 import { join, dirname } from 'path';
 
 export interface UpdateFrontmatterOperationOptions {
-  updates: Record<string, any>;
+  updates: Record<string, unknown>;
   mode?: 'merge' | 'replace';
 }
 
@@ -19,10 +19,10 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
   private mode: 'merge' | 'replace';
   
   constructor(private options: UpdateFrontmatterOperationOptions) {
-    this.mode = options.mode || 'merge';
+    this.mode = options.mode ?? 'merge';
   }
 
-  async validate(doc: Document, context: OperationContext): Promise<ValidationResult> {
+  validate(_doc: Document, _context: OperationContext): ValidationResult {
     // Check if updates is empty
     if (Object.keys(this.options.updates).length === 0) {
       return {
@@ -34,12 +34,12 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
     return { valid: true };
   }
 
-  async preview(doc: Document, context: OperationContext): Promise<OperationPreview> {
+  preview(doc: Document, _context: OperationContext): OperationPreview {
     const changes: FileChange[] = [];
     
     // Show frontmatter update
-    const currentFrontmatter = doc.metadata.frontmatter || {};
-    let newFrontmatter: Record<string, any>;
+    const currentFrontmatter = doc.metadata.frontmatter;
+    let newFrontmatter: Record<string, unknown>;
     
     if (this.mode === 'replace') {
       // In replace mode, only the updates will remain
@@ -51,7 +51,10 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
       // Apply updates
       for (const [key, value] of Object.entries(this.options.updates)) {
         if (value === null) {
-          delete newFrontmatter[key];
+          // Remove the key by creating new object without it
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          const { [key]: _removed, ...rest } = newFrontmatter;
+          newFrontmatter = rest;
         } else {
           newFrontmatter[key] = value;
         }
@@ -95,19 +98,22 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
       }
 
       // Calculate new frontmatter
-      let newFrontmatter: Record<string, any>;
+      let newFrontmatter: Record<string, unknown>;
       
       if (this.mode === 'replace') {
         // Replace mode: only use the provided updates
         newFrontmatter = { ...this.options.updates };
       } else {
         // Merge mode: merge with existing frontmatter
-        newFrontmatter = { ...(doc.metadata.frontmatter || {}) };
+        newFrontmatter = { ...doc.metadata.frontmatter };
         
         // Apply updates
         for (const [key, value] of Object.entries(this.options.updates)) {
           if (value === null) {
-            delete newFrontmatter[key];
+            // Remove the key by creating new object without it
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            const { [key]: _removed, ...rest } = newFrontmatter;
+            newFrontmatter = rest;
           } else {
             newFrontmatter[key] = value;
           }
@@ -116,7 +122,7 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
       
       if (!context.options.dryRun) {
         // Read current content
-        const { content, frontmatter } = await context.fs.readMarkdownFile(doc.path);
+        const { content } = await context.fs.readMarkdownFile(doc.path);
         
         // Write back with updated frontmatter
         await context.fs.writeMarkdownFile(doc.path, content, newFrontmatter);
@@ -146,7 +152,7 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
   }
 
   private async createBackup(doc: Document, context: OperationContext): Promise<string> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const timestamp = new Date().toISOString().replace(/[:.]/gu, '-');
     const backupDir = join(dirname(doc.path), '.backups');
     const backupPath = join(backupDir, `${doc.metadata.name}-${timestamp}.md`);
     
@@ -159,32 +165,32 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
     return backupPath;
   }
 
-  private formatYaml(obj: Record<string, any>): string {
+  private formatYaml(obj: Record<string, unknown>): string {
     // Simple YAML formatter for preview purposes
     const lines: string[] = [];
     
-    const formatValue = (value: any, indent: string = ''): string => {
-      if (value === null) return 'null';
-      if (value === undefined) return 'null';
-      if (typeof value === 'boolean') return value.toString();
-      if (typeof value === 'number') return value.toString();
-      if (typeof value === 'string') return value;
+    const formatValue = (value: unknown, indent = ''): string => {
+      if (value === null) {return 'null';}
+      if (value === undefined) {return 'null';}
+      if (typeof value === 'boolean') {return value.toString();}
+      if (typeof value === 'number') {return value.toString();}
+      if (typeof value === 'string') {return value;}
       
       if (Array.isArray(value)) {
-        if (value.length === 0) return '[]';
-        return '\n' + value.map(item => `${indent}  - ${formatValue(item, indent + '  ')}`).join('\n');
+        if (value.length === 0) {return '[]';}
+        return `\n${ value.map(item => `${indent}  - ${formatValue(item, `${indent }  `)}`).join('\n')}`;
       }
       
       if (typeof value === 'object') {
-        const entries = Object.entries(value);
-        if (entries.length === 0) return '{}';
-        return '\n' + entries.map(([k, v]) => {
-          const formattedValue = formatValue(v, indent + '  ');
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 0) {return '{}';}
+        return `\n${ entries.map(([k, v]) => {
+          const formattedValue = formatValue(v, `${indent }  `);
           return `${indent}  ${k}: ${formattedValue}`;
-        }).join('\n');
+        }).join('\n')}`;
       }
       
-      return String(value);
+      return JSON.stringify(value);
     };
     
     for (const [key, value] of Object.entries(obj)) {
