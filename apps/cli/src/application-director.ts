@@ -32,10 +32,10 @@ export class ApplicationDirector {
 
     // Read version from package.json
     try {
-      const __dirname = dirname(fileURLToPath(import.meta.url));
-      const packageJson = JSON.parse(
-        readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
-      );
+      const currentDir = dirname(fileURLToPath(import.meta.url));
+      const packageJson: { version: string } = JSON.parse(
+        readFileSync(join(currentDir, '..', 'package.json'), 'utf-8')
+      ) as { version: string };
       this.version = packageJson.version;
     } catch {
       this.version = '0.1.0'; // Fallback
@@ -54,6 +54,7 @@ export class ApplicationDirector {
       
       // 2. Handle special flags first
       if (cliArgs.version) {
+        // eslint-disable-next-line no-console
         console.log(`mmt version ${this.version}`);
         process.exit(0);
       }
@@ -65,14 +66,14 @@ export class ApplicationDirector {
       }
       
       // 3. Default to help if no command
-      if (!cliArgs.command) {
-        cliArgs.command = 'help';
-      }
+      cliArgs.command ??= 'help';
       
       // 4. Help doesn't require config
       if (cliArgs.command === 'help') {
         const handler = this.commands.get('help');
-        const result = await handler!.execute({} as AppContext, cliArgs.commandArgs);
+        if (handler) {
+          await handler.execute({} as AppContext, cliArgs.commandArgs);
+        }
         // Help command always succeeds, just return
         return;
       }

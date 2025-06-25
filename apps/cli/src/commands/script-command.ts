@@ -48,7 +48,7 @@ export class ScriptCommand implements CommandHandler {
       : resolve(process.cwd(), scriptArgs.scriptPath);
 
     // Extract CLI options
-    const cliOptions: Record<string, any> = {};
+    const cliOptions: Record<string, unknown> = {};
     
     // Check for --execute flag
     if (scriptArgs.scriptArgs.includes('--execute')) {
@@ -70,7 +70,7 @@ export class ScriptCommand implements CommandHandler {
         cliOptions.reportPath = nextArg;
       } else {
         // Default report path
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const timestamp = new Date().toISOString().replace(/[:.]/gu, '-').slice(0, -5);
         cliOptions.reportPath = `mmt-report-${timestamp}.md`;
       }
     }
