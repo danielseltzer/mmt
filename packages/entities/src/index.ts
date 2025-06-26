@@ -55,7 +55,6 @@ import {
 } from './document.schema.js';
 import {
   QueryOperatorSchema,
-  QuerySchema,
   StructuredQuerySchema,
 } from './query.schema.js';
 import {
@@ -104,71 +103,6 @@ import {
   CommandResultSchema,
   CommandResults,
 } from './cli.schema.js';
-
-/**
- * Convenience export of all schemas grouped by domain.
- * This maintains backward compatibility with the previous single-file structure.
- */
-export const schemas = {
-  // Core objects
-  Config: ConfigSchema,
-  AppContext: AppContextSchema,
-  BaseDocumentMetadata: BaseDocumentMetadataSchema,
-  DocumentMetadata: DocumentMetadataSchema,
-  Document: DocumentSchema,
-  DocumentSet: DocumentSetSchema,
-  
-  // Query and operations
-  QueryOperator: QueryOperatorSchema,
-  QueryInput: QueryInputSchema,
-  Query: QuerySchema, // Alias for QueryInput
-  StructuredQuery: StructuredQuerySchema,
-  MoveOperation: MoveOperationSchema,
-  UpdateFrontmatterOperation: UpdateFrontmatterOperationSchema,
-  RemoveFrontmatterOperation: RemoveFrontmatterOperationSchema,
-  DeleteOperation: DeleteOperationSchema,
-  CreateOperation: CreateOperationSchema,
-  Operation: OperationSchema,
-  
-  // Vault and execution
-  VaultIndex: VaultIndexSchema,
-  Vault: VaultSchema,
-  VaultContext: VaultContextSchema,
-  LinkUpdate: LinkUpdateSchema,
-  ExecutionResult: ExecutionResultSchema,
-  
-  // UI and persistence
-  Snapshot: SnapshotSchema,
-  ColumnConfig: ColumnConfigSchema,
-  TableViewConfig: TableViewConfigSchema,
-  
-  // Events and results
-  FileOperationResult: FileOperationResultSchema,
-  IndexUpdateEvent: IndexUpdateEventSchema,
-  
-  // Scripting
-  SelectCriteria: SelectCriteriaSchema,
-  OperationType: OperationTypeSchema,
-  ScriptOperation: ScriptOperationSchema,
-  OutputFormat: OutputFormatSchema,
-  OutputConfig: OutputConfigSchema,
-  ExecuteOptions: ExecuteOptionsSchema,
-  ExecutionOptions: ExecutionOptionsSchema,
-  OperationPipeline: OperationPipelineSchema,
-  ScriptContext: ScriptContextSchema,
-  SuccessResult: SuccessResultSchema,
-  FailureResult: FailureResultSchema,
-  SkippedResult: SkippedResultSchema,
-  ExecutionStats: ExecutionStatsSchema,
-  ScriptExecutionResult: ScriptExecutionResultSchema,
-  
-  // Document sets
-  OperationReadyDocumentSet: OperationReadyDocumentSetSchema,
-  ToDocumentSetOptions: ToDocumentSetOptionsSchema,
-  
-  // CLI
-  CommandResult: CommandResultSchema,
-} as const;
 
 // Also export the CommandResults helper
 export { CommandResults };

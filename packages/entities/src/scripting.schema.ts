@@ -35,8 +35,6 @@ export const OperationTypeSchema = z.enum([
   'analyze',
   'transform',
   'aggregate',
-  // Legacy
-  'custom',
 ]).describe('Type of operation to perform');
 
 /**

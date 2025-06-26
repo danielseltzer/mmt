@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Query } from '@mmt/entities';
+import type { QueryInput } from '@mmt/entities';
 import { parseQuery } from './index.js';
 
 describe('parseQuery', () => {
@@ -11,7 +11,7 @@ describe('parseQuery', () => {
     // GIVEN: A query with namespace:property format
     // WHEN: Parsing the query to extract namespace-based structure
     // THEN: Properties are organized into separate namespace objects
-    const input: Query = {
+    const input: QueryInput = {
       'fs:path': 'posts/**',
       'fm:status': 'published',
       'content:text': 'important',
@@ -32,7 +32,7 @@ describe('parseQuery', () => {
     // GIVEN: A query with sort options
     // WHEN: Parsing a query that includes sort and order fields
     // THEN: Sort options are structured into a sort object with field and order
-    const input: Query = {
+    const input: QueryInput = {
       'fs:path': 'posts/**',
       sort: 'modified',
       order: 'desc',
@@ -52,7 +52,7 @@ describe('parseQuery', () => {
     // GIVEN: A query with invalid keys
     // WHEN: Parsing a query containing keys without namespace prefixes
     // THEN: Invalid keys are ignored (namespace requirement enforced)
-    const input: Query = {
+    const input: QueryInput = {
       'fs:path': 'posts/**',
       invalidKey: 'value', // No namespace
     };
@@ -70,7 +70,7 @@ describe('parseQuery', () => {
     // GIVEN: A query using all namespaces
     // WHEN: Parsing a query with fs:, fm:, content:, and inline: prefixes
     // THEN: All namespaces are parsed into their respective objects
-    const input: Query = {
+    const input: QueryInput = {
       'fs:path': 'posts/**',
       'fs:name': 'README',
       'fm:status': 'draft',

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { DocumentSchema } from './document.schema.js';
-import { QuerySchema } from './query.schema.js';
+import { QueryInputSchema } from './query.schema.js';
 
 /**
  * Operation-ready document set that can be passed to mutation operations.
@@ -11,7 +11,7 @@ export const OperationReadyDocumentSetSchema = z.object({
   _type: z.literal('DocumentSet'),
   
   // Original query that produced this set
-  sourceQuery: QuerySchema.optional(),
+  sourceQuery: QueryInputSchema.optional(),
   
   // Number of documents in the set
   documentCount: z.number().min(0),

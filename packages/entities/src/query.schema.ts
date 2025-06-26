@@ -200,10 +200,3 @@ export const StructuredQuerySchema = z.object({
 });
 
 export type StructuredQuery = z.infer<typeof StructuredQuerySchema>;
-
-/**
- * Alias for backward compatibility.
- * @deprecated Use QueryInput instead
- */
-export const QuerySchema = QueryInputSchema;
-export type Query = QueryInput;

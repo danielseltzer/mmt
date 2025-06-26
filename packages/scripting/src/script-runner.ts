@@ -146,8 +146,7 @@ export class ScriptRunner {
 
     // Check if this is an analysis pipeline
     const hasAnalysisOps = pipeline.operations.some(op => 
-      op.type === 'analyze' || op.type === 'transform' || op.type === 'aggregate' ||
-      (op.type === 'custom' && 'action' in op && op.action === 'analyze')
+      op.type === 'analyze' || op.type === 'transform' || op.type === 'aggregate'
     );
     
     if (hasAnalysisOps) {
@@ -419,11 +418,6 @@ export class ScriptRunner {
       throw new Error(`Analysis operation '${operation.type}' should be handled by executeAnalysisPipeline`);
     }
 
-    // Legacy custom operations not supported
-    if (operation.type === 'custom') {
-      throw new Error('Custom operations are not supported. Use built-in operations instead.');
-    }
-
     // Initialize indexer if needed
     if (!this.indexer) {
       throw new Error('Indexer not initialized');
@@ -529,14 +523,6 @@ export class ScriptRunner {
     // Analysis operations don't have preview
     if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
       return { details: { preview: true, operation: operation.type } };
-    }
-
-    // Legacy custom operations not supported
-    if (operation.type === 'custom') {
-      return {
-        skipped: true,
-        reason: 'Custom operations are not supported'
-      };
     }
 
     // Initialize indexer if needed

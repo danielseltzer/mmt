@@ -1,7 +1,7 @@
 import type {
   Document,
   OperationReadyDocumentSet,
-  Query,
+  QueryInput,
 } from '@mmt/entities';
 import type { ParsedArrayField } from './types.js';
 import { 
@@ -29,7 +29,7 @@ type Table = ReturnType<typeof aq.table>;
  */
 export class DocumentSet implements OperationReadyDocumentSet {
   readonly _type = 'DocumentSet' as const;
-  readonly sourceQuery?: Query; // Can be IndexerQuery or entities QueryInput
+  readonly sourceQuery?: QueryInput; // Can be IndexerQuery or entities QueryInput
   readonly documentCount: number;
   readonly limit: number;
   readonly tableRef: Table;
@@ -44,7 +44,7 @@ export class DocumentSet implements OperationReadyDocumentSet {
   
   constructor(data: {
     tableRef: Table;
-    sourceQuery?: Query;
+    sourceQuery?: QueryInput;
     limit?: number;
     executionTime?: number;
   }) {
