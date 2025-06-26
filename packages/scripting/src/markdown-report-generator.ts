@@ -97,7 +97,7 @@ export class MarkdownReportGenerator {
   }
   
   private buildHeader(scriptPath: string, vaultPath: string): string {
-    const scriptName = scriptPath.split('/').pop() || scriptPath;
+    const scriptName = scriptPath.split('/').pop() ?? scriptPath;
     return `# MMT Script Execution Report
 
 **Script**: \`${scriptName}\`  
@@ -114,11 +114,11 @@ export class MarkdownReportGenerator {
     return `## Execution Summary
 
 **Mode**: ${mode}  
-**Duration**: ${duration}ms  
-**Documents Processed**: ${result.attempted.length}  
-**Successful Operations**: ${result.succeeded.length}  
-**Failed Operations**: ${result.failed.length}  
-**Skipped Operations**: ${result.skipped.length}`;
+**Duration**: ${duration.toString()}ms  
+**Documents Processed**: ${result.attempted.length.toString()}  
+**Successful Operations**: ${result.succeeded.length.toString()}  
+**Failed Operations**: ${result.failed.length.toString()}  
+**Skipped Operations**: ${result.skipped.length.toString()}`;
   }
   
   private buildPipelineDetails(pipeline: OperationPipeline): string {
@@ -127,15 +127,15 @@ export class MarkdownReportGenerator {
     // Selection criteria
     lines.push('\n### Selection Criteria');
     const criteria = pipeline.select;
-    if ('files' in criteria && criteria.files) {
-      lines.push(`- **Files**: ${criteria.files.length} explicit files`);
+    if ('files' in criteria && criteria.files !== undefined) {
+      lines.push(`- **Files**: ${criteria.files.length.toString()} explicit files`);
     } else {
       const conditions = Object.entries(criteria);
       if (conditions.length === 0) {
         lines.push('- All documents in vault');
       } else {
         conditions.forEach(([key, value]) => {
-          lines.push(`- **${key}**: ${value}`);
+          lines.push(`- **${key}**: ${String(value)}`);
         });
       }
     }
@@ -143,9 +143,9 @@ export class MarkdownReportGenerator {
     // Operations
     lines.push('\n### Operations');
     pipeline.operations.forEach((op, i) => {
-      lines.push(`${i + 1}. **${op.type}** operation`);
+      lines.push(`${(i + 1).toString()}. **${op.type}** operation`);
       if ('action' in op) {
-        lines.push(`   - Action: ${op.action}`);
+        lines.push(`   - Action: ${String(op.action)}`);
       }
     });
     
@@ -166,11 +166,11 @@ export class MarkdownReportGenerator {
     return lines.join('\n');
   }
   
-  private buildAnalysisResults(table: Table, outputs?: OutputConfig): string {
+  private buildAnalysisResults(table: Table, _outputs?: OutputConfig): string {
     const lines = ['## Analysis Results'];
     
     // Table stats
-    lines.push(`\n**Result Set**: ${table.numRows()} rows × ${table.numCols()} columns`);
+    lines.push(`\n**Result Set**: ${table.numRows().toString()} rows × ${table.numCols().toString()} columns`);
     
     // Sample data (first 10 rows)
     lines.push('\n### Sample Data (First 10 Rows)');
@@ -185,7 +185,7 @@ export class MarkdownReportGenerator {
     columns.forEach((col: string) => {
       const type = this.inferColumnType(table, col);
       const nonNullCount = table.filter(`d => d['${col}'] != null`).numRows();
-      lines.push(`| ${col} | ${type} | ${nonNullCount} |`);
+      lines.push(`| ${col} | ${type} | ${nonNullCount.toString()} |`);
     });
     
     return lines.join('\n');
@@ -196,7 +196,7 @@ export class MarkdownReportGenerator {
     
     if (result.succeeded.length > 0) {
       lines.push('\n### Successful Operations');
-      lines.push(`Total: ${result.succeeded.length}`);
+      lines.push(`Total: ${result.succeeded.length.toString()}`);
       
       // Sample of successful operations
       const successSample = result.succeeded.slice(0, 5);
@@ -204,13 +204,13 @@ export class MarkdownReportGenerator {
         lines.push(`- ✓ ${success.operation.type} on ${success.item.path || 'item'}`);
       });
       if (result.succeeded.length > 5) {
-        lines.push(`- ... and ${result.succeeded.length - 5} more`);
+        lines.push(`- ... and ${(result.succeeded.length - 5).toString()} more`);
       }
     }
     
     if (result.failed.length > 0) {
       lines.push('\n### Failed Operations');
-      lines.push(`Total: ${result.failed.length}`);
+      lines.push(`Total: ${result.failed.length.toString()}`);
       
       result.failed.forEach(failure => {
         lines.push(`- ❌ ${failure.operation.type} on ${failure.item.path || 'item'}`);
@@ -220,14 +220,14 @@ export class MarkdownReportGenerator {
     
     if (result.skipped.length > 0) {
       lines.push('\n### Skipped Operations');
-      lines.push(`Total: ${result.skipped.length}`);
+      lines.push(`Total: ${result.skipped.length.toString()}`);
       
       const skipSample = result.skipped.slice(0, 5);
       skipSample.forEach(skip => {
         lines.push(`- ⏭️ ${skip.operation.type} on ${skip.item.path || 'item'}: ${skip.reason}`);
       });
       if (result.skipped.length > 5) {
-        lines.push(`- ... and ${result.skipped.length - 5} more`);
+        lines.push(`- ... and ${(result.skipped.length - 5).toString()} more`);
       }
     }
     
@@ -241,7 +241,7 @@ export class MarkdownReportGenerator {
 
 - **Start Time**: ${result.stats.startTime.toISOString()}
 - **End Time**: ${result.stats.endTime.toISOString()}
-- **Total Duration**: ${result.stats.duration}ms
+- **Total Duration**: ${result.stats.duration.toString()}ms
 - **Report Generated By**: MMT Scripting Engine
 
 _This report was automatically generated. For questions or issues, please refer to the MMT documentation._`;
@@ -262,9 +262,9 @@ _This report was automatically generated. For questions or issues, please refer 
     lines.push(`|${ headers.map(() => '---').join('|') }|`);
     
     // Rows
-    rows.forEach((row: any) => {
+    rows.forEach((row: Record<string, unknown>) => {
       const values = headers.map(h => {
-        const val = row[h];
+        const val = row[h] as unknown;
         if (val === null || val === undefined) {return '';}
         if (typeof val === 'string' && val.length > 50) {
           return `${val.substring(0, 47) }...`;
@@ -282,7 +282,7 @@ _This report was automatically generated. For questions or issues, please refer 
    */
   private inferColumnType(table: Table, column: string): string {
     const sample = table.sample(Math.min(100, table.numRows()));
-    const values = (sample).array(column);
+    const values = (sample as any).array(column) as unknown[];
     
     let hasString = false;
     let hasNumber = false;
@@ -295,7 +295,7 @@ _This report was automatically generated. For questions or issues, please refer 
       if (type === 'string') {
         hasString = true;
         // Check if it's a date string
-        if (!isNaN(Date.parse(val))) {
+        if (!isNaN(Date.parse(val as string))) {
           hasDate = true;
         }
       } else if (type === 'number') {
@@ -325,8 +325,8 @@ _This report was automatically generated. For questions or issues, please refer 
     
     try {
       const prompt = this.buildPrompt(report, options, agentConfig);
-      const model = agentConfig?.model || 'sonnet';
-      const timeout = agentConfig?.timeout || 30000;
+      const model = agentConfig?.model ?? 'sonnet';
+      const timeout = agentConfig?.timeout ?? 30000;
       
       // Write prompt to temporary file
       await writeFile(tempFile, prompt, 'utf-8');
@@ -367,7 +367,7 @@ _This report was automatically generated. For questions or issues, please refer 
     options: ReportGenerationOptions,
     agentConfig?: AgentAnalysis
   ): string {
-    const template = agentConfig?.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+    const template = agentConfig?.promptTemplate ?? DEFAULT_PROMPT_TEMPLATE;
     
     // Detect analysis type from script name or operations
     const analysisType = this.detectAnalysisType(options);

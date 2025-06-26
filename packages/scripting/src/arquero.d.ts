@@ -9,6 +9,7 @@ declare module 'arquero' {
     // Data access
     objects(): any[];
     object(index: number): any;
+    array(column: string): any[];
     
     // Selection and filtering
     select(...fields: string[]): Table;

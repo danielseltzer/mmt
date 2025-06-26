@@ -48,12 +48,12 @@ export class AnalysisRunner {
   ): Promise<AnalysisResult> {
     // Create DocumentSet from documents
     const docSet = await fromDocuments(documents, { overrideLimit: true });
-    let table = docSet.tableRef as Table;
+    let table = docSet.tableRef;
     
     // Execute each analysis operation
     for (const operation of operations) {
       if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
-        table = await this.executeAnalysisOperation(table, operation);
+        table = this.executeAnalysisOperation(table, operation);
       }
     }
     
@@ -129,7 +129,7 @@ export class AnalysisRunner {
       
       if (output.destination === 'console') {
         // Output to console is handled by the formatter
-      } else if (output.destination === 'file' && output.path) {
+      } else if (output.path !== undefined) {
         // Ensure directory exists
         await mkdir(dirname(output.path), { recursive: true });
         await writeFile(output.path, formatted, 'utf-8');
@@ -175,8 +175,8 @@ export class AnalysisRunner {
     const rows = data.objects();
     if (rows.length === 0) {return 'No results';}
     
-    const headers = Object.keys(rows[0]);
-    const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r: any) => String(r[h] || '').length)));
+    const headers = Object.keys(rows[0] as Record<string, unknown>);
+    const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r) => String((r as Record<string, unknown>)[h] ?? '').length)));
     
     // Header
     let output = `${headers.map((h, i) => h.padEnd(widths[i])).join(' | ') }\n`;
@@ -184,13 +184,13 @@ export class AnalysisRunner {
     
     // Rows
     for (const row of rows) {
-      output += `${headers.map((h, i) => String(row[h] ?? '').padEnd(widths[i])).join(' | ') }\n`;
+      output += `${headers.map((h, i) => String((row as Record<string, unknown>)[h] ?? '').padEnd(widths[i])).join(' | ') }\n`;
     }
     
     return output;
   }
   
   private formatAsSummary(table: Table): string {
-    return `Analysis complete: ${table.numRows()} rows, ${table.numCols()} columns`;
+    return `Analysis complete: ${table.numRows().toString()} rows, ${table.numCols().toString()} columns`;
   }
 }
