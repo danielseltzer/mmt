@@ -127,7 +127,7 @@ export class MarkdownReportGenerator {
     // Selection criteria
     lines.push('\n### Selection Criteria');
     const criteria = pipeline.select;
-    if ('files' in criteria && criteria.files !== undefined) {
+    if ('files' in criteria && Array.isArray(criteria.files)) {
       lines.push(`- **Files**: ${criteria.files.length.toString()} explicit files`);
     } else {
       const conditions = Object.entries(criteria);
@@ -254,7 +254,7 @@ _This report was automatically generated. For questions or issues, please refer 
     const rows = table.objects();
     if (rows.length === 0) {return '_No data_';}
     
-    const headers = Object.keys(rows[0]);
+    const headers = Object.keys(rows[0] as Record<string, unknown>);
     const lines: string[] = [];
     
     // Header
@@ -264,10 +264,14 @@ _This report was automatically generated. For questions or issues, please refer 
     // Rows
     rows.forEach((row: Record<string, unknown>) => {
       const values = headers.map(h => {
-        const val = row[h] as unknown;
+        const val = row[h];
         if (val === null || val === undefined) {return '';}
         if (typeof val === 'string' && val.length > 50) {
           return `${val.substring(0, 47) }...`;
+        }
+        // Handle different types appropriately
+        if (typeof val === 'object' && val !== null) {
+          return JSON.stringify(val);
         }
         return String(val);
       });
@@ -282,7 +286,7 @@ _This report was automatically generated. For questions or issues, please refer 
    */
   private inferColumnType(table: Table, column: string): string {
     const sample = table.sample(Math.min(100, table.numRows()));
-    const values = (sample as any).array(column) as unknown[];
+    const values = sample.array(column);
     
     let hasString = false;
     let hasNumber = false;
@@ -321,7 +325,7 @@ _This report was automatically generated. For questions or issues, please refer 
     const startTime = Date.now();
     
     // Create temporary file for the prompt
-    const tempFile = join(tmpdir(), `mmt-prompt-${Date.now()}.txt`);
+    const tempFile = join(tmpdir(), `mmt-prompt-${Date.now().toString()}.txt`);
     
     try {
       const prompt = this.buildPrompt(report, options, agentConfig);
@@ -353,7 +357,7 @@ _This report was automatically generated. For questions or issues, please refer 
       // Clean up temp file
       try {
         await unlink(tempFile);
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     }

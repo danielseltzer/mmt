@@ -1,4 +1,4 @@
-import type { ScriptExecutionResult, OutputFormat } from '@mmt/entities';
+import type { ScriptExecutionResult, OutputFormat, ScriptOperation } from '@mmt/entities';
 
 export interface FormatOptions {
   format: OutputFormat;
@@ -36,22 +36,22 @@ export class ResultFormatter {
   private formatSummary(result: ScriptExecutionResult, isPreview: boolean): string {
     const lines: string[] = [];
     
-    lines.push(`Selected ${result.attempted.length} files`);
+    lines.push(`Selected ${result.attempted.length.toString()} files`);
     
     if (result.succeeded.length > 0) {
       const action = isPreview ? 'Would process' : 'Processed';
-      lines.push(`${action}: ${result.succeeded.length}`);
+      lines.push(`${action}: ${result.succeeded.length.toString()}`);
     }
     
     if (result.failed.length > 0) {
-      lines.push(`Failed: ${result.failed.length}`);
+      lines.push(`Failed: ${result.failed.length.toString()}`);
     }
     
     if (result.skipped.length > 0) {
-      lines.push(`Skipped: ${result.skipped.length}`);
+      lines.push(`Skipped: ${result.skipped.length.toString()}`);
     }
     
-    lines.push(`\nDuration: ${result.stats.duration}ms`);
+    lines.push(`\nDuration: ${result.stats.duration.toString()}ms`);
     
     if (isPreview) {
       lines.push('\nTo execute these changes, run with --execute flag');
@@ -63,7 +63,7 @@ export class ResultFormatter {
   private formatDetailed(result: ScriptExecutionResult, isPreview: boolean): string {
     const lines: string[] = [];
     
-    lines.push(`Selected ${result.attempted.length} files matching criteria:`);
+    lines.push(`Selected ${result.attempted.length.toString()} files matching criteria:`);
     
     // Group by operation for cleaner output
     const operationGroups = new Map<string, typeof result.succeeded>();
@@ -73,10 +73,10 @@ export class ResultFormatter {
       if (!operationGroups.has(key)) {
         operationGroups.set(key, []);
       }
-      operationGroups.get(key)!.push(item);
+      operationGroups.get(key)?.push(item);
     }
     
-    for (const [opKey, items] of operationGroups) {
+    for (const [_opKey, items] of operationGroups) {
       const op = items[0].operation;
       lines.push(`\n${this.formatOperationHeader(op, isPreview)}:`);
       
@@ -100,14 +100,14 @@ export class ResultFormatter {
     }
     
     lines.push(`\nSummary:`);
-    lines.push(`- Files selected: ${result.attempted.length}`);
-    lines.push(`- Operations ${isPreview ? 'to perform' : 'performed'}: ${result.succeeded.length}`);
+    lines.push(`- Files selected: ${result.attempted.length.toString()}`);
+    lines.push(`- Operations ${isPreview ? 'to perform' : 'performed'}: ${result.succeeded.length.toString()}`);
     
     if (result.failed.length > 0) {
-      lines.push(`- Failed: ${result.failed.length}`);
+      lines.push(`- Failed: ${result.failed.length.toString()}`);
     }
     
-    lines.push(`- Duration: ${result.stats.duration}ms`);
+    lines.push(`- Duration: ${result.stats.duration.toString()}ms`);
     
     if (isPreview) {
       lines.push('\nTo execute these changes, run with --execute flag');
@@ -116,12 +116,12 @@ export class ResultFormatter {
     return lines.join('\n');
   }
 
-  private formatOperationHeader(operation: any, isPreview: boolean): string {
+  private formatOperationHeader(operation: ScriptOperation, isPreview: boolean): string {
     const prefix = isPreview ? 'Would' : 'Did';
     
     switch (operation.type) {
       case 'move':
-        return `${prefix} move to ${operation.destination}`;
+        return `${prefix} move to ${String(operation.destination ?? 'unknown')}`;
       case 'delete':
         return `${prefix} delete`;
       case 'updateFrontmatter':
@@ -133,7 +133,7 @@ export class ResultFormatter {
     }
   }
 
-  private formatJson(result: ScriptExecutionResult, fields?: string[]): string {
+  private formatJson(result: ScriptExecutionResult, _fields?: string[]): string {
     // For JSON, include full result with optional field filtering
     const output = {
       attempted: result.attempted.length,
