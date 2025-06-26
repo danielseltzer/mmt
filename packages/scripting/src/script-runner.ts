@@ -19,7 +19,7 @@ import { VaultIndexer } from '@mmt/indexer';
 import type { Query, PageMetadata } from '@mmt/indexer';
 import { QueryParser } from '@mmt/query-parser';
 import { OperationRegistry } from '@mmt/document-operations';
-import type { OperationContext, OperationOptions, OperationResult } from '@mmt/document-operations';
+import type { OperationContext, OperationResult } from '@mmt/document-operations';
 import type { Script } from './script.interface.js';
 import { ResultFormatter } from './result-formatter.js';
 import { AnalysisRunner } from './analysis-runner.js';
@@ -69,7 +69,7 @@ export class ScriptRunner {
   /**
    * Load and execute a script from a file path.
    */
-  async runScript(scriptPath: string, cliOptions: Record<string, any> = {}): Promise<ScriptExecutionResult> {
+  async runScript(scriptPath: string, cliOptions: Record<string, unknown> = {}): Promise<ScriptExecutionResult> {
     // Initialize indexer if not already done
     if (!this.indexer) {
       this.indexer = new VaultIndexer({
@@ -85,19 +85,20 @@ export class ScriptRunner {
     // Load the script module
     const script = await this.loadScript(scriptPath);
     
-    // Create script context with Arquero namespace
+    // Create script context
     const context: ScriptContext = {
       vaultPath: this.config.vaultPath,
       indexPath: this.config.indexPath,
       scriptPath,
       cliOptions,
       indexer: this.indexer,
-      // Add Arquero namespace for scripts
-      aq,
-    } as any;
+    };
+    
+    // Extend context with Arquero namespace for scripts
+    const extendedContext = { ...context, aq };
 
     // Get pipeline definition from script
-    const pipeline = script.define(context);
+    const pipeline = script.define(extendedContext);
     
     // Validate pipeline
     const validatedPipeline = OperationPipelineSchema.parse(pipeline);
@@ -113,7 +114,7 @@ export class ScriptRunner {
     const result = await this.executePipeline(validatedPipeline, executionOptions);
     
     // Generate report if requested
-    if (cliOptions.reportPath) {
+    if (cliOptions.reportPath !== undefined && cliOptions.reportPath !== null) {
       const resultWithTable = result as ScriptExecutionResult & { analysisTable?: Table };
       await this.reportGenerator.generateReport({
         scriptPath,
@@ -276,7 +277,7 @@ export class ScriptRunner {
     try {
       // Convert to file URL for ES module import
       const fileUrl = pathToFileURL(scriptPath).href;
-      const module = await import(fileUrl);
+      const module = await import(fileUrl) as { default?: unknown };
       
       // Check for default export
       if (!module.default) {
@@ -284,16 +285,23 @@ export class ScriptRunner {
       }
 
       // Instantiate if it's a class, otherwise use as-is
-      const script = typeof module.default === 'function' 
-        ? new module.default()
-        : module.default;
+      const scriptExport = module.default;
+      let script: unknown;
+      
+      if (typeof scriptExport === 'function') {
+        // It's a constructor, instantiate it
+        const ScriptConstructor = scriptExport as new () => unknown;
+        script = new ScriptConstructor();
+      } else {
+        script = scriptExport;
+      }
 
       // Validate it implements Script interface
-      if (typeof script.define !== 'function') {
+      if (!script || typeof script !== 'object' || !('define' in script) || typeof script.define !== 'function') {
         throw new Error(`Script ${scriptPath} must implement Script interface with define() method`);
       }
 
-      return script;
+      return script as Script;
     } catch (error) {
       throw new Error(`Failed to load script ${scriptPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
