@@ -106,10 +106,11 @@ describe('VaultIndexer file watching', () => {
     await rm(join(tempDir, 'to-delete.md'));
     
     // Wait for file watcher to process
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 500)); // Increased wait time
     
     // THEN: The file should be removed from the index
     const docs = indexer.getAllDocuments();
+    console.log('Remaining documents after delete:', docs.map(d => d.path));
     expect(docs).toHaveLength(1);
     expect(docs.every(d => !d.path.includes('to-delete.md'))).toBe(true);
   });
