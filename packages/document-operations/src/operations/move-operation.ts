@@ -1,6 +1,7 @@
-import { dirname, relative, isAbsolute, basename } from 'path';
+import { dirname, isAbsolute, basename } from 'path';
 import { rename, copyFile } from 'fs/promises';
 import type { Document } from '@mmt/entities';
+import { FileRelocator } from '@mmt/file-relocator';
 import type { 
   DocumentOperation, 
   OperationContext, 
@@ -87,7 +88,7 @@ export class MoveOperation implements DocumentOperation {
 
   async preview(doc: Document, context: OperationContext): Promise<OperationPreview> {
     const { targetPath } = this.options;
-    const { indexer, options } = context;
+    const { fs, options } = context;
     
     const changes: FileChange[] = [{
       type: 'file-move',
@@ -98,22 +99,20 @@ export class MoveOperation implements DocumentOperation {
     // Find documents that link to this document
     if (options.updateLinks) {
       try {
-        // Get the relative path for link lookup
-        const relativePath = relative(context.vault.path, doc.path);
+        // Use FileRelocator to find all references
+        const relocator = new FileRelocator(fs);
+        const references = await relocator.findReferences(doc.path, context.vault.path);
         
-        // Get documents that have backlinks to this document
-        const linkingDocs = await indexer.getBacklinks(relativePath);
-        
-        // Add link update changes for each linking document
-        for (const linkingDoc of linkingDocs) {
+        // Add link update changes for each file with references
+        for (const ref of references) {
           changes.push({
             type: 'link-update',
-            file: linkingDoc.path,
-            description: `Update links to ${basename(doc.path, '.md')}`
+            file: ref.filePath,
+            description: `Update ${ref.links.length} link(s) to ${basename(doc.path, '.md')}`
           });
         }
       } catch (error) {
-        // If indexer fails, continue without link updates
+        // If finding references fails, continue without link updates
         console.warn('Failed to find linking documents:', error);
       }
     }
@@ -128,7 +127,7 @@ export class MoveOperation implements DocumentOperation {
 
   async execute(doc: Document, context: OperationContext): Promise<OperationResult> {
     const { targetPath } = this.options;
-    const { fs, indexer, options } = context;
+    const { fs, options } = context;
     
     try {
       // Validate first
@@ -167,65 +166,9 @@ export class MoveOperation implements DocumentOperation {
       // Update links if enabled
       if (options.updateLinks) {
         try {
-          // Get the relative paths
-          const oldRelativePath = relative(context.vault.path, doc.path);
-          // const newRelativePath = relative(context.vault.path, targetPath); // Not used yet
-          
-          // Get documents that link to this document
-          const linkingDocs = await indexer.getBacklinks(oldRelativePath);
-          
-          // Update each linking document
-          for (const linkingDoc of linkingDocs) {
-            // Read the file content
-            let content = await fs.readFile(linkingDoc.path);
-            
-            // Update wikilinks
-            const oldName = basename(doc.path, '.md');
-            const newName = basename(targetPath, '.md');
-            
-            // Get relative paths without extension
-            const oldRelativePathNoExt = relative(context.vault.path, doc.path).replace(/\.md$/u, '');
-            const newRelativePathNoExt = relative(context.vault.path, targetPath).replace(/\.md$/u, '');
-            
-            // Try to replace vault-relative paths like [[notes/doc1]]
-            if (content.includes(`[[${oldRelativePathNoExt}]]`)) {
-              content = content.replace(
-                new RegExp(`\\[\\[${oldRelativePathNoExt.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\]\\]`, 'gu'),
-                `[[${newRelativePathNoExt}]]`
-              );
-            }
-            
-            // Try to replace paths relative to the linking document
-            const oldRelativeFromLinking = relative(dirname(linkingDoc.path), doc.path).replace(/\.md$/u, '');
-            const newRelativeFromLinking = relative(dirname(linkingDoc.path), targetPath).replace(/\.md$/u, '');
-            
-            if (oldRelativeFromLinking !== oldRelativePath && content.includes(`[[${oldRelativeFromLinking}]]`)) {
-              content = content.replace(
-                new RegExp(`\\[\\[${oldRelativeFromLinking.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\]\\]`, 'gu'),
-                `[[${newRelativeFromLinking}]]`
-              );
-            }
-            
-            // Also try basename-only links like [[doc1]]
-            if (content.includes(`[[${oldName}]]`)) {
-              // If moving to different directory, use relative path
-              if (dirname(doc.path) !== dirname(targetPath)) {
-                content = content.replace(
-                  new RegExp(`\\[\\[${oldName}\\]\\]`, 'gu'),
-                  `[[${newRelativeFromLinking}]]`
-                );
-              } else {
-                // Same directory, just update the name
-                content = content.replace(
-                  new RegExp(`\\[\\[${oldName}\\]\\]`, 'gu'),
-                  `[[${newName}]]`
-                );
-              }
-            }
-            
-            // Write updated content
-            await fs.writeFile(linkingDoc.path, content);
-          }
+          // Use FileRelocator for comprehensive link updates
+          const relocator = new FileRelocator(fs);
+          await relocator.updateReferences(doc.path, targetPath, context.vault.path);
         } catch (error) {
           console.error('Failed to update links:', error);
           // Continue with move even if link update fails
