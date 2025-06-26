@@ -159,30 +159,30 @@ export class AnalysisRunner {
   
   private formatAsCSV(table: Table, fields?: string[]): string {
     const data = fields ? (table as any).select(fields) : table;
-    return (data as any).toCSV();
+    return (data).toCSV();
   }
   
   private formatAsJSON(table: Table, fields?: string[]): string {
     const data = fields ? (table as any).select(fields) : table;
-    return JSON.stringify((data as any).objects(), null, 2);
+    return JSON.stringify((data).objects(), null, 2);
   }
   
   private formatAsTable(table: Table, fields?: string[]): string {
     const data = fields ? (table as any).select(fields) : table;
     // Simple ASCII table format
-    const rows = (data as any).objects();
-    if (rows.length === 0) return 'No results';
+    const rows = (data).objects();
+    if (rows.length === 0) {return 'No results';}
     
     const headers = Object.keys(rows[0]);
     const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r: any) => String(r[h] || '').length)));
     
     // Header
-    let output = headers.map((h, i) => h.padEnd(widths[i])).join(' | ') + '\n';
-    output += widths.map(w => '-'.repeat(w)).join('-|-') + '\n';
+    let output = `${headers.map((h, i) => h.padEnd(widths[i])).join(' | ') }\n`;
+    output += `${widths.map(w => '-'.repeat(w)).join('-|-') }\n`;
     
     // Rows
     for (const row of rows) {
-      output += headers.map((h, i) => String(row[h] || '').padEnd(widths[i])).join(' | ') + '\n';
+      output += `${headers.map((h, i) => String(row[h] || '').padEnd(widths[i])).join(' | ') }\n`;
     }
     
     return output;

@@ -1,5 +1,4 @@
 import * as aq from 'arquero';
-import type { Table } from 'arquero';
 
 /**
  * Re-export Arquero for scripts to use.

@@ -121,7 +121,7 @@ export const QueryInputSchema = z.object({
 .describe('Query using namespace:property format')
 .refine(
   (obj) => {
-    const namespacePattern = /^(fs|fm|content|inline):[a-zA-Z_][a-zA-Z0-9_]*$/;
+    const namespacePattern = /^(fs|fm|content|inline):[a-zA-Z_][a-zA-Z0-9_]*$/u;
     return Object.keys(obj).every(key => 
       key === 'sort' || key === 'order' || namespacePattern.test(key)
     );

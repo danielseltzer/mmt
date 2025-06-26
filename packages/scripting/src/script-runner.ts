@@ -267,7 +267,7 @@ export class ScriptRunner {
       isPreview: !options.executeNow,
     });
     
-    this.output.write(formatted + '\n');
+    this.output.write(`${formatted }\n`);
 
     return result;
   }
@@ -339,7 +339,7 @@ export class ScriptRunner {
 
     const query = Object.entries(criteria as Record<string, any>)
       .filter(([key]) => key !== 'files')
-      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {} as Record<string, any>);
+      .reduce<Record<string, any>>((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
     if (Object.keys(query).length === 0) {
       // No criteria - return all documents

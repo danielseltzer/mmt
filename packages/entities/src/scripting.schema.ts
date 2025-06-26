@@ -64,7 +64,7 @@ export const OutputSpecSchema = z.object({
   path: z.string().optional().describe('File path when destination is file'),
   fields: z.array(z.string()).optional().describe('Fields to include in csv/json output'),
 }).refine(
-  (data) => data.destination === 'console' || (data.destination === 'file' && data.path),
+  (data) => data.destination === 'console' || (data.path !== undefined),
   { message: 'Path is required when destination is file' }
 ).describe('Single output specification');
 

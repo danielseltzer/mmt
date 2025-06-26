@@ -47,62 +47,8 @@ export const DocumentSetSchema = z.object({
 
 export type DocumentSet = z.infer<typeof DocumentSetSchema>;
 
-// Import all schemas for the convenience export
-import { ConfigSchema, AppContextSchema } from './config.schema.js';
-import { 
-  BaseDocumentMetadataSchema,
-  DocumentMetadataSchema,
-} from './document.schema.js';
-import {
-  QueryOperatorSchema,
-  StructuredQuerySchema,
-} from './query.schema.js';
-import {
-  MoveOperationSchema,
-  UpdateFrontmatterOperationSchema,
-  RemoveFrontmatterOperationSchema,
-  DeleteOperationSchema,
-  CreateOperationSchema,
-  OperationSchema,
-} from './operation.schema.js';
-import {
-  VaultIndexSchema,
-  VaultSchema,
-  VaultContextSchema,
-  LinkUpdateSchema,
-  ExecutionResultSchema,
-  SnapshotSchema,
-  FileOperationResultSchema,
-  IndexUpdateEventSchema,
-} from './vault.schema.js';
-import {
-  ColumnConfigSchema,
-  TableViewConfigSchema,
-} from './ui.schema.js';
-import {
-  SelectCriteriaSchema,
-  OperationTypeSchema,
-  ScriptOperationSchema,
-  OutputFormatSchema,
-  OutputConfigSchema,
-  ExecuteOptionsSchema,
-  ExecutionOptionsSchema,
-  OperationPipelineSchema,
-  ScriptContextSchema,
-  SuccessResultSchema,
-  FailureResultSchema,
-  SkippedResultSchema,
-  ExecutionStatsSchema,
-  ScriptExecutionResultSchema,
-} from './scripting.schema.js';
-import {
-  OperationReadyDocumentSetSchema,
-  ToDocumentSetOptionsSchema,
-} from './document-set.schema.js';
-import {
-  CommandResultSchema,
-  CommandResults,
-} from './cli.schema.js';
+// Import the CommandResults helper for re-export
+import { CommandResults } from './cli.schema.js';
 
 // Also export the CommandResults helper
 export { CommandResults };
