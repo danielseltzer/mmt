@@ -8,6 +8,7 @@ export const CliArgsSchema = z.object({
   // Special flags
   version: z.boolean().default(false).describe('Show version and exit'),
   debug: z.boolean().default(false).describe('Enable debug output'),
+  watch: z.boolean().default(false).describe('Enable file watching for continuous mode'),
   
   // Config and command
   configPath: z.string().optional().describe('Path to config file from --config flag'),

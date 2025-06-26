@@ -77,6 +77,11 @@ export interface IndexerOptions {
   useWorkers?: boolean; // Enable worker threads
   cacheDir?: string; // Where to store cache
   workerCount?: number; // Number of worker threads
+  fileWatching?: {
+    enabled: boolean;
+    debounceMs?: number;
+    ignorePatterns?: string[];
+  };
 }
 
 /**

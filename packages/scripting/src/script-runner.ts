@@ -33,6 +33,11 @@ export interface ScriptRunnerOptions {
   config: {
     vaultPath: string;
     indexPath: string;
+    fileWatching?: {
+      enabled: boolean;
+      debounceMs?: number;
+      ignorePatterns?: string[];
+    };
   };
   fileSystem: FileSystemAccess;
   queryParser: QueryParser;
@@ -75,6 +80,7 @@ export class ScriptRunner {
         fileSystem: this.fs,
         useCache: true,
         useWorkers: true,
+        fileWatching: this.config.fileWatching,
       });
       await this.indexer.initialize();
     }

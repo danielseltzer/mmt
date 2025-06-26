@@ -35,6 +35,35 @@ export const ConfigSchema = z.object({
    * The index database will be created here if it doesn't exist.
    */
   indexPath: z.string().describe('Absolute path to store the vault index'),
+  
+  /**
+   * File watching configuration for real-time index updates.
+   * When enabled, the indexer will automatically update when files change.
+   */
+  fileWatching: z.object({
+    /**
+     * Whether to enable file watching.
+     * When true, changes to markdown files trigger automatic index updates.
+     */
+    enabled: z.boolean().default(true),
+    
+    /**
+     * Debounce delay in milliseconds.
+     * Rapid file changes within this window are batched together.
+     */
+    debounceMs: z.number().min(0).default(100),
+    
+    /**
+     * Glob patterns to ignore when watching.
+     * These patterns are relative to the vault root.
+     */
+    ignorePatterns: z.array(z.string()).default([
+      '.git/**',
+      '.obsidian/**',
+      '.trash/**',
+      'node_modules/**'
+    ]),
+  }).default({}).optional(),
 }).strict();
 
 export type Config = z.infer<typeof ConfigSchema>;

@@ -30,6 +30,8 @@ export class CliParser {
         parsed.version = true;
       } else if (arg === '--debug') {
         parsed.debug = true;
+      } else if (arg === '--watch') {
+        parsed.watch = true;
       } else if (arg.startsWith('--config=') && !parsed.command) {
         // Handle --config=value format (only before command)
         parsed.configPath = arg.slice('--config='.length);

@@ -82,7 +82,7 @@ export class VaultIndexer {
     console.error(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
     
     // Start file watching
-    if (this.options.useCache) {
+    if (this.options.fileWatching?.enabled ?? this.options.useCache) {
       this.startWatching();
     }
   }
@@ -322,29 +322,34 @@ export class VaultIndexer {
    * Start watching for file changes
    */
   private startWatching(): void {
-    this.watcher = new FileWatcher(this.options.vaultPath);
-    
-    this.watcher.on('add', (path: unknown) => {
-      if (typeof path === 'string') {
-        this.handleFileAdded(path).catch((error: unknown) => {
-          console.error('Error handling file added:', error);
-        });
-      }
-    });
-    this.watcher.on('change', (path: unknown) => {
-      if (typeof path === 'string') {
-        this.handleFileChanged(path).catch((error: unknown) => {
-          console.error('Error handling file changed:', error);
-        });
-      }
-    });
-    this.watcher.on('unlink', (path: unknown) => {
-      if (typeof path === 'string') {
-        this.handleFileDeleted(path);
-      }
+    this.watcher = new FileWatcher({
+      paths: [this.options.vaultPath],
+      recursive: true,
+      debounceMs: this.options.fileWatching?.debounceMs ?? 100,
+      ignorePatterns: this.options.fileWatching?.ignorePatterns,
     });
     
-    this.watcher.start();
+    this.watcher.onFileChange(async (event) => {
+      try {
+        switch (event.type) {
+          case 'created':
+            await this.handleFileAdded(event.path);
+            break;
+          case 'modified':
+            await this.handleFileChanged(event.path);
+            break;
+          case 'deleted':
+            this.handleFileDeleted(event.path);
+            break;
+        }
+      } catch (error) {
+        console.error(`Error handling file ${event.type}:`, error);
+      }
+    });
+    
+    this.watcher.start().catch(error => {
+      console.error('Failed to start file watcher:', error);
+    });
   }
   
   private async handleFileAdded(path: string): Promise<void> {
@@ -367,6 +372,23 @@ export class VaultIndexer {
       if (this.cache) {
         this.cache.delete(path);
       }
+    }
+  }
+
+  /**
+   * Shutdown the indexer and clean up resources
+   */
+  async shutdown(): Promise<void> {
+    // Stop file watcher
+    if (this.watcher) {
+      await this.watcher.stop();
+      this.watcher = undefined;
+    }
+
+    // Close worker pool
+    if (this.workers) {
+      // Workers would need cleanup method
+      this.workers = undefined;
     }
   }
 }
