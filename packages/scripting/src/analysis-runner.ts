@@ -56,14 +56,6 @@ export class AnalysisRunner {
     for (const operation of operations) {
       if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
         table = await this.executeAnalysisOperation(table, operation);
-      } else if (operation.type === 'custom' && 'action' in operation && operation.action === 'analyze' && 'handler' in operation) {
-        // Support legacy custom operations with handlers
-        const context: AnalysisContext = { table, aq };
-        const handler = (operation as any).handler;
-        const result = await handler(documents, context);
-        if (result && result.table) {
-          table = result.table;
-        }
       }
     }
     
@@ -74,7 +66,6 @@ export class AnalysisRunner {
     
     return {
       table,
-      output: undefined, // Legacy field, kept for compatibility
     };
   }
   

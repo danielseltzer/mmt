@@ -17,7 +17,7 @@ export type {
   VaultContext,
   Document,
   DocumentSet,
-  Query,
+  QueryInput,
   ExecutionResult,
   Operation,
 } from '@mmt/entities';

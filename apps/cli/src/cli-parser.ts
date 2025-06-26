@@ -56,8 +56,10 @@ export class CliParser {
       } else if (!arg.startsWith('-')) {
         // Non-flag arg before command - invalid
         throw new Error(`Unexpected argument: ${arg}`);
+      } else {
+        // Unknown flag - error instead of ignoring
+        throw new Error(`Unknown flag: ${arg}`);
       }
-      // Ignore unknown flags for forward compatibility
       
       i++;
     }

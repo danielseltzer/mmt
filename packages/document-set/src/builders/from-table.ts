@@ -21,7 +21,7 @@ export interface FromTableOptions {
   /**
    * The original query that produced this table (if any).
    */
-  sourceQuery?: import('@mmt/entities').Query;
+  sourceQuery?: import('@mmt/entities').QueryInput;
   
   /**
    * Query execution time in milliseconds.

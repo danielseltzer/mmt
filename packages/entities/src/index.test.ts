@@ -3,14 +3,14 @@ import {
   ConfigSchema,
   DocumentMetadataSchema,
   DocumentSchema,
-  QuerySchema,
+  QueryInputSchema,
   OperationSchema,
   VaultSchema,
   ExecutionResultSchema,
   type Config,
   type DocumentMetadata,
   type Document,
-  type Query,
+  type QueryInput,
   type Operation,
   type Vault,
   type ExecutionResult,
@@ -99,12 +99,12 @@ describe('Entity Schemas', () => {
     });
   });
 
-  describe('QuerySchema with namespaces', () => {
+  describe('QueryInputSchema with namespaces', () => {
     it('should validate query with namespace format', () => {
       // GIVEN: Query with namespace:property format
-      // WHEN: Validating against QuerySchema
+      // WHEN: Validating against QueryInputSchema
       // THEN: Valid because all properties use correct namespace prefixes (fs:, fm:, content:)
-      const query: Query = {
+      const query: QueryInput = {
         'fs:path': 'folder/**',
         'fs:modified': '>2024-01-01',
         'fm:status': 'draft',
@@ -114,30 +114,30 @@ describe('Entity Schemas', () => {
         order: 'desc',
       };
       
-      const result = QuerySchema.safeParse(query);
+      const result = QueryInputSchema.safeParse(query);
       expect(result.success).toBe(true);
     });
 
     it('should reject query without namespace prefix', () => {
       // GIVEN: Query properties without namespace prefixes
-      // WHEN: Validating against QuerySchema
+      // WHEN: Validating against QueryInputSchema
       // THEN: Invalid because all query properties must have namespace (prevents ambiguity)
       const query = {
         path: 'folder/', // Missing namespace
         status: 'draft', // Missing namespace
       };
       
-      const result = QuerySchema.safeParse(query);
+      const result = QueryInputSchema.safeParse(query);
       expect(result.success).toBe(false);
     });
 
     it('should validate empty query', () => {
       // GIVEN: An empty query object
-      // WHEN: Validating against QuerySchema
+      // WHEN: Validating against QueryInputSchema
       // THEN: Valid because empty queries select all documents
-      const query: Query = {};
+      const query: QueryInput = {};
       
-      const result = QuerySchema.safeParse(query);
+      const result = QueryInputSchema.safeParse(query);
       expect(result.success).toBe(true);
     });
 

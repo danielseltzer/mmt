@@ -9,11 +9,10 @@ export { Script } from './script.interface.js';
 export { ScriptRunner, type ScriptRunnerOptions } from './script-runner.js';
 export { ResultFormatter, type FormatOptions } from './result-formatter.js';
 export { AnalysisRunner } from './analysis-runner.js';
-export { documentsToTable, tableToDocumentSet } from './analysis-pipeline.js';
 export { MarkdownReportGenerator, type ReportGenerationOptions } from './markdown-report-generator.js';
 
 // Re-export Arquero for script usage
-export * as aq from 'arquero';
+export { aq } from './analysis-pipeline.js';
 
 // Re-export relevant types from entities for convenience
 export type {

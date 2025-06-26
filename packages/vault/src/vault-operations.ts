@@ -8,7 +8,7 @@ import type {
   VaultContext, 
   Document, 
   DocumentSet,
-  Query,
+  QueryInput,
   StructuredQuery,
   VaultIndex,
 } from '@mmt/entities';
@@ -186,7 +186,7 @@ class VaultContextImpl implements VaultContext {
    * @returns New context with matching documents
    * @example vault.select({ 'fs:path': 'posts/**', 'fm:status': 'draft' })
    */
-  select(query: Query): VaultContext {
+  select(query: QueryInput): VaultContext {
     const structured = parseQuery(query);
     const documents = Array.from(this.vault.documents.values());
     const filtered = documents.filter(doc => matchesQuery(doc, structured, this.vault.basePath));

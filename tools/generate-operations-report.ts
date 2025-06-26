@@ -40,7 +40,7 @@ async function findOperations(): Promise<Operation[]> {
   const schemaContent = readFileSync(schemaPath, 'utf-8');
   
   // Extract operation types from schema
-  const operationTypes = ['move', 'rename', 'updateFrontmatter', 'delete', 'custom'];
+  const operationTypes = ['move', 'rename', 'updateFrontmatter', 'delete'];
   
   // Check scripting package for implementations
   const scriptRunnerPath = join(__dirname, '../packages/scripting/src/script-runner.ts');
@@ -62,7 +62,7 @@ async function findOperations(): Promise<Operation[]> {
       package: '@mmt/scripting',
       file: 'packages/scripting/src/script-runner.ts',
       line: 0, // Would need AST parsing for exact line
-      implemented: isImplemented && opType === 'custom', // Only custom is implemented
+      implemented: isImplemented,
       tested: testFiles.length > 0,
       testFiles,
     });
@@ -123,7 +123,6 @@ function getOperationDescription(opType: string): string {
     rename: 'Rename documents',
     updateFrontmatter: 'Update document frontmatter fields',
     delete: 'Delete documents',
-    custom: 'Execute custom operations',
   };
   return descriptions[opType] || 'Unknown operation';
 }
