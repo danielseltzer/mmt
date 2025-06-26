@@ -252,6 +252,9 @@ importers:
       '@mmt/filesystem-access':
         specifier: workspace:*
         version: link:../filesystem-access
+      '@mmt/vault':
+        specifier: workspace:*
+        version: link:../vault
       chokidar:
         specifier: ^3.5.3
         version: 3.6.0

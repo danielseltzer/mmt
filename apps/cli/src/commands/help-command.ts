@@ -18,6 +18,7 @@ export class HelpCommand implements CommandHandler {
       'Options:',
       '  --config=<path>  Path to configuration file (required for most commands)',
       '  --debug          Enable debug output',
+      '  --watch          Enable file watching for automatic index updates',
       '  --version        Show version and exit',
       '  --help, -h       Show this help message',
       '',

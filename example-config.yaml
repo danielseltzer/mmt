@@ -9,3 +9,14 @@ vaultPath: /Users/username/Documents/my-notes
 
 # Absolute path where MMT will store its index database
 indexPath: /Users/username/.mmt/my-notes-index
+
+# Optional: File watching configuration for automatic index updates
+# Uncomment to enable real-time synchronization when files change
+# fileWatching:
+#   enabled: true              # Enable automatic index updates
+#   debounceMs: 100           # Milliseconds to wait before processing rapid changes
+#   ignorePatterns:           # Glob patterns for files/directories to ignore
+#     - .git/**
+#     - .obsidian/**
+#     - .trash/**
+#     - node_modules/**

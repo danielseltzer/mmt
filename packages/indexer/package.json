@@ -25,6 +25,7 @@
   "dependencies": {
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
+    "@mmt/vault": "workspace:*",
     "chokidar": "^3.5.3",
     "gray-matter": "^4.0.3",
     "minimatch": "^9.0.3",

@@ -89,6 +89,20 @@ export class ApplicationDirector {
       const configService = new ConfigService();
       const config = configService.load(cliArgs.configPath);
       
+      // Override file watching setting with CLI flag if provided
+      if (cliArgs.watch) {
+        config.fileWatching = {
+          enabled: true,
+          debounceMs: config.fileWatching?.debounceMs ?? 100,
+          ignorePatterns: config.fileWatching?.ignorePatterns ?? [
+            '.git/**',
+            '.obsidian/**',
+            '.trash/**',
+            'node_modules/**'
+          ],
+        };
+      }
+      
       debugLog('Config loaded:', config);
       
       // 7. Create app context

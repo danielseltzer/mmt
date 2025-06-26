@@ -10,6 +10,10 @@ MMT requires explicit configuration with no defaults. Create a YAML config file:
 # mmt-config.yaml
 vaultPath: /absolute/path/to/your/vault
 indexPath: /absolute/path/to/store/index
+
+# Optional: Enable file watching for automatic index updates
+fileWatching:
+  enabled: true
 ```
 
 See [example-config.yaml](example-config.yaml) for a complete example.
@@ -25,6 +29,9 @@ See [example-config.yaml](example-config.yaml) for a complete example.
 ### Development
 - [Engineering Principles](docs/building/principles.md)
 - [Dependency Injection](docs/building/dependency-injection.md)
+
+### Features
+- [File Watching](docs/features/file-watching.md) - Automatic index updates when files change
 
 ## Development
 
