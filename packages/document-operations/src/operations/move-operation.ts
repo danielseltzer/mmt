@@ -108,7 +108,7 @@ export class MoveOperation implements DocumentOperation {
           changes.push({
             type: 'link-update',
             file: ref.filePath,
-            description: `Update ${ref.links.length} link(s) to ${basename(doc.path, '.md')}`
+            description: `Update ${String(ref.links.length)} link(s) to ${basename(doc.path, '.md')}`
           });
         }
       } catch (error) {

@@ -100,7 +100,7 @@ export class RenameOperation implements DocumentOperation {
         const relativePathForIndex = context.vault.path ? 
           doc.path.substring(context.vault.path.length + 1) : 
           doc.path;
-        const linkingDocs = await indexer.getBacklinks(relativePathForIndex);
+        const linkingDocs = indexer.getBacklinks(relativePathForIndex);
         
         // Add link update changes for documents that link here
         for (const linkingDoc of linkingDocs) {
@@ -188,7 +188,7 @@ export class RenameOperation implements DocumentOperation {
       if (options.updateLinks) {
         try {
           // Get all documents
-          const allDocs = await indexer.getAllDocuments();
+          const allDocs = indexer.getAllDocuments();
           
           // Update each document that might link to this one
           for (const linkingDoc of allDocs) {

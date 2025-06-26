@@ -78,7 +78,7 @@ export class DeleteOperation implements DocumentOperation {
 
     // Find documents that link to this file
     const relativePath = relative(vaultPath, doc.path);
-    const backlinks = await context.indexer.getBacklinks(relativePath);
+    const backlinks = context.indexer.getBacklinks(relativePath);
     for (const linkingDoc of backlinks) {
       changes.push({
         type: 'link-update',
@@ -121,7 +121,7 @@ export class DeleteOperation implements DocumentOperation {
 
       // Update links in referencing documents first
       const relativePath = relative(context.vault.path, doc.path);
-      const backlinks = await context.indexer.getBacklinks(relativePath);
+      const backlinks = context.indexer.getBacklinks(relativePath);
       for (const linkingDoc of backlinks) {
         await this.updateLinksInDocument(linkingDoc.path, doc.path, context);
       }

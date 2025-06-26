@@ -1,7 +1,7 @@
-export { FileRelocator } from './file-relocator';
+export { FileRelocator } from './file-relocator.js';
 export type { 
   Link, 
   LinkType, 
   FileReferences, 
   RelocatorOptions 
-} from './types';
+} from './types.js';
