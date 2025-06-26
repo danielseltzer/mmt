@@ -25,7 +25,7 @@ import matter from 'gray-matter';
  */
 export interface FileSystemAccess {
   // Basic file operations
-  readFile(path: string): Promise<string>;
+  readFile(path: string, encoding?: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
   exists(path: string): Promise<boolean>;
   unlink(path: string): Promise<void>;
@@ -59,8 +59,8 @@ export interface FileSystemAccess {
  * Node.js implementation of FileSystemAccess
  */
 export class NodeFileSystem implements FileSystemAccess {
-  async readFile(path: string): Promise<string> {
-    return fsReadFile(path, 'utf-8');
+  async readFile(path: string, encoding?: string): Promise<string> {
+    return fsReadFile(path, (encoding || 'utf-8') as BufferEncoding);
   }
 
   async writeFile(path: string, content: string): Promise<void> {

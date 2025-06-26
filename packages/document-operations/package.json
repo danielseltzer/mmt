@@ -26,6 +26,7 @@
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
+    "@mmt/file-relocator": "workspace:*",
     "yaml": "^2.3.4"
   },
   "devDependencies": {
