@@ -20,12 +20,16 @@ export const OperationReadyDocumentSetSchema = z.object({
   limit: z.number().default(500),
   
   // Lazy Arquero table reference - validated at runtime
-  tableRef: z.custom<any>((val) => {
+  tableRef: z.custom<unknown>((val) => {
     // Runtime check that it's a Table-like object
-    return val && typeof val === 'object' && 
-           'numRows' in val && 
-           'numCols' in val &&
-           typeof val.filter === 'function';
+    if (val !== null && val !== undefined && typeof val === 'object') {
+      const obj = val as Record<string, unknown>;
+      return 'numRows' in obj && 
+             'numCols' in obj &&
+             'filter' in obj &&
+             typeof obj.filter === 'function';
+    }
+    return false;
   }, {
     message: "Expected Arquero Table instance"
   }),

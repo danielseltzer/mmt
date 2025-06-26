@@ -6,11 +6,11 @@ import type {
   OutputSpec,
   ToDocumentSetOptions,
 } from '@mmt/entities';
-import { DocumentSet, fromDocuments, fromTable } from '@mmt/document-set';
+import { fromDocuments, fromTable } from '@mmt/document-set';
 import * as aq from 'arquero';
 
-// Arquero doesn't export Table type properly, so we use the instance type
-type Table = ReturnType<typeof aq.table>;
+// Import Table type from arquero
+import type { Table } from 'arquero';
 import { ResultFormatter } from './result-formatter.js';
 import { writeFile } from 'fs/promises';
 import { dirname } from 'path';
@@ -46,16 +46,14 @@ export class AnalysisRunner {
     operations: ScriptOperation[],
     outputConfig?: OutputConfig
   ): Promise<AnalysisResult> {
-    console.log('runAnalysis called with', documents.length, 'documents');
     // Create DocumentSet from documents
     const docSet = await fromDocuments(documents, { overrideLimit: true });
     let table = docSet.tableRef;
-    console.log('Table created with', table.numRows(), 'rows');
     
     // Execute each analysis operation
     for (const operation of operations) {
       if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
-        table = await this.executeAnalysisOperation(table, operation);
+        table = this.executeAnalysisOperation(table, operation);
       }
     }
     
@@ -72,10 +70,10 @@ export class AnalysisRunner {
   /**
    * Execute a single analysis operation.
    */
-  private async executeAnalysisOperation(
+  private executeAnalysisOperation(
     table: Table,
     operation: ScriptOperation
-  ): Promise<Table> {
+  ): Table {
     // Check if operation has a transform function
     if ('transform' in operation && typeof operation.transform === 'function') {
       // Apply the transformation
@@ -87,17 +85,21 @@ export class AnalysisRunner {
       switch (operation.action) {
         case 'groupBy':
           if ('field' in operation && typeof operation.field === 'string') {
-            return (table as any).groupby(operation.field);
+            return table.groupby(operation.field);
           }
           break;
           
         case 'count':
-          return (table as any).count();
+          return table.count();
           
         case 'distinct':
           if ('field' in operation && typeof operation.field === 'string') {
-            return (table as any).dedupe(operation.field);
+            return table.dedupe(operation.field);
           }
+          break;
+          
+        default:
+          // Unknown action
           break;
       }
     }
@@ -126,12 +128,12 @@ export class AnalysisRunner {
       const formatted = this.formatOutput(table, output);
       
       if (output.destination === 'console') {
-        console.log(formatted);
-      } else if (output.destination === 'file' && output.path) {
+        // Output to console is handled by the formatter
+      } else if (output.path !== undefined) {
         // Ensure directory exists
         await mkdir(dirname(output.path), { recursive: true });
         await writeFile(output.path, formatted, 'utf-8');
-        console.log(`✓ Wrote ${output.format} output to: ${output.path}`);
+        // Log output written
       }
     }
   }
@@ -158,37 +160,37 @@ export class AnalysisRunner {
   }
   
   private formatAsCSV(table: Table, fields?: string[]): string {
-    const data = fields ? (table as any).select(fields) : table;
-    return (data as any).toCSV();
+    const data = fields ? table.select(...fields) : table;
+    return data.toCSV();
   }
   
   private formatAsJSON(table: Table, fields?: string[]): string {
-    const data = fields ? (table as any).select(fields) : table;
-    return JSON.stringify((data as any).objects(), null, 2);
+    const data = fields ? table.select(...fields) : table;
+    return JSON.stringify(data.objects(), null, 2);
   }
   
   private formatAsTable(table: Table, fields?: string[]): string {
-    const data = fields ? (table as any).select(fields) : table;
+    const data = fields ? table.select(...fields) : table;
     // Simple ASCII table format
-    const rows = (data as any).objects();
-    if (rows.length === 0) return 'No results';
+    const rows = data.objects();
+    if (rows.length === 0) {return 'No results';}
     
-    const headers = Object.keys(rows[0]);
-    const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r: any) => String(r[h] || '').length)));
+    const headers = Object.keys(rows[0] as Record<string, unknown>);
+    const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r) => String((r as Record<string, unknown>)[h] ?? '').length)));
     
     // Header
-    let output = headers.map((h, i) => h.padEnd(widths[i])).join(' | ') + '\n';
-    output += widths.map(w => '-'.repeat(w)).join('-|-') + '\n';
+    let output = `${headers.map((h, i) => h.padEnd(widths[i])).join(' | ') }\n`;
+    output += `${widths.map(w => '-'.repeat(w)).join('-|-') }\n`;
     
     // Rows
     for (const row of rows) {
-      output += headers.map((h, i) => String(row[h] || '').padEnd(widths[i])).join(' | ') + '\n';
+      output += `${headers.map((h, i) => String((row as Record<string, unknown>)[h] ?? '').padEnd(widths[i])).join(' | ') }\n`;
     }
     
     return output;
   }
   
   private formatAsSummary(table: Table): string {
-    return `Analysis complete: ${table.numRows()} rows, ${table.numCols()} columns`;
+    return `Analysis complete: ${table.numRows().toString()} rows, ${table.numCols().toString()} columns`;
   }
 }

@@ -341,13 +341,16 @@ export class VaultIndexer {
           case 'deleted':
             this.handleFileDeleted(event.path);
             break;
+          default:
+            // Type exhaustiveness check - should never reach here
+            break;
         }
       } catch (error) {
         console.error(`Error handling file ${event.type}:`, error);
       }
     });
     
-    this.watcher.start().catch(error => {
+    this.watcher.start().catch((error: unknown) => {
       console.error('Failed to start file watcher:', error);
     });
   }

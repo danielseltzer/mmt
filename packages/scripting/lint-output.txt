@@ -1,0 +1,231 @@
+
+> @mmt/scripting@0.0.0 lint
+> eslint src
+
+
+/Users/danielseltzer/code/mmt/packages/scripting/src/analysis-runner.ts
+    9:10   error    'DocumentSet' is defined but never used. Allowed unused vars must match /^_/u                              @typescript-eslint/no-unused-vars
+   49:5    warning  Unexpected console statement. Only these console methods are allowed: warn, error                          no-console
+   53:5    warning  Unexpected console statement. Only these console methods are allowed: warn, error                          no-console
+   75:3    error    Async method 'executeAnalysisOperation' has no 'await' expression                                          @typescript-eslint/require-await
+   82:7    error    Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
+   82:14   error    Unsafe call of a(n) `Function` typed value                                                                 @typescript-eslint/no-unsafe-call
+   87:7    error    Expected a default case                                                                                    default-case
+   90:13   error    Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
+   90:20   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+   90:30   error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+   90:35   error    Unsafe member access .groupby on an `any` value                                                            @typescript-eslint/no-unsafe-member-access
+   95:11   error    Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
+   95:18   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+   95:28   error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+   95:33   error    Unsafe member access .count on an `any` value                                                              @typescript-eslint/no-unsafe-member-access
+   99:13   error    Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
+   99:20   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+   99:30   error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+   99:35   error    Unsafe member access .dedupe on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  129:9    warning  Unexpected console statement. Only these console methods are allowed: warn, error                          no-console
+  130:18   error    Unnecessary conditional, comparison is always true, since `"file" === "file"` is true                      @typescript-eslint/no-unnecessary-condition
+  134:9    warning  Unexpected console statement. Only these console methods are allowed: warn, error                          no-console
+  161:11   error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  161:27   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  161:37   error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  161:42   error    Unsafe member access .select on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  162:5    error    Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
+  162:12   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  162:19   error    Unsafe member access .toCSV on an `any` value                                                              @typescript-eslint/no-unsafe-member-access
+  166:11   error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  166:27   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  166:37   error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  166:42   error    Unsafe member access .select on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  167:27   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  167:34   error    Unsafe member access .objects on an `any` value                                                            @typescript-eslint/no-unsafe-member-access
+  171:11   error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  171:27   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  171:37   error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  171:42   error    Unsafe member access .select on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  173:11   error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  173:18   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  173:25   error    Unsafe member access .objects on an `any` value                                                            @typescript-eslint/no-unsafe-member-access
+  174:14   error    Unsafe member access .length on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  176:33   error    Unsafe argument of type `any` assigned to a parameter of type `{}`                                         @typescript-eslint/no-unsafe-argument
+  176:38   error    Unsafe member access [0] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access
+  177:66   error    Unsafe spread of an `any` type                                                                             @typescript-eslint/no-unsafe-argument
+  177:69   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  177:74   error    Unsafe member access .map on an `any` value                                                                @typescript-eslint/no-unsafe-member-access
+  177:82   error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  177:97   error    Unexpected any value in conditional. An explicit comparison or type conversion is required                 @typescript-eslint/strict-boolean-expressions
+  177:99   error    Unsafe member access [h] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access
+  177:102  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  185:49   error    Unexpected any value in conditional. An explicit comparison or type conversion is required                 @typescript-eslint/strict-boolean-expressions
+  185:53   error    Unsafe member access [h] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access
+  185:56   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  192:34   error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  192:59   error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+
+/Users/danielseltzer/code/mmt/packages/scripting/src/markdown-report-generator.ts
+   59:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error                          no-console
+  100:52  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  117:17  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  118:28  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  119:30  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  120:26  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  121:27  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  130:32  error    Unexpected any value in conditional. An explicit comparison or type conversion is required                 @typescript-eslint/strict-boolean-expressions
+  131:34  error    Invalid type "any" of template literal expression                                                          @typescript-eslint/restrict-template-expressions
+  131:49  error    Unsafe member access .length on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  138:39  error    Invalid type "any" of template literal expression                                                          @typescript-eslint/restrict-template-expressions
+  146:21  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  148:36  error    Invalid type "unknown" of template literal expression                                                      @typescript-eslint/restrict-template-expressions
+  169:46  error    'outputs' is defined but never used. Allowed unused args must match /^_/u                                  @typescript-eslint/no-unused-vars
+  173:37  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  173:63  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  177:11  error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  177:20  error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  177:30  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  177:35  error    Unsafe member access .slice on an `any` value                                                              @typescript-eslint/no-unsafe-member-access
+  178:37  error    Unsafe argument of type `any` assigned to a parameter of type `Table`                                      @typescript-eslint/no-unsafe-argument
+  187:13  error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  187:28  error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  187:28  error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  187:38  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  187:43  error    Unsafe member access .filter on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  187:78  error    Unsafe member access .numRows on an `any` value                                                            @typescript-eslint/no-unsafe-member-access
+  188:42  error    Invalid type "any" of template literal expression                                                          @typescript-eslint/restrict-template-expressions
+  199:28  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  207:33  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  213:28  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  223:28  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  230:33  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  244:25  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  254:11  error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  254:18  error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  254:28  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  254:33  error    Unsafe member access .objects on an `any` value                                                            @typescript-eslint/no-unsafe-member-access
+  255:14  error    Unsafe member access .length on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  257:33  error    Unsafe argument of type `any` assigned to a parameter of type `{}`                                         @typescript-eslint/no-unsafe-argument
+  257:38  error    Unsafe member access [0] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access
+  265:5   error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  265:10  error    Unsafe member access .forEach on an `any` value                                                            @typescript-eslint/no-unsafe-member-access
+  265:24  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  267:15  error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  267:25  error    Unsafe member access [h] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access
+  284:11  error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  284:20  error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  284:30  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  284:35  error    Unsafe member access .sample on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  285:11  error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  285:20  error    Unsafe call of a(n) `any` typed value                                                                      @typescript-eslint/no-unsafe-call
+  285:29  error    Unsafe member access .array on an `any` value                                                              @typescript-eslint/no-unsafe-member-access
+  298:31  error    Unsafe argument of type `any` assigned to a parameter of type `string`                                     @typescript-eslint/no-unsafe-argument
+  324:51  error    Invalid type "number" of template literal expression                                                       @typescript-eslint/restrict-template-expressions
+  328:40  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  329:44  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  356:16  error    'e' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  370:50  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/danielseltzer/code/mmt/packages/scripting/src/result-formatter.ts
+   39:28  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+   43:32  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+   47:29  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+   51:30  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+   54:31  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+   66:28  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+   76:7   error  Forbidden non-null assertion                                                      @typescript-eslint/no-non-null-assertion
+   79:17  error  'opKey' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  103:37  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+  104:75  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+  107:31  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+  110:31  error  Invalid type "number" of template literal expression                              @typescript-eslint/restrict-template-expressions
+  119:44  error  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+  122:23  error  Unsafe member access .type on an `any` value                                      @typescript-eslint/no-unsafe-member-access
+  124:37  error  Invalid type "any" of template literal expression                                 @typescript-eslint/restrict-template-expressions
+  124:47  error  Unsafe member access .destination on an `any` value                               @typescript-eslint/no-unsafe-member-access
+  132:29  error  Invalid type "any" of template literal expression                                 @typescript-eslint/restrict-template-expressions
+  132:39  error  Unsafe member access .type on an `any` value                                      @typescript-eslint/no-unsafe-member-access
+  136:53  error  'fields' is defined but never used. Allowed unused args must match /^_/u          @typescript-eslint/no-unused-vars
+  140:48  error  Unsafe return of a value of type `any`                                            @typescript-eslint/no-unsafe-return
+
+/Users/danielseltzer/code/mmt/packages/scripting/src/script-runner.ts
+    1:10  error  'readFile' is defined but never used. Allowed unused vars must match /^_/u                                  @typescript-eslint/no-unused-vars
+   10:3   error  'ExecuteOptions' is defined but never used. Allowed unused vars must match /^_/u                            @typescript-eslint/no-unused-vars
+   17:3   error  'OutputSpec' is defined but never used. Allowed unused vars must match /^_/u                                @typescript-eslint/no-unused-vars
+   25:33  error  'OperationOptions' is defined but never used. Allowed unused vars must match /^_/u                          @typescript-eslint/no-unused-vars
+   75:66  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+   92:11  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  100:10  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  110:7   error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  119:9   error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  127:9   error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  150:39  error  Unexpected any value in array predicate return type. An explicit comparison or type conversion is required  @typescript-eslint/strict-boolean-expressions
+  179:25  error  Forbidden non-null assertion                                                                                @typescript-eslint/no-non-null-assertion
+  185:17  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  213:25  error  Forbidden non-null assertion                                                                                @typescript-eslint/no-non-null-assertion
+  219:17  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  259:9   error  Use object destructuring                                                                                    prefer-destructuring
+  260:9   error  Use object destructuring                                                                                    prefer-destructuring
+  265:7   error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  265:25  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  282:13  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  285:12  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  285:19  error  Unsafe member access .default on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  290:13  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  290:36  error  Unsafe member access .default on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  291:11  error  Unsafe construction of a(n) `any` typed value                                                               @typescript-eslint/no-unsafe-call
+  291:22  error  Unsafe member access .default on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  292:18  error  Unsafe member access .default on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  295:25  error  Unsafe member access .define on an `any` value                                                              @typescript-eslint/no-unsafe-member-access
+  299:7   error  Unsafe return of a value of type `any`                                                                      @typescript-eslint/no-unsafe-return
+  312:32  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  315:45  error  Unsafe argument of type `any` assigned to a parameter of type `string`                                      @typescript-eslint/no-unsafe-argument
+  317:44  error  Unsafe argument of type `any` assigned to a parameter of type `string`                                      @typescript-eslint/no-unsafe-argument
+  319:13  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  322:15  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  322:21  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  322:21  error  Unsafe call of a(n) `any` typed value                                                                       @typescript-eslint/no-unsafe-call
+  322:21  error  Unsafe call of a(n) `any` typed value                                                                       @typescript-eslint/no-unsafe-call
+  322:21  error  Unsafe call of a(n) `any` typed value                                                                       @typescript-eslint/no-unsafe-call
+  322:30  error  Unsafe member access .replace on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
+  322:38  error  Use the 'u' flag                                                                                            require-unicode-regexp
+  322:51  error  Unsafe member access .split on an `any` value                                                               @typescript-eslint/no-unsafe-member-access
+  322:62  error  Unsafe member access .pop on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access
+  322:68  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  340:61  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  342:30  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  342:70  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  346:23  error  Unexpected `await` of a non-Promise (non-"Thenable") value                                                  @typescript-eslint/await-thenable
+  352:21  error  Unexpected `await` of a non-Promise (non-"Thenable") value                                                  @typescript-eslint/await-thenable
+  359:54  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  391:29  error  Unexpected `await` of a non-Promise (non-"Thenable") value                                                  @typescript-eslint/await-thenable
+  394:29  error  Unexpected `await` of a non-Promise (non-"Thenable") value                                                  @typescript-eslint/await-thenable
+  403:24  error  Unnecessary conditional, value is always truthy                                                             @typescript-eslint/no-unnecessary-condition
+  403:24  error  Unexpected object value in conditional. The condition is always true                                        @typescript-eslint/strict-boolean-expressions
+  404:17  error  Unnecessary conditional, value is always truthy                                                             @typescript-eslint/no-unnecessary-condition
+  404:17  error  Unexpected object value in conditional. The condition is always true                                        @typescript-eslint/strict-boolean-expressions
+  421:62  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  452:16  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  456:11  error  Unexpected lexical declaration in case block                                                                no-case-declarations
+  463:16  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  472:16  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  477:19  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  477:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  483:24  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  483:44  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  488:54  error  Invalid type "never" of template literal expression                                                         @typescript-eslint/restrict-template-expressions
+  502:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  510:36  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  528:62  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  559:16  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  563:11  error  Unexpected lexical declaration in case block                                                                no-case-declarations
+  570:16  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  579:16  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  584:19  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  584:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  590:24  error  Unexpected any value in conditional. An explicit comparison or type conversion is required                  @typescript-eslint/strict-boolean-expressions
+  590:44  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  595:54  error  Invalid type "never" of template literal expression                                                         @typescript-eslint/restrict-template-expressions
+  609:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator   @typescript-eslint/prefer-nullish-coalescing
+  651:48  error  Unsafe assignment of an `any` value                                                                         @typescript-eslint/no-unsafe-assignment
+  651:64  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+
+✖ 216 problems (211 errors, 5 warnings)
+

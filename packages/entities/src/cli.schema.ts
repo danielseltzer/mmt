@@ -65,7 +65,7 @@ export const CommandResults = {
   },
 
   /** Standard failure result */
-  failure(message: string, exitCode: number = 1): CommandResult {
+  failure(message: string, exitCode = 1): CommandResult {
     return {
       success: false,
       exitCode,
@@ -74,7 +74,7 @@ export const CommandResults = {
   },
 
   /** Failure with error details */
-  error(error: Error, exitCode: number = 1): CommandResult {
+  error(error: Error, exitCode = 1): CommandResult {
     return {
       success: false,
       exitCode,

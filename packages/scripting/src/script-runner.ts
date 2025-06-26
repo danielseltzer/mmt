@@ -1,4 +1,3 @@
-import { readFile } from 'fs/promises';
 import { pathToFileURL } from 'url';
 import { join, basename } from 'path';
 import type { Table } from 'arquero';
@@ -7,14 +6,12 @@ import type {
   OperationPipeline,
   ScriptExecutionResult,
   ExecutionOptions,
-  ExecuteOptions,
   Document,
   SelectCriteria,
   ScriptOperation,
   SuccessResult,
   FailureResult,
   SkippedResult,
-  OutputSpec,
 } from '@mmt/entities';
 import { OperationPipelineSchema } from '@mmt/entities';
 import type { FileSystemAccess } from '@mmt/filesystem-access';
@@ -267,7 +264,7 @@ export class ScriptRunner {
       isPreview: !options.executeNow,
     });
     
-    this.output.write(formatted + '\n');
+    this.output.write(`${formatted }\n`);
 
     return result;
   }
@@ -339,7 +336,7 @@ export class ScriptRunner {
 
     const query = Object.entries(criteria as Record<string, any>)
       .filter(([key]) => key !== 'files')
-      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {} as Record<string, any>);
+      .reduce<Record<string, any>>((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
     if (Object.keys(query).length === 0) {
       // No criteria - return all documents
