@@ -6,23 +6,21 @@ import type {
   OutputSpec,
   ToDocumentSetOptions,
 } from '@mmt/entities';
-import { DocumentSet, fromDocuments, fromTable } from '@mmt/document-set';
+import { fromDocuments, fromTable } from '@mmt/document-set';
 import * as aq from 'arquero';
-
-// Arquero doesn't export Table type properly, so we use the instance type
-type Table = ReturnType<typeof aq.table>;
+import type { ColumnTable } from '@jrwats/arquero-types';
 import { ResultFormatter } from './result-formatter.js';
 import { writeFile } from 'fs/promises';
 import { dirname } from 'path';
 import { mkdir } from 'fs/promises';
 
 export interface AnalysisContext {
-  table: Table;
+  table: ColumnTable;
   aq: typeof aq;
 }
 
 export interface AnalysisResult {
-  table: Table;
+  table: ColumnTable;
   documentSet?: OperationReadyDocumentSet;
   output?: string;
 }
@@ -46,11 +44,9 @@ export class AnalysisRunner {
     operations: ScriptOperation[],
     outputConfig?: OutputConfig
   ): Promise<AnalysisResult> {
-    console.log('runAnalysis called with', documents.length, 'documents');
     // Create DocumentSet from documents
     const docSet = await fromDocuments(documents, { overrideLimit: true });
     let table = docSet.tableRef;
-    console.log('Table created with', table.numRows(), 'rows');
     
     // Execute each analysis operation
     for (const operation of operations) {
@@ -72,10 +68,10 @@ export class AnalysisRunner {
   /**
    * Execute a single analysis operation.
    */
-  private async executeAnalysisOperation(
-    table: Table,
+  private executeAnalysisOperation(
+    table: ColumnTable,
     operation: ScriptOperation
-  ): Promise<Table> {
+  ): ColumnTable {
     // Check if operation has a transform function
     if ('transform' in operation && typeof operation.transform === 'function') {
       // Apply the transformation
@@ -87,17 +83,21 @@ export class AnalysisRunner {
       switch (operation.action) {
         case 'groupBy':
           if ('field' in operation && typeof operation.field === 'string') {
-            return (table as any).groupby(operation.field);
+            return table.groupby(operation.field);
           }
           break;
           
         case 'count':
-          return (table as any).count();
+          return table.count();
           
         case 'distinct':
           if ('field' in operation && typeof operation.field === 'string') {
-            return (table as any).dedupe(operation.field);
+            return table.dedupe(operation.field);
           }
+          break;
+          
+        default:
+          // Unknown action
           break;
       }
     }
@@ -118,7 +118,7 @@ export class AnalysisRunner {
   /**
    * Process multiple outputs according to configuration.
    */
-  private async processOutputs(table: Table, config: OutputConfig): Promise<void> {
+  private async processOutputs(table: ColumnTable, config: OutputConfig): Promise<void> {
     // Config is always an array of OutputSpec
     const outputs = config;
     
@@ -126,12 +126,12 @@ export class AnalysisRunner {
       const formatted = this.formatOutput(table, output);
       
       if (output.destination === 'console') {
-        console.log(formatted);
+        // Output to console is handled by the formatter
       } else if (output.destination === 'file' && output.path) {
         // Ensure directory exists
         await mkdir(dirname(output.path), { recursive: true });
         await writeFile(output.path, formatted, 'utf-8');
-        console.log(`✓ Wrote ${output.format} output to: ${output.path}`);
+        // Log output written
       }
     }
   }
@@ -139,7 +139,7 @@ export class AnalysisRunner {
   /**
    * Format output according to specification.
    */
-  private formatOutput(table: Table, spec: OutputSpec): string {
+  private formatOutput(table: ColumnTable, spec: OutputSpec): string {
     switch (spec.format) {
       case 'csv':
         return this.formatAsCSV(table, spec.fields);
@@ -157,20 +157,20 @@ export class AnalysisRunner {
     }
   }
   
-  private formatAsCSV(table: Table, fields?: string[]): string {
-    const data = fields ? (table as any).select(fields) : table;
-    return (data).toCSV();
+  private formatAsCSV(table: ColumnTable, fields?: string[]): string {
+    const data = fields ? table.select(fields) : table;
+    return data.toCSV();
   }
   
-  private formatAsJSON(table: Table, fields?: string[]): string {
-    const data = fields ? (table as any).select(fields) : table;
-    return JSON.stringify((data).objects(), null, 2);
+  private formatAsJSON(table: ColumnTable, fields?: string[]): string {
+    const data = fields ? table.select(fields) : table;
+    return JSON.stringify(data.objects(), null, 2);
   }
   
-  private formatAsTable(table: Table, fields?: string[]): string {
-    const data = fields ? (table as any).select(fields) : table;
+  private formatAsTable(table: ColumnTable, fields?: string[]): string {
+    const data = fields ? table.select(fields) : table;
     // Simple ASCII table format
-    const rows = (data).objects();
+    const rows = data.objects();
     if (rows.length === 0) {return 'No results';}
     
     const headers = Object.keys(rows[0]);
@@ -182,13 +182,13 @@ export class AnalysisRunner {
     
     // Rows
     for (const row of rows) {
-      output += `${headers.map((h, i) => String(row[h] || '').padEnd(widths[i])).join(' | ') }\n`;
+      output += `${headers.map((h, i) => String(row[h] ?? '').padEnd(widths[i])).join(' | ') }\n`;
     }
     
     return output;
   }
   
-  private formatAsSummary(table: Table): string {
+  private formatAsSummary(table: ColumnTable): string {
     return `Analysis complete: ${table.numRows()} rows, ${table.numCols()} columns`;
   }
 }
