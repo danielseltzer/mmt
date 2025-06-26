@@ -103,7 +103,7 @@ export interface DocumentOperation {
   /**
    * Preview what this operation will do
    */
-  preview(doc: Document, context: OperationContext): Promise<OperationPreview>;
+  preview(doc: Document, context: OperationContext): OperationPreview | Promise<OperationPreview>;
   
   /**
    * Execute the operation

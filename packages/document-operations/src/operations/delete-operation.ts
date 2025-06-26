@@ -44,7 +44,7 @@ export class DeleteOperation implements DocumentOperation {
     };
   }
 
-  async preview(doc: Document, context: OperationContext): Promise<OperationPreview> {
+  preview(doc: Document, context: OperationContext): OperationPreview {
     const changes: FileChange[] = [];
     const vaultPath = context.vault.path;
 
