@@ -60,7 +60,7 @@ export interface FileSystemAccess {
  */
 export class NodeFileSystem implements FileSystemAccess {
   async readFile(path: string, encoding?: string): Promise<string> {
-    return fsReadFile(path, (encoding || 'utf-8') as BufferEncoding);
+    return fsReadFile(path, (encoding ?? 'utf-8') as BufferEncoding);
   }
 
   async writeFile(path: string, content: string): Promise<void> {

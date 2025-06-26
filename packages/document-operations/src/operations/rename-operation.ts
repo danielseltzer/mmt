@@ -76,7 +76,7 @@ export class RenameOperation implements DocumentOperation {
     return { valid: true };
   }
 
-  async preview(doc: Document, context: OperationContext): Promise<OperationPreview> {
+  preview(doc: Document, context: OperationContext): OperationPreview {
     const targetPath = join(dirname(doc.path), this.newName);
     const { indexer, options } = context;
     

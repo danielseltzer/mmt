@@ -1,5 +1,5 @@
 {
-  "name": "@mmt/core-operations",
+  "name": "@mmt/vault",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,9 +23,11 @@
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/query-parser": "workspace:*",
+    "chokidar": "^3.6.0",
     "minimatch": "^9.0.0"
   },
   "devDependencies": {
+    "@types/minimatch": "^5.1.2",
     "@types/node": "^20.14.0",
     "typescript": "^5.5.0",
     "vitest": "^1.6.0"
