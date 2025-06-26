@@ -56,7 +56,7 @@ export class MarkdownReportGenerator {
     
     // Write report
     await writeFile(options.reportPath, report, 'utf-8');
-    console.log(`✓ Generated markdown report: ${options.reportPath}`);
+    // Report generated successfully
   }
   
   /**
@@ -174,7 +174,7 @@ export class MarkdownReportGenerator {
     
     // Sample data (first 10 rows)
     lines.push('\n### Sample Data (First 10 Rows)');
-    const sample = (table as any).slice(0, 10);
+    const sample = table.slice(0, 10);
     lines.push(this.tableToMarkdown(sample));
     
     // Column statistics
@@ -184,7 +184,7 @@ export class MarkdownReportGenerator {
     lines.push('|--------|------|----------------|');
     columns.forEach((col: string) => {
       const type = this.inferColumnType(table, col);
-      const nonNullCount = (table as any).filter(`d => d['${col}'] != null`).numRows();
+      const nonNullCount = table.filter(`d => d['${col}'] != null`).numRows();
       lines.push(`| ${col} | ${type} | ${nonNullCount} |`);
     });
     
@@ -251,7 +251,7 @@ _This report was automatically generated. For questions or issues, please refer 
    * Convert Arquero table to markdown table format
    */
   private tableToMarkdown(table: Table): string {
-    const rows = (table as any).objects();
+    const rows = table.objects();
     if (rows.length === 0) {return '_No data_';}
     
     const headers = Object.keys(rows[0]);
@@ -281,7 +281,7 @@ _This report was automatically generated. For questions or issues, please refer 
    * Infer column type from sample values
    */
   private inferColumnType(table: Table, column: string): string {
-    const sample = (table as any).sample(Math.min(100, table.numRows()));
+    const sample = table.sample(Math.min(100, table.numRows()));
     const values = (sample).array(column);
     
     let hasString = false;
