@@ -15,6 +15,7 @@
     "@mmt/entities": "workspace:*",
     "@tanstack/react-query": "^5.62.14",
     "@tanstack/react-table": "^8.20.6",
+    "@trpc/client": "^11.4.3",
     "clsx": "^2.1.1",
     "electron-trpc": "^0.6.0",
     "react": "^18.3.1",
