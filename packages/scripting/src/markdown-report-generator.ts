@@ -270,10 +270,10 @@ _This report was automatically generated. For questions or issues, please refer 
           return `${val.substring(0, 47) }...`;
         }
         // Handle different types appropriately
-        if (typeof val === 'object' && val !== null) {
+        if (typeof val === 'object') {
           return JSON.stringify(val);
         }
-        return String(val);
+        return String(val as string | number | boolean);
       });
       lines.push(`| ${ values.join(' | ') } |`);
     });

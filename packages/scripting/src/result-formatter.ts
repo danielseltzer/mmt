@@ -76,7 +76,7 @@ export class ResultFormatter {
       operationGroups.get(key)?.push(item);
     }
     
-    for (const [_opKey, items] of operationGroups) {
+    for (const [, items] of operationGroups) {
       const op = items[0].operation;
       lines.push(`\n${this.formatOperationHeader(op, isPreview)}:`);
       
@@ -121,7 +121,7 @@ export class ResultFormatter {
     
     switch (operation.type) {
       case 'move':
-        return `${prefix} move to ${String(operation.destination ?? 'unknown')}`;
+        return `${prefix} move to ${typeof operation.destination === 'string' ? operation.destination : 'unknown'}`;
       case 'delete':
         return `${prefix} delete`;
       case 'updateFrontmatter':
@@ -137,11 +137,16 @@ export class ResultFormatter {
     // For JSON, include full result with optional field filtering
     const output = {
       attempted: result.attempted.length,
-      succeeded: result.succeeded.map(item => ({
-        path: item.item.path,
-        operation: item.operation.type,
-        ...item.details,
-      })),
+      succeeded: result.succeeded.map(item => {
+        const baseResult: Record<string, unknown> = {
+          path: item.item.path,
+          operation: item.operation.type,
+        };
+        if (item.details !== undefined) {
+          return { ...baseResult, ...(item.details as Record<string, unknown>) };
+        }
+        return baseResult;
+      }),
       failed: result.failed.map(item => ({
         path: item.item.path,
         operation: item.operation.type,
