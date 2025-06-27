@@ -9,24 +9,29 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@mmt/config": "workspace:*",
+    "@mmt/document-operations": "workspace:*",
+    "@mmt/document-set": "workspace:^",
+    "@mmt/entities": "workspace:*",
+    "@mmt/file-relocator": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
     "@mmt/query-parser": "workspace:*",
-    "@mmt/document-operations": "workspace:*",
-    "@mmt/file-relocator": "workspace:*",
     "@mmt/scripting": "workspace:*",
-    "@mmt/entities": "workspace:*",
     "@trpc/server": "^10.45.2",
     "electron-trpc": "^0.6.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",
+    "@vitest/ui": "^3.2.4",
     "electron": "^36.4.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
