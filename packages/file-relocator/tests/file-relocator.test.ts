@@ -81,6 +81,9 @@ This [[task1]] should not be updated - it's in a code block
   });
 
   it('finds all wikilinks [[task1]] pointing to moved file', async () => {
+    // GIVEN: Multiple files containing wikilinks to task1.md
+    // WHEN: Finding all references to the file
+    // THEN: Returns all files and specific links that need updating
     const references = await relocator.findReferences(
       path.join(tempDir, 'Tasks/task1.md'),
       tempDir
@@ -103,6 +106,9 @@ This [[task1]] should not be updated - it's in a code block
   });
 
   it('updates [[Tasks/task1]] to [[Archive/2024/task1]] after move', async () => {
+    // GIVEN: A file is moved from Tasks/ to Archive/2024/
+    // WHEN: Updating all references to the moved file
+    // THEN: All wikilinks are updated with the new path
     const oldPath = path.join(tempDir, 'Tasks/task1.md');
     const newPath = path.join(tempDir, 'Archive/2024/task1.md');
 
@@ -118,6 +124,9 @@ This [[task1]] should not be updated - it's in a code block
   });
 
   it('preserves link text in [my task](Tasks/task1.md) -> [my task](Archive/2024/task1.md)', async () => {
+    // GIVEN: Markdown links with custom display text
+    // WHEN: Updating the link target path
+    // THEN: Preserves the custom text while updating only the URL
     // Add a markdown link with custom text
     const projectFile = path.join(tempDir, 'Projects/project1.md');
     let content = await fs.readFile(projectFile, 'utf-8');
@@ -134,6 +143,9 @@ This [[task1]] should not be updated - it's in a code block
   });
 
   it('updates relative paths: [[task1]] -> [[../Archive/2024/task1]]', async () => {
+    // GIVEN: Short wikilinks without path (resolved by context)
+    // WHEN: Target moves to a different folder depth
+    // THEN: Calculates correct relative path from linking file
     const oldPath = path.join(tempDir, 'Tasks/task1.md');
     const newPath = path.join(tempDir, 'Archive/2024/task1.md');
 
@@ -149,6 +161,9 @@ This [[task1]] should not be updated - it's in a code block
   });
 
   it('handles link anchors: [[task1#heading]] -> [[Archive/2024/task1#heading]]', async () => {
+    // GIVEN: Wikilinks with section anchors (#heading)
+    // WHEN: Updating the file path
+    // THEN: Preserves the anchor while updating the path
     // Add a link with anchor
     const projectFile = path.join(tempDir, 'Projects/project1.md');
     let content = await fs.readFile(projectFile, 'utf-8');
@@ -165,6 +180,9 @@ This [[task1]] should not be updated - it's in a code block
   });
 
   it('processes 50 files with 200 links in < 2 seconds', async () => {
+    // GIVEN: A vault with 50 files containing 200 total links
+    // WHEN: Updating all references after a file move
+    // THEN: Completes within performance requirement of 2 seconds
     // Create many files with multiple links
     const manyFilesDir = path.join(tempDir, 'ManyFiles');
     await fs.mkdir(manyFilesDir, { recursive: true });
@@ -208,6 +226,9 @@ Link 4: Check [this target](../target.md#section2)
   });
 
   it('does not update links in code blocks or comments', async () => {
+    // GIVEN: Links inside code blocks and HTML comments
+    // WHEN: Updating references in the file
+    // THEN: Skips links in code/comments (they're not active links)
     const oldPath = path.join(tempDir, 'Tasks/task1.md');
     const newPath = path.join(tempDir, 'Archive/2024/task1.md');
 
@@ -229,6 +250,9 @@ Link 4: Check [this target](../target.md#section2)
   });
 
   it('handles bidirectional links correctly', async () => {
+    // GIVEN: Two files that link to each other
+    // WHEN: Moving one file to a new location
+    // THEN: Updates both incoming links TO the file and outgoing links FROM it
     // Test that when moving task1.md, the links FROM task1 TO project1 are also updated
     const oldPath = path.join(tempDir, 'Tasks/task1.md');
     const newPath = path.join(tempDir, 'Archive/2024/task1.md');

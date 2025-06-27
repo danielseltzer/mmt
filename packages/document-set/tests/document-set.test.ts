@@ -37,6 +37,9 @@ describe('DocumentSet', () => {
   
   describe('constructor', () => {
     it('should create a DocumentSet from a table', () => {
+      // GIVEN: An Arquero table with document data
+      // WHEN: Creating a DocumentSet from the table
+      // THEN: Returns DocumentSet with correct metadata and row count
       const docs = createTestDocuments(10);
       const table = createTestTable(docs);
       
@@ -54,6 +57,9 @@ describe('DocumentSet', () => {
     });
     
     it('should track execution time and source query', () => {
+      // GIVEN: A table with query metadata and execution time
+      // WHEN: Creating a DocumentSet with these parameters
+      // THEN: Preserves query context and performance metrics
       const table = createTestTable(createTestDocuments(5));
       const sourceQuery = { conditions: [{ field: 'tag', operator: 'equals' as const, value: 'test' }] };
       
@@ -68,6 +74,9 @@ describe('DocumentSet', () => {
     });
     
     it('should mark as incomplete when over limit', () => {
+      // GIVEN: A table with 10 documents and a limit of 5
+      // WHEN: Creating a DocumentSet with this limit
+      // THEN: Marks set as incomplete and tracks truncation
       const docs = createTestDocuments(10);
       const table = createTestTable(docs);
       
@@ -85,6 +94,9 @@ describe('DocumentSet', () => {
   
   describe('properties', () => {
     it('should correctly report isEmpty', () => {
+      // GIVEN: Empty and non-empty tables
+      // WHEN: Checking isEmpty property
+      // THEN: Returns true for empty sets, false for sets with data
       const emptyTable = aq.from([]);
       const emptySet = new DocumentSet({ tableRef: emptyTable });
       expect(emptySet.isEmpty).toBe(true);
@@ -95,6 +107,9 @@ describe('DocumentSet', () => {
     });
     
     it('should track materialization state', () => {
+      // GIVEN: A newly created DocumentSet
+      // WHEN: Checking materialization before calling materialize()
+      // THEN: Reports as not materialized with undefined documents
       const table = createTestTable(createTestDocuments(5));
       const docSet = new DocumentSet({ tableRef: table });
       
@@ -105,6 +120,9 @@ describe('DocumentSet', () => {
   
   describe('materialize', () => {
     it('should materialize documents from table', async () => {
+      // GIVEN: A DocumentSet with table data
+      // WHEN: Calling materialize() to create Document objects
+      // THEN: Converts table rows back to full Document structures
       const originalDocs = createTestDocuments(3);
       const table = createTestTable(originalDocs);
       const docSet = new DocumentSet({ tableRef: table });
@@ -126,6 +144,9 @@ describe('DocumentSet', () => {
     });
     
     it('should return cached documents on subsequent calls', async () => {
+      // GIVEN: A DocumentSet that has been materialized once
+      // WHEN: Calling materialize() again
+      // THEN: Returns the same cached array (performance optimization)
       const table = createTestTable(createTestDocuments(2));
       const docSet = new DocumentSet({ tableRef: table });
       
@@ -136,6 +157,9 @@ describe('DocumentSet', () => {
     });
     
     it('should parse tags and links from strings', async () => {
+      // GIVEN: Table data with comma-separated tags and links
+      // WHEN: Materializing documents
+      // THEN: Converts CSV strings back to arrays
       const rows = [{
         path: '/test/doc.md',
         name: 'doc',
@@ -161,6 +185,9 @@ describe('DocumentSet', () => {
   
   describe('withTable', () => {
     it('should create new DocumentSet with different table', () => {
+      // GIVEN: A DocumentSet and a filtered table
+      // WHEN: Creating new set with withTable()
+      // THEN: Returns new instance preserving original metadata
       const originalTable = createTestTable(createTestDocuments(10));
       const original = new DocumentSet({
         tableRef: originalTable,
@@ -180,6 +207,9 @@ describe('DocumentSet', () => {
   
   describe('withLimit', () => {
     it('should create new DocumentSet with limited rows', () => {
+      // GIVEN: A DocumentSet with 10 documents
+      // WHEN: Applying a limit of 3
+      // THEN: Returns new set with only 3 documents
       const table = createTestTable(createTestDocuments(10));
       const original = new DocumentSet({ tableRef: table });
       

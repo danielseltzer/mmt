@@ -52,6 +52,9 @@ describe('operations', () => {
   
   describe('filter', () => {
     it('should filter documents with custom predicate', async () => {
+      // GIVEN: A DocumentSet with documents of varying sizes
+      // WHEN: Filtering with custom predicate for size > 750
+      // THEN: Returns new DocumentSet with only matching documents
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -65,6 +68,9 @@ describe('operations', () => {
     });
     
     it('should work with hasTag filter', async () => {
+      // GIVEN: Documents with different tags
+      // WHEN: Using hasTag filter helper for 'important'
+      // THEN: Returns only documents containing that tag
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -76,6 +82,9 @@ describe('operations', () => {
     });
     
     it('should work with frontmatter filter', async () => {
+      // GIVEN: Documents with frontmatter priority field
+      // WHEN: Filtering for priority='low'
+      // THEN: Returns documents matching the frontmatter value
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -87,6 +96,9 @@ describe('operations', () => {
     });
     
     it('should work with sizeGreaterThan filter', async () => {
+      // GIVEN: Documents with sizes 1000, 500, and 2000 bytes
+      // WHEN: Filtering for size > 1500
+      // THEN: Returns only the document with 2000 bytes
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -98,6 +110,9 @@ describe('operations', () => {
     });
     
     it('should work with modifiedAfter filter', async () => {
+      // GIVEN: Documents with different modification dates
+      // WHEN: Filtering for documents modified after Dec 1, 2023
+      // THEN: Returns only recently modified documents
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -109,6 +124,9 @@ describe('operations', () => {
     });
     
     it('should work with pathMatches filter', async () => {
+      // GIVEN: Documents in different folders
+      // WHEN: Filtering with regex for 'archive' in path
+      // THEN: Returns only documents in archive folder
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -120,6 +138,9 @@ describe('operations', () => {
     });
     
     it('should handle empty results', async () => {
+      // GIVEN: A DocumentSet and an always-false predicate
+      // WHEN: Filtering with predicate that matches nothing
+      // THEN: Returns empty DocumentSet (not null or error)
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -132,6 +153,9 @@ describe('operations', () => {
   
   describe('limit', () => {
     it('should limit document count', async () => {
+      // GIVEN: A DocumentSet with 3 documents
+      // WHEN: Applying limit of 2
+      // THEN: Returns new set with only first 2 documents
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -143,6 +167,9 @@ describe('operations', () => {
     });
     
     it('should return same set if already within limit', async () => {
+      // GIVEN: A DocumentSet with 3 documents
+      // WHEN: Applying limit of 10 (higher than count)
+      // THEN: Returns same instance (optimization)
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -152,6 +179,9 @@ describe('operations', () => {
     });
     
     it('should reject invalid limits', async () => {
+      // GIVEN: A DocumentSet
+      // WHEN: Applying limit of 0 or negative
+      // THEN: Throws error (limits must be positive)
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -160,6 +190,9 @@ describe('operations', () => {
     });
     
     it('should preserve document order', async () => {
+      // GIVEN: Documents in specific order
+      // WHEN: Applying limit of 2
+      // THEN: Returns first 2 documents in original order
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -173,6 +206,9 @@ describe('operations', () => {
   
   describe('materialize', () => {
     it('should materialize documents', async () => {
+      // GIVEN: An unmaterialized DocumentSet
+      // WHEN: Calling materialize()
+      // THEN: Converts table to Document array and caches result
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -186,6 +222,9 @@ describe('operations', () => {
     });
     
     it('should preserve document data', async () => {
+      // GIVEN: A DocumentSet with complete document data
+      // WHEN: Materializing to Document objects
+      // THEN: All metadata fields are preserved correctly
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -202,6 +241,9 @@ describe('operations', () => {
   
   describe('chaining operations', () => {
     it('should allow chaining filter and limit', async () => {
+      // GIVEN: A DocumentSet
+      // WHEN: Chaining filter for priority='low' then limit to 1
+      // THEN: Operations compose correctly (filter first, then limit)
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
@@ -216,6 +258,9 @@ describe('operations', () => {
     });
     
     it('should allow multiple filters', async () => {
+      // GIVEN: A DocumentSet
+      // WHEN: Applying multiple sequential filters
+      // THEN: Each filter narrows the result set further
       const docs = createTestDocuments();
       const docSet = await fromDocuments(docs);
       
