@@ -36,7 +36,7 @@ export const operationsRouter = t.router({
       try {
         // Map from schema type to operation type
         const operationType = input.type === 'update-frontmatter' ? 'updateFrontmatter' : input.type;
-        const operation = operationRegistry.create(operationType as any, input);
+        const operation = operationRegistry.create(operationType as 'move' | 'rename' | 'delete' | 'updateFrontmatter', input);
         
         // Load the document (operations need the document object)
         // For validation, we need to determine which path to use
@@ -321,7 +321,7 @@ export const operationsRouter = t.router({
         try {
           // Map from schema type to operation type
           const operationType = op.type === 'update-frontmatter' ? 'updateFrontmatter' : op.type;
-          const operation = operationRegistry.create(operationType as any, op);
+          const operation = operationRegistry.create(operationType as 'move' | 'rename' | 'delete' | 'updateFrontmatter', op);
           
           // Load the document for the operation
           let documentPath: string;

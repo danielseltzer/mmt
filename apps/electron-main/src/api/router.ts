@@ -1,5 +1,4 @@
 import { initTRPC } from '@trpc/server';
-import { z } from 'zod';
 import { configRouter } from './routers/config.js';
 import { indexerRouter } from './routers/indexer.js';
 import { operationsRouter } from './routers/operations.js';

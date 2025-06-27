@@ -4,7 +4,7 @@ import { api } from './client.js';
 declare global {
   interface Window {
     api: typeof api;
-    __progressUpdates?: any[];
+    __progressUpdates?: unknown[];
   }
 }
 

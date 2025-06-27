@@ -1,4 +1,3 @@
-import { ConfigService } from '@mmt/config';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { VaultIndexer } from '@mmt/indexer';
 import { QueryParser } from '@mmt/query-parser';

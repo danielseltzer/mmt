@@ -1,16 +1,11 @@
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { createIPCHandler } from 'electron-trpc/main';
 import { appRouter } from './api/router.js';
 import { createContext } from './api/context.js';
 import { createApplicationMenu } from './menu.js';
 import { isDev, isTest, getPreloadPath, getRendererPath } from './utils/paths.js';
-import { ConfigService } from '@mmt/config';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -43,7 +38,7 @@ async function createWindow() {
     // Set up IPC handler
     createIPCHandler({
       router: appRouter,
-      createContext: async () => context,
+      createContext: () => Promise.resolve(context),
       windows: [mainWindow],
     });
   } catch (error) {
@@ -83,13 +78,13 @@ async function createWindow() {
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void shell.openExternal(url);
     return { action: 'deny' };
   });
 }
 
 // App event handlers
-app.whenReady().then(createWindow);
+void app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -99,7 +94,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    void createWindow();
   }
 });
 

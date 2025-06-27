@@ -2,8 +2,6 @@ import { initTRPC } from '@trpc/server';
 import { observable } from '@trpc/server/observable';
 import { z } from 'zod';
 import type { Context } from '../context.js';
-import { QueryInputSchema } from '@mmt/entities';
-import { fromDocuments } from '@mmt/document-set';
 
 const t = initTRPC.context<Context>().create();
 
@@ -27,7 +25,7 @@ export const indexerRouter = t.router({
 
   // Subscribe to progress updates
   onProgress: t.procedure
-    .subscription(({ ctx }) => {
+    .subscription(() => {
       return observable<{ phase: string; progress?: number; file?: string }>((emit) => {
         let progress = 0;
         const totalSteps = 10;
@@ -46,13 +44,13 @@ export const indexerRouter = t.router({
               emit.next({ 
                 phase: 'scanning', 
                 progress: percentage,
-                file: `file${progress}.md`
+                file: `file${String(progress)}.md`
               });
             } else if (percentage < 90) {
               emit.next({ 
                 phase: 'indexing', 
                 progress: percentage,
-                file: `file${progress}.md`
+                file: `file${String(progress)}.md`
               });
             } else {
               emit.next({ 
@@ -73,7 +71,7 @@ export const indexerRouter = t.router({
 
   // Get indexer status
   status: t.procedure
-    .query(async ({ ctx }) => {
+    .query(({ ctx }) => {
       const { indexer } = ctx;
       const documents = indexer.getAllDocuments();
       
@@ -86,7 +84,7 @@ export const indexerRouter = t.router({
 
   // Get indexer statistics
   stats: t.procedure
-    .query(async ({ ctx }) => {
+    .query(({ ctx }) => {
       const { indexer } = ctx;
       const documents = indexer.getAllDocuments();
       
@@ -97,17 +95,17 @@ export const indexerRouter = t.router({
         byExtension: {
           '.md': documents.length, // All are markdown in our case
         },
-        byFolder: documents.reduce((acc, doc) => {
+        byFolder: documents.reduce<Record<string, number>>((acc, doc) => {
           const folder = doc.path.split('/').slice(0, -1).join('/') || '/';
           acc[folder] = (acc[folder] || 0) + 1;
           return acc;
-        }, {} as Record<string, number>),
+        }, {}),
       };
     }),
 
   // Get all documents
   getAllDocuments: t.procedure
-    .query(async ({ ctx }) => {
+    .query(({ ctx }) => {
       const { indexer } = ctx;
       const documents = indexer.getAllDocuments();
       
@@ -139,9 +137,9 @@ export const indexerRouter = t.router({
     .input(z.object({
       path: z.string(),
     }))
-    .query(async ({ input, ctx }) => {
+    .query(({ input, ctx }) => {
       const { indexer } = ctx;
-      const backlinks = await indexer.getBacklinks(input.path);
+      const backlinks = indexer.getBacklinks(input.path);
       
       return {
         documents: backlinks,
@@ -154,9 +152,9 @@ export const indexerRouter = t.router({
     .input(z.object({
       path: z.string(),
     }))
-    .query(async ({ input, ctx }) => {
+    .query(({ input, ctx }) => {
       const { indexer } = ctx;
-      const links = await indexer.getOutgoingLinks(input.path);
+      const links = indexer.getOutgoingLinks(input.path);
       
       return {
         documents: links,
@@ -169,9 +167,7 @@ export const indexerRouter = t.router({
     .input(z.object({
       enabled: z.boolean().optional().default(true),
     }))
-    .mutation(async ({ input, ctx }) => {
-      const { indexer } = ctx;
-      
+    .mutation(({ input }) => {
       // TODO: Implement file watching control
       // For now, file watching is enabled by default in context creation
       

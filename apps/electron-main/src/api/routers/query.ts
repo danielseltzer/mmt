@@ -18,7 +18,11 @@ export const queryRouter = t.router({
       const parsedQuery = queryParser.parse(input);
       
       // Convert parsed query to indexer Query format
-      const conditions: any[] = [];
+      const conditions: Array<{
+        field: string;
+        operator: 'equals' | 'contains' | 'matches' | 'exists' | 'not-exists';
+        value?: unknown;
+      }> = [];
       
       // Convert filesystem conditions
       if (parsedQuery.filesystem) {
@@ -49,7 +53,7 @@ export const queryRouter = t.router({
       
       // Convert content conditions
       if (parsedQuery.content) {
-        for (const [key, value] of Object.entries(parsedQuery.content)) {
+        for (const [, value] of Object.entries(parsedQuery.content)) {
           // For content searches, we need to handle this differently
           // The indexer doesn't support content search directly
           // We'll need to filter after getting all documents
@@ -69,7 +73,7 @@ export const queryRouter = t.router({
       };
       
       // Execute query using indexer
-      let pageMetadata = await indexer.query(indexerQuery);
+      let pageMetadata = indexer.query(indexerQuery);
       
       // Handle content search manually since indexer doesn't support it
       if (parsedQuery.content && Object.keys(parsedQuery.content).length > 0) {
@@ -150,9 +154,9 @@ export const queryRouter = t.router({
         order: z.enum(['asc', 'desc']),
       }).optional(),
     }))
-    .query(async ({ input }) => {
+    .query(({ input }) => {
       // Build query object from conditions
-      const query: Record<string, any> = {};
+      const query: Record<string, unknown> = {};
       
       for (const condition of input.conditions) {
         if (condition.operator === 'equals') {
@@ -173,7 +177,7 @@ export const queryRouter = t.router({
   // Validate query syntax
   validate: t.procedure
     .input(QueryInputSchema)
-    .query(async ({ input, ctx }) => {
+    .query(({ input, ctx }) => {
       const { queryParser } = ctx;
       
       try {
@@ -194,7 +198,7 @@ export const queryRouter = t.router({
 
   // Get recent queries (from memory/cache)
   recent: t.procedure
-    .query(async () => {
+    .query(() => {
       // TODO: Implement query history/caching
       return {
         queries: [],
@@ -208,7 +212,7 @@ export const queryRouter = t.router({
       query: QueryInputSchema,
       description: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(({ input }) => {
       // TODO: Implement saved queries
       return {
         id: Date.now().toString(),
@@ -219,7 +223,7 @@ export const queryRouter = t.router({
 
   // Get saved queries
   getSaved: t.procedure
-    .query(async () => {
+    .query(() => {
       // TODO: Implement saved queries retrieval
       return {
         queries: [],

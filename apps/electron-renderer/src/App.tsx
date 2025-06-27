@@ -17,7 +17,9 @@ export function App() {
         <div className="flex items-center gap-2">
           <button
             className="px-3 py-1 text-sm rounded-md bg-secondary hover:bg-secondary/80 transition-colors"
-            onClick={() => setIsOperationsPanelOpen(!isOperationsPanelOpen)}
+            onClick={() => {
+              setIsOperationsPanelOpen(!isOperationsPanelOpen);
+            }}
             disabled={selectedDocuments.length === 0}
           >
             Operations ({selectedDocuments.length})
@@ -40,7 +42,9 @@ export function App() {
         {/* Operations Panel */}
         {isOperationsPanelOpen && (
           <div className="w-80 border-l overflow-auto">
-            <OperationsPanel onClose={() => setIsOperationsPanelOpen(false)} />
+            <OperationsPanel onClose={() => {
+              setIsOperationsPanelOpen(false);
+            }} />
           </div>
         )}
       </div>
