@@ -77,7 +77,8 @@ export class AnalysisRunner {
     // Check if operation has a transform function
     if ('transform' in operation && typeof operation.transform === 'function') {
       // Apply the transformation
-      return operation.transform(table);
+      const transform = operation.transform as (table: Table) => Table;
+      return transform(table);
     }
     
     // Check for built-in analysis operations
@@ -176,7 +177,12 @@ export class AnalysisRunner {
     if (rows.length === 0) {return 'No results';}
     
     const headers = Object.keys(rows[0] as Record<string, unknown>);
-    const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r) => String((r as Record<string, unknown>)[h] ?? '').length)));
+    const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r) => {
+      const val = (r as Record<string, unknown>)[h];
+      if (val === null || val === undefined) return 0;
+      if (typeof val === 'object') return JSON.stringify(val).length;
+      return String(val).length;
+    })));
     
     // Header
     let output = `${headers.map((h, i) => h.padEnd(widths[i])).join(' | ') }\n`;
@@ -184,7 +190,12 @@ export class AnalysisRunner {
     
     // Rows
     for (const row of rows) {
-      output += `${headers.map((h, i) => String((row as Record<string, unknown>)[h] ?? '').padEnd(widths[i])).join(' | ') }\n`;
+      output += `${headers.map((h, i) => {
+        const val = (row as Record<string, unknown>)[h];
+        if (val === null || val === undefined) return ''.padEnd(widths[i]);
+        if (typeof val === 'object') return JSON.stringify(val).padEnd(widths[i]);
+        return String(val).padEnd(widths[i]);
+      }).join(' | ') }\n`;
     }
     
     return output;
