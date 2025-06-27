@@ -26,6 +26,21 @@ import { AnalysisRunner } from './analysis-runner.js';
 import { aq } from './analysis-pipeline.js';
 import { MarkdownReportGenerator } from './markdown-report-generator.js';
 
+interface OperationExecutionResult {
+  skipped?: boolean;
+  reason?: string;
+  details?: {
+    document?: Document;
+    backup?: string;
+    dryRun?: boolean;
+    preview?: boolean;
+    type?: string;
+    source?: string;
+    target?: string;
+    changes?: unknown;
+  };
+}
+
 export interface ScriptRunnerOptions {
   config: {
     vaultPath: string;
@@ -71,7 +86,7 @@ export class ScriptRunner {
    */
   async runScript(scriptPath: string, cliOptions: Record<string, unknown> = {}): Promise<ScriptExecutionResult> {
     // Initialize indexer if not already done
-    if (!this.indexer) {
+    if (this.indexer === undefined) {
       this.indexer = new VaultIndexer({
         vaultPath: this.config.vaultPath,
         fileSystem: this.fs,
@@ -105,7 +120,7 @@ export class ScriptRunner {
     
     // Merge execution options (CLI overrides script)
     const executionOptions: ExecutionOptions = {
-      executeNow: cliOptions.execute ?? validatedPipeline.options?.executeNow ?? false,
+      executeNow: (cliOptions.execute as boolean | undefined) ?? validatedPipeline.options?.executeNow ?? false,
       failFast: validatedPipeline.options?.failFast ?? false,
       parallel: validatedPipeline.options?.parallel ?? false,
     };
@@ -122,7 +137,7 @@ export class ScriptRunner {
         executionResult: result,
         pipeline: validatedPipeline,
         analysisTable: resultWithTable.analysisTable,
-        reportPath: cliOptions.reportPath,
+        reportPath: cliOptions.reportPath as string,
         isPreview: !executionOptions.executeNow,
       });
     }
@@ -144,8 +159,8 @@ export class ScriptRunner {
     
     // Apply filter if provided
     let documents = selectedDocs;
-    if (pipeline.filter) {
-      documents = selectedDocs.filter(pipeline.filter);
+    if (pipeline.filter !== undefined) {
+      documents = selectedDocs.filter((doc) => Boolean(pipeline.filter?.(doc)));
     }
 
     // Check if this is an analysis pipeline
@@ -174,13 +189,13 @@ export class ScriptRunner {
               skipped.push({
                 item: doc,
                 operation,
-                reason: result.reason!,
+                reason: result.reason ?? 'Unknown reason',
               });
             } else {
               succeeded.push({
                 item: doc,
                 operation,
-                details: result.details,
+                details: result.details ?? {},
               });
             }
           } catch (error) {
@@ -208,13 +223,13 @@ export class ScriptRunner {
               skipped.push({
                 item: doc,
                 operation,
-                reason: preview.reason!,
+                reason: preview.reason ?? 'Unknown reason',
               });
             } else {
               succeeded.push({
                 item: doc,
                 operation,
-                details: preview.details,
+                details: preview.details ?? {},
               });
             }
           } catch (error) {
@@ -251,23 +266,35 @@ export class ScriptRunner {
     let format = 'summary';
     let fields: string[] | undefined;
     
-    if (pipeline.output) {
+    if (pipeline.output !== undefined) {
       const consoleOutput = pipeline.output.find(o => o.destination === 'console');
-      if (consoleOutput) {
-        format = consoleOutput.format;
-        fields = consoleOutput.fields;
+      if (consoleOutput !== undefined) {
+        ({ format, fields } = consoleOutput);
       }
     }
     
     const formatted = this.formatter.format(result, {
-      format: format as any,
+      format,
       fields,
       isPreview: !options.executeNow,
     });
     
-    this.output.write(`${formatted }\n`);
+    this.output.write(`${formatted}\n`);
 
     return result;
+  }
+
+  /**
+   * Type guard to check if an object implements the Script interface.
+   */
+  private isValidScript(obj: unknown): obj is Script {
+    return (
+      obj !== null &&
+      obj !== undefined &&
+      typeof obj === 'object' &&
+      'define' in obj &&
+      typeof (obj as Script).define === 'function'
+    );
   }
 
   /**
@@ -277,31 +304,31 @@ export class ScriptRunner {
     try {
       // Convert to file URL for ES module import
       const fileUrl = pathToFileURL(scriptPath).href;
-      const module = await import(fileUrl) as { default?: unknown };
+      const module = await import(fileUrl) as { default?: Script | (new () => Script) };
       
       // Check for default export
-      if (!module.default) {
+      if (module.default === undefined) {
         throw new Error(`Script ${scriptPath} must have a default export`);
       }
 
       // Instantiate if it's a class, otherwise use as-is
       const scriptExport = module.default;
-      let script: unknown;
+      let script: Script;
       
       if (typeof scriptExport === 'function') {
         // It's a constructor, instantiate it
-        const ScriptConstructor = scriptExport as new () => unknown;
+        const ScriptConstructor = scriptExport;
         script = new ScriptConstructor();
       } else {
         script = scriptExport;
       }
 
       // Validate it implements Script interface
-      if (!script || typeof script !== 'object' || !('define' in script) || typeof script.define !== 'function') {
+      if (!this.isValidScript(script)) {
         throw new Error(`Script ${scriptPath} must implement Script interface with define() method`);
       }
 
-      return script as Script;
+      return script;
     } catch (error) {
       throw new Error(`Failed to load script ${scriptPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -314,17 +341,17 @@ export class ScriptRunner {
    */
   private async selectDocuments(criteria: SelectCriteria): Promise<Document[]> {
     // Handle explicit file list
-    if ('files' in criteria && criteria.files) {
+    if ('files' in criteria && criteria.files !== undefined) {
       const docs: Document[] = [];
       for (const filePath of criteria.files) {
         const exists = await this.fs.exists(filePath);
-        if (exists) {
+        if (exists === true) {
           const stats = await this.fs.stat(filePath);
           docs.push({
             path: filePath,
             content: '', // Content loading on demand
             metadata: {
-              name: filePath.replace(/\.md$/, '').split('/').pop() || filePath,
+              name: filePath.replace(/\.md$/, '').split('/').pop() ?? filePath,
               modified: stats.mtime,
               size: stats.size,
               frontmatter: {},
@@ -338,13 +365,13 @@ export class ScriptRunner {
     }
 
     // Query-based selection using indexer
-    if (!this.indexer) {
+    if (this.indexer === undefined) {
       throw new Error('Indexer not initialized');
     }
 
-    const query = Object.entries(criteria as Record<string, any>)
+    const query = Object.entries(criteria as Record<string, unknown>)
       .filter(([key]) => key !== 'files')
-      .reduce<Record<string, any>>((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+      .reduce<Record<string, unknown>>((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
     if (Object.keys(query).length === 0) {
       // No criteria - return all documents
@@ -361,7 +388,7 @@ export class ScriptRunner {
   /**
    * Build an indexer query from script selection criteria.
    */
-  private buildIndexerQuery(criteria: Record<string, any>): Query {
+  private buildIndexerQuery(criteria: Record<string, unknown>): Query {
     const conditions: Query['conditions'] = [];
 
     for (const [field, value] of Object.entries(criteria)) {
@@ -385,7 +412,7 @@ export class ScriptRunner {
    * Convert PageMetadata from indexer to Document format for scripts.
    */
   private async convertMetadataToDocuments(metadata: PageMetadata[]): Promise<Document[]> {
-    if (!this.indexer) {
+    if (this.indexer === undefined) {
       throw new Error('Indexer not initialized');
     }
     
@@ -405,8 +432,8 @@ export class ScriptRunner {
           name: meta.basename,
           modified: new Date(meta.mtime),
           size: meta.size,
-          frontmatter: meta.frontmatter || {},
-          tags: meta.tags || [],
+          frontmatter: meta.frontmatter ?? {},
+          tags: meta.tags ?? [],
           // Convert PageMetadata targets to relative paths
           links: outgoingLinks.map(targetDoc => targetDoc.relativePath),
           backlinks: incomingLinks.map(sourceDoc => sourceDoc.relativePath),
@@ -423,14 +450,14 @@ export class ScriptRunner {
   private async executeOperation(
     doc: Document,
     operation: ScriptOperation
-  ): Promise<{ skipped?: boolean; reason?: string; details?: any }> {
+  ): Promise<OperationExecutionResult> {
     // Analysis operations are handled separately
     if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
       throw new Error(`Analysis operation '${operation.type}' should be handled by executeAnalysisPipeline`);
     }
 
     // Initialize indexer if needed
-    if (!this.indexer) {
+    if (this.indexer === undefined) {
       throw new Error('Indexer not initialized');
     }
 
@@ -453,8 +480,8 @@ export class ScriptRunner {
     let docOperation;
     try {
       switch (operation.type) {
-        case 'move':
-          if (!operation.destination) {
+        case 'move': {
+          if (operation.destination === undefined || operation.destination === null) {
             throw new Error('Move operation requires destination');
           }
           // Build full target path by combining destination directory with filename
@@ -463,34 +490,37 @@ export class ScriptRunner {
             targetPath: moveTargetPath
           });
           break;
+        }
 
-        case 'rename':
-          if (!operation.newName) {
+        case 'rename': {
+          if (operation.newName === undefined || operation.newName === null) {
             throw new Error('Rename operation requires newName');
           }
           docOperation = this.operationRegistry.create('rename', {
-            newName: operation.newName
+            newName: operation.newName as string
           });
           break;
+        }
 
-        case 'updateFrontmatter':
-          if (!operation.updates) {
+        case 'updateFrontmatter': {
+          if (operation.updates === undefined || operation.updates === null) {
             throw new Error('UpdateFrontmatter operation requires updates');
           }
           docOperation = this.operationRegistry.create('updateFrontmatter', {
-            updates: operation.updates,
-            mode: operation.mode || 'merge'
+            updates: operation.updates as Record<string, unknown>,
+            mode: (operation.mode ?? 'merge') as 'merge' | 'replace'
           });
           break;
+        }
 
         case 'delete':
           docOperation = this.operationRegistry.create('delete', {
-            permanent: operation.permanent || false
+            permanent: operation.permanent ?? false
           });
           break;
 
         default:
-          throw new Error(`Unknown operation type: ${operation.type}`);
+          throw new Error(`Unknown operation type: ${String(operation.type)}`);
       }
     } catch (error) {
       return {
@@ -504,7 +534,7 @@ export class ScriptRunner {
     if (!validation.valid) {
       return {
         skipped: true,
-        reason: validation.error || 'Validation failed'
+        reason: validation.error ?? 'Validation failed'
       };
     }
 
@@ -512,7 +542,7 @@ export class ScriptRunner {
     const result: OperationResult = await docOperation.execute(doc, operationContext);
     
     if (!result.success) {
-      throw new Error(result.error || 'Operation failed');
+      throw new Error(result.error ?? 'Operation failed');
     }
 
     return {
@@ -530,14 +560,14 @@ export class ScriptRunner {
   private async previewOperation(
     doc: Document,
     operation: ScriptOperation
-  ): Promise<{ skipped?: boolean; reason?: string; details?: any }> {
+  ): Promise<OperationExecutionResult> {
     // Analysis operations don't have preview
     if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
       return { details: { preview: true, operation: operation.type } };
     }
 
     // Initialize indexer if needed
-    if (!this.indexer) {
+    if (this.indexer === undefined) {
       throw new Error('Indexer not initialized');
     }
 
@@ -560,8 +590,8 @@ export class ScriptRunner {
     let docOperation;
     try {
       switch (operation.type) {
-        case 'move':
-          if (!operation.destination) {
+        case 'move': {
+          if (operation.destination === undefined || operation.destination === null) {
             throw new Error('Move operation requires destination');
           }
           // Build full target path by combining destination directory with filename
@@ -570,34 +600,37 @@ export class ScriptRunner {
             targetPath: moveTargetPath
           });
           break;
+        }
 
-        case 'rename':
-          if (!operation.newName) {
+        case 'rename': {
+          if (operation.newName === undefined || operation.newName === null) {
             throw new Error('Rename operation requires newName');
           }
           docOperation = this.operationRegistry.create('rename', {
-            newName: operation.newName
+            newName: operation.newName as string
           });
           break;
+        }
 
-        case 'updateFrontmatter':
-          if (!operation.updates) {
+        case 'updateFrontmatter': {
+          if (operation.updates === undefined || operation.updates === null) {
             throw new Error('UpdateFrontmatter operation requires updates');
           }
           docOperation = this.operationRegistry.create('updateFrontmatter', {
-            updates: operation.updates,
-            mode: operation.mode || 'merge'
+            updates: operation.updates as Record<string, unknown>,
+            mode: (operation.mode ?? 'merge') as 'merge' | 'replace'
           });
           break;
+        }
 
         case 'delete':
           docOperation = this.operationRegistry.create('delete', {
-            permanent: operation.permanent || false
+            permanent: operation.permanent ?? false
           });
           break;
 
         default:
-          throw new Error(`Unknown operation type: ${operation.type}`);
+          throw new Error(`Unknown operation type: ${String(operation.type)}`);
       }
     } catch (error) {
       return {
@@ -611,7 +644,7 @@ export class ScriptRunner {
     if (!validation.valid) {
       return {
         skipped: true,
-        reason: validation.error || 'Validation failed'
+        reason: validation.error ?? 'Validation failed'
       };
     }
 
@@ -653,7 +686,7 @@ export class ScriptRunner {
     return {
       attempted: documents,
       succeeded: [{
-        item: { path: 'analysis', content: '', metadata: {} as any },
+        item: { path: 'analysis', content: '', metadata: { name: 'analysis', modified: new Date(), size: 0, frontmatter: {}, tags: [], links: [] } },
         operation: { type: 'analyze' },
         details: { 
           rowCount: analysisResult.table.numRows(),
