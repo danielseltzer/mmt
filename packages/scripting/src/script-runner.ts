@@ -31,7 +31,10 @@ interface OperationExecutionResult {
   reason?: string;
   details?: {
     document?: Document;
-    backup?: string;
+    backup?: {
+      originalPath: string;
+      backupPath: string;
+    };
     dryRun?: boolean;
     preview?: boolean;
     type?: string;
@@ -274,7 +277,7 @@ export class ScriptRunner {
     }
     
     const formatted = this.formatter.format(result, {
-      format,
+      format: format as 'summary' | 'detailed' | 'csv' | 'json' | 'table',
       fields,
       isPreview: !options.executeNow,
     });
@@ -344,14 +347,18 @@ export class ScriptRunner {
     if ('files' in criteria && criteria.files !== undefined) {
       const docs: Document[] = [];
       for (const filePath of criteria.files) {
+        if (typeof filePath !== 'string') {
+          continue;
+        }
         const exists = await this.fs.exists(filePath);
-        if (exists === true) {
+        if (exists) {
           const stats = await this.fs.stat(filePath);
+          const fileName = filePath.replace(/\.md$/u, '').split('/').pop() ?? filePath;
           docs.push({
             path: filePath,
             content: '', // Content loading on demand
             metadata: {
-              name: filePath.replace(/\.md$/, '').split('/').pop() ?? filePath,
+              name: fileName,
               modified: stats.mtime,
               size: stats.size,
               frontmatter: {},
@@ -375,14 +382,14 @@ export class ScriptRunner {
 
     if (Object.keys(query).length === 0) {
       // No criteria - return all documents
-      const allDocs = await this.indexer.getAllDocuments();
-      return await this.convertMetadataToDocuments(allDocs);
+      const allDocs = this.indexer.getAllDocuments();
+      return this.convertMetadataToDocuments(allDocs);
     }
 
     // Convert criteria to indexer query
     const indexerQuery = this.buildIndexerQuery(query);
-    const results = await this.indexer.query(indexerQuery);
-    return await this.convertMetadataToDocuments(results);
+    const results = this.indexer.query(indexerQuery);
+    return this.convertMetadataToDocuments(results);
   }
 
   /**
@@ -411,7 +418,7 @@ export class ScriptRunner {
   /**
    * Convert PageMetadata from indexer to Document format for scripts.
    */
-  private async convertMetadataToDocuments(metadata: PageMetadata[]): Promise<Document[]> {
+  private convertMetadataToDocuments(metadata: PageMetadata[]): Document[] {
     if (this.indexer === undefined) {
       throw new Error('Indexer not initialized');
     }
@@ -420,10 +427,10 @@ export class ScriptRunner {
     
     for (const meta of metadata) {
       // Get outgoing links for this document
-      const outgoingLinks = await this.indexer.getOutgoingLinks(meta.relativePath);
+      const outgoingLinks = this.indexer.getOutgoingLinks(meta.relativePath);
       
       // Get incoming links (backlinks) for this document
-      const incomingLinks = await this.indexer.getBacklinks(meta.relativePath);
+      const incomingLinks = this.indexer.getBacklinks(meta.relativePath);
       
       documents.push({
         path: meta.path,
@@ -432,8 +439,8 @@ export class ScriptRunner {
           name: meta.basename,
           modified: new Date(meta.mtime),
           size: meta.size,
-          frontmatter: meta.frontmatter ?? {},
-          tags: meta.tags ?? [],
+          frontmatter: meta.frontmatter,
+          tags: meta.tags,
           // Convert PageMetadata targets to relative paths
           links: outgoingLinks.map(targetDoc => targetDoc.relativePath),
           backlinks: incomingLinks.map(sourceDoc => sourceDoc.relativePath),
@@ -563,7 +570,7 @@ export class ScriptRunner {
   ): Promise<OperationExecutionResult> {
     // Analysis operations don't have preview
     if (operation.type === 'analyze' || operation.type === 'transform' || operation.type === 'aggregate') {
-      return { details: { preview: true, operation: operation.type } };
+      return { details: { preview: true, type: operation.type } };
     }
 
     // Initialize indexer if needed

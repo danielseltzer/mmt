@@ -179,9 +179,13 @@ export class AnalysisRunner {
     const headers = Object.keys(rows[0] as Record<string, unknown>);
     const widths = headers.map((h: string) => Math.max(h.length, ...rows.map((r) => {
       const val = (r as Record<string, unknown>)[h];
-      if (val === null || val === undefined) return 0;
-      if (typeof val === 'object') return JSON.stringify(val).length;
-      return String(val).length;
+      if (val === null || val === undefined) {
+        return 0;
+      }
+      if (typeof val === 'object') {
+        return JSON.stringify(val).length;
+      }
+      return String(val as string | number | boolean).length;
     })));
     
     // Header
@@ -192,9 +196,13 @@ export class AnalysisRunner {
     for (const row of rows) {
       output += `${headers.map((h, i) => {
         const val = (row as Record<string, unknown>)[h];
-        if (val === null || val === undefined) return ''.padEnd(widths[i]);
-        if (typeof val === 'object') return JSON.stringify(val).padEnd(widths[i]);
-        return String(val).padEnd(widths[i]);
+        if (val === null || val === undefined) {
+          return ''.padEnd(widths[i]);
+        }
+        if (typeof val === 'object') {
+          return JSON.stringify(val).padEnd(widths[i]);
+        }
+        return String(val as string | number | boolean).padEnd(widths[i]);
       }).join(' | ') }\n`;
     }
     
