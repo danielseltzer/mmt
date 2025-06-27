@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "module": "ES2022",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../../packages/entities" },
+    { "path": "../../packages/config" },
+    { "path": "../../packages/filesystem-access" },
+    { "path": "../../packages/indexer" },
+    { "path": "../../packages/query-parser" },
+    { "path": "../../packages/document-operations" },
+    { "path": "../../packages/file-relocator" },
+    { "path": "../../packages/scripting" }
+  ]
+}

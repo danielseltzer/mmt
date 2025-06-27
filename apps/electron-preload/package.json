@@ -1,0 +1,21 @@
+{
+  "name": "@mmt/electron-preload",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/preload.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "electron-trpc": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "electron": "^36.4.0",
+    "typescript": "^5.8.3"
+  }
+}
