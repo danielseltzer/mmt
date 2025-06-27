@@ -7,10 +7,10 @@ export default defineConfig({
     root: 'apps/electron-main',
     build: {
       outDir: '../../dist/main',
+      lib: {
+        entry: resolve(__dirname, 'apps/electron-main/src/index.ts'),
+      },
       rollupOptions: {
-        input: {
-          index: resolve(__dirname, 'apps/electron-main/src/index.ts'),
-        },
         output: {
           format: 'es',
         },
@@ -25,10 +25,10 @@ export default defineConfig({
     root: 'apps/electron-preload',
     build: {
       outDir: '../../dist/preload',
+      lib: {
+        entry: resolve(__dirname, 'apps/electron-preload/src/preload.ts'),
+      },
       rollupOptions: {
-        input: {
-          preload: resolve(__dirname, 'apps/electron-preload/src/preload.ts'),
-        },
         output: {
           format: 'cjs',
           entryFileNames: '[name].js',

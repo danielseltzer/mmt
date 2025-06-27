@@ -1,8 +1,16 @@
-import { contextBridge } from 'electron';
-import { exposeElectronTRPC } from 'electron-trpc/preload';
+import { contextBridge, ipcRenderer } from 'electron';
 
-// Expose tRPC IPC bridge
-exposeElectronTRPC();
+// Expose IPC methods for tRPC
+contextBridge.exposeInMainWorld('electronTRPC', {
+  sendMessage: (channel: string, data: any) => ipcRenderer.send(channel, data),
+  invoke: (channel: string, data: any) => ipcRenderer.invoke(channel, data),
+  on: (channel: string, callback: (event: any, ...args: any[]) => void) => {
+    ipcRenderer.on(channel, callback);
+  },
+  removeAllListeners: (channel: string) => {
+    ipcRenderer.removeAllListeners(channel);
+  },
+});
 
 // Expose additional APIs if needed
 contextBridge.exposeInMainWorld('electronAPI', {

@@ -27,7 +27,11 @@ export function DocumentTable() {
                 <input
                   type="checkbox"
                   checked={allSelected}
-                  indeterminate={someSelected}
+                  ref={(el) => {
+                    if (el) {
+                      el.indeterminate = someSelected;
+                    }
+                  }}
                   onChange={() => {
                     if (allSelected) {
                       clearSelection();

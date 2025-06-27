@@ -20,7 +20,9 @@
     "@mmt/file-relocator": "workspace:*",
     "@mmt/scripting": "workspace:*",
     "@mmt/entities": "workspace:*",
-    "electron-trpc": "^0.6.0"
+    "@trpc/server": "^10.45.2",
+    "electron-trpc": "^0.6.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",

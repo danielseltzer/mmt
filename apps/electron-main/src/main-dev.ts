@@ -2,10 +2,6 @@ import { app, BrowserWindow, Menu, shell } from 'electron';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-// import { createIPCHandler } from 'electron-trpc/main';
-// import { router } from './api/router.js';
-import { createApplicationMenu } from './menu.js';
-import { isDev, isTest, getPreloadPath, getRendererPath } from './utils/paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,52 +9,39 @@ const __dirname = dirname(__filename);
 let mainWindow: BrowserWindow | null = null;
 
 async function createWindow() {
+  console.log('Creating window...');
+  console.log('__dirname:', __dirname);
+  
+  const preloadPath = join(__dirname, '../../electron-preload/dist/preload.js');
+  console.log('Preload path:', preloadPath);
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
-      preload: getPreloadPath(),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
+      // Add more permissive settings for dev
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     show: false,
   });
 
-  // Set up IPC handler
-  // TODO: Set up tRPC handler once we fix the import
-  // createIPCHandler({
-  //   router,
-  //   windows: [mainWindow],
-  // });
-
-  // Set up application menu
-  const menu = createApplicationMenu(mainWindow);
-  Menu.setApplicationMenu(menu);
-
-  // Load the app
-  if (isDev() && process.env.NODE_ENV !== 'test') {
-    await mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
-  } else {
-    const rendererPath = getRendererPath();
-    console.log('Loading renderer from:', rendererPath);
-    await mainWindow.loadFile(rendererPath);
-  }
+  // Load the dev server
+  await mainWindow.loadURL('http://localhost:5173');
+  
+  // Open DevTools in development
+  mainWindow.webContents.openDevTools();
 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
   });
-
-  // Log any console messages from renderer
-  if (isTest()) {
-    mainWindow.webContents.on('console-message', (event, level, message) => {
-      console.log('Renderer console:', level, message);
-    });
-  }
 
   // Handle window closed
   mainWindow.on('closed', () => {
@@ -73,12 +56,24 @@ async function createWindow() {
 }
 
 // App event handlers
-app.whenReady().then(createWindow);
+app.whenReady().then(createWindow).catch((error) => {
+  console.error('Failed to create window:', error);
+  app.quit();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Add error handlers
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 app.on('activate', () => {

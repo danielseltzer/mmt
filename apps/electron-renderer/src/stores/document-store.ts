@@ -43,7 +43,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
   clearSelection: () => set({ selectedDocuments: [] }),
 
-  executeQuery: async (query) => {
+  executeQuery: async (_query) => {
     set({ isLoading: true, error: null });
     try {
       // TODO: Call tRPC to execute query
