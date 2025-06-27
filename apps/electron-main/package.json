@@ -1,0 +1,32 @@
+{
+  "name": "@mmt/electron-main",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "eslint src",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mmt/config": "workspace:*",
+    "@mmt/filesystem-access": "workspace:*",
+    "@mmt/indexer": "workspace:*",
+    "@mmt/query-parser": "workspace:*",
+    "@mmt/document-operations": "workspace:*",
+    "@mmt/file-relocator": "workspace:*",
+    "@mmt/scripting": "workspace:*",
+    "@mmt/entities": "workspace:*",
+    "@trpc/server": "^10.45.2",
+    "electron-trpc": "^0.6.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "electron": "^36.4.0",
+    "typescript": "^5.8.3"
+  }
+}
