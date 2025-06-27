@@ -65,6 +65,8 @@ describe('Document Operations Integration', () => {
   describe('move operation', () => {
     it('should preview moving files to a new directory', async () => {
       // GIVEN: A script that moves files to archived folder
+      // WHEN: Executing in preview mode (executeNow: false)
+      // THEN: Shows preview of move operation without actually moving files
       class MoveScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -96,6 +98,8 @@ describe('Document Operations Integration', () => {
 
     it('should execute move operation when executeNow is true', async () => {
       // GIVEN: A script that moves files
+      // WHEN: Executing with executeNow: true
+      // THEN: Actually moves the file and updates any links to it
       class MoveScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -128,6 +132,8 @@ describe('Document Operations Integration', () => {
   describe('rename operation', () => {
     it('should preview renaming a file', async () => {
       // GIVEN: A script that renames a file
+      // WHEN: Executing in preview mode
+      // THEN: Shows preview of rename with new filename
       class RenameScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -159,6 +165,8 @@ describe('Document Operations Integration', () => {
   describe('updateFrontmatter operation', () => {
     it('should preview updating frontmatter', async () => {
       // GIVEN: A script that updates frontmatter
+      // WHEN: Executing in preview mode
+      // THEN: Shows preview of frontmatter changes without modifying file
       class UpdateScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -193,6 +201,8 @@ describe('Document Operations Integration', () => {
   describe('delete operation', () => {
     it('should preview deleting a file', async () => {
       // GIVEN: A script that deletes files
+      // WHEN: Executing in preview mode
+      // THEN: Shows preview of deletion (move to trash) without actually deleting
       class DeleteScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -222,6 +232,8 @@ describe('Document Operations Integration', () => {
 
     it('should preview permanent deletion when specified', async () => {
       // GIVEN: A script that permanently deletes files
+      // WHEN: Executing with permanent: true flag
+      // THEN: Shows preview of permanent deletion (no trash folder)
       class DeleteScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -252,7 +264,9 @@ describe('Document Operations Integration', () => {
 
   describe('multiple operations', () => {
     it('should handle multiple operations in sequence', async () => {
-      // GIVEN: A script with multiple operations
+      // GIVEN: A script with multiple operations (updateFrontmatter + move)
+      // WHEN: Executing the pipeline
+      // THEN: Previews both operations in sequence
       class MultiOpScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -285,7 +299,9 @@ describe('Document Operations Integration', () => {
 
   describe('error handling', () => {
     it('should skip operations with validation errors', async () => {
-      // GIVEN: A script with invalid operation parameters
+      // GIVEN: A script with invalid operation parameters (empty destination)
+      // WHEN: Executing the script
+      // THEN: Skips the invalid operation with reason
       class InvalidScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {

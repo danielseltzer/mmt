@@ -40,6 +40,9 @@ describe('FileWatcher', () => {
 
   describe('lifecycle', () => {
     it('should start and stop watching', async () => {
+      // GIVEN: A FileWatcher instance with configured paths
+      // WHEN: Starting and then stopping the watcher
+      // THEN: isRunning() reflects the current state accurately
       watcher = new FileWatcher({ paths: [tempDir] });
       
       expect(watcher.isRunning()).toBe(false);
@@ -52,6 +55,9 @@ describe('FileWatcher', () => {
     });
 
     it('should throw error if started twice', async () => {
+      // GIVEN: A FileWatcher that is already running
+      // WHEN: Attempting to start it again
+      // THEN: Throws error to prevent duplicate watchers
       watcher = new FileWatcher({ paths: [tempDir] });
       
       await startWatcher(watcher);
@@ -59,6 +65,9 @@ describe('FileWatcher', () => {
     });
 
     it('should handle stop when not started', async () => {
+      // GIVEN: A FileWatcher that was never started
+      // WHEN: Calling stop()
+      // THEN: Handles gracefully without throwing errors
       watcher = new FileWatcher({ paths: [tempDir] });
       
       // Should not throw
@@ -67,6 +76,9 @@ describe('FileWatcher', () => {
     });
 
     it('should return watched paths', () => {
+      // GIVEN: A FileWatcher configured with specific paths
+      // WHEN: Getting watched paths
+      // THEN: Returns the exact paths passed during construction
       const paths = [tempDir, '/another/path'];
       watcher = new FileWatcher({ paths });
       
@@ -76,6 +88,9 @@ describe('FileWatcher', () => {
 
   describe('file events', () => {
     it('should emit event when markdown file is created', async () => {
+      // GIVEN: A running FileWatcher monitoring a directory
+      // WHEN: Creating a new markdown file
+      // THEN: Emits 'created' event with file path and timestamp
       watcher = new FileWatcher({ paths: [tempDir], debounceMs: 50 });
       const events: FileChangeEvent[] = [];
       
@@ -101,6 +116,9 @@ describe('FileWatcher', () => {
     });
 
     it('should emit event when markdown file is modified', async () => {
+      // GIVEN: An existing markdown file being watched
+      // WHEN: Modifying the file contents
+      // THEN: Emits 'modified' event after debounce period
       // Create file before watching
       const filePath = join(tempDir, 'test.md');
       await writeFile(filePath, '# Test');
@@ -131,6 +149,9 @@ describe('FileWatcher', () => {
     });
 
     it('should emit event when markdown file is deleted', async () => {
+      // GIVEN: An existing markdown file being watched
+      // WHEN: Deleting the file
+      // THEN: Emits 'deleted' event with the removed file's path
       // Create file before watching
       const filePath = join(tempDir, 'test.md');
       await writeFile(filePath, '# Test');
@@ -161,6 +182,9 @@ describe('FileWatcher', () => {
     });
 
     it('should ignore non-markdown files', async () => {
+      // GIVEN: A watcher monitoring for markdown files only
+      // WHEN: Creating .txt, .json, and other non-markdown files
+      // THEN: No events are emitted (filters out non-markdown)
       watcher = new FileWatcher({ paths: [tempDir], debounceMs: 50 });
       const events: FileChangeEvent[] = [];
       
@@ -182,6 +206,9 @@ describe('FileWatcher', () => {
     });
 
     it('should debounce rapid changes', async () => {
+      // GIVEN: A file being modified multiple times rapidly
+      // WHEN: Changes occur faster than debounce interval
+      // THEN: Only one event is emitted after debounce period
       watcher = new FileWatcher({ paths: [tempDir], debounceMs: 100 });
       const events: FileChangeEvent[] = [];
       
@@ -218,6 +245,9 @@ describe('FileWatcher', () => {
     });
 
     it('should handle nested directories when recursive is true', async () => {
+      // GIVEN: FileWatcher with recursive: true option
+      // WHEN: Creating files in nested subdirectories
+      // THEN: Events are emitted for files at any depth
       watcher = new FileWatcher({ 
         paths: [tempDir], 
         debounceMs: 50,
@@ -248,6 +278,9 @@ describe('FileWatcher', () => {
     });
 
     it('should ignore nested directories when recursive is false', async () => {
+      // GIVEN: FileWatcher with recursive: false option
+      // WHEN: Creating files in subdirectories
+      // THEN: No events for nested files (only watches top level)
       watcher = new FileWatcher({ 
         paths: [tempDir], 
         debounceMs: 50,
@@ -276,6 +309,9 @@ describe('FileWatcher', () => {
 
   describe('ignore patterns', () => {
     it('should ignore files matching ignore patterns', async () => {
+      // GIVEN: FileWatcher with custom ignore patterns
+      // WHEN: Creating files matching those patterns
+      // THEN: Only files NOT matching patterns emit events
       watcher = new FileWatcher({ 
         paths: [tempDir], 
         debounceMs: 50,
@@ -309,6 +345,9 @@ describe('FileWatcher', () => {
     });
 
     it('should use default ignore patterns', async () => {
+      // GIVEN: FileWatcher without custom ignore patterns
+      // WHEN: Creating hidden files, temp files, and trash files
+      // THEN: Default patterns filter out system/temp files
       watcher = new FileWatcher({ paths: [tempDir], debounceMs: 50 });
       const events: FileChangeEvent[] = [];
       
@@ -341,6 +380,9 @@ describe('FileWatcher', () => {
 
   describe('event listeners', () => {
     it('should support multiple listeners', async () => {
+      // GIVEN: Multiple event listeners registered
+      // WHEN: A file change occurs
+      // THEN: All listeners receive the same event
       watcher = new FileWatcher({ paths: [tempDir], debounceMs: 50 });
       
       const events1: FileChangeEvent[] = [];
@@ -366,6 +408,9 @@ describe('FileWatcher', () => {
     });
 
     it('should support removing listeners', async () => {
+      // GIVEN: A registered event listener
+      // WHEN: Removing the listener with offFileChange()
+      // THEN: Listener no longer receives events
       watcher = new FileWatcher({ paths: [tempDir], debounceMs: 50 });
       
       const events: FileChangeEvent[] = [];
@@ -393,6 +438,9 @@ describe('FileWatcher', () => {
     });
 
     it('should handle async listeners', async () => {
+      // GIVEN: Async event listeners that perform async operations
+      // WHEN: Multiple file changes trigger the listeners
+      // THEN: All async operations complete successfully
       watcher = new FileWatcher({ paths: [tempDir], debounceMs: 50 });
       
       const processedPaths: string[] = [];
@@ -420,6 +468,9 @@ describe('FileWatcher', () => {
 
   describe('error handling', () => {
     it('should emit error events', async () => {
+      // GIVEN: A FileWatcher with error event listener
+      // WHEN: File system errors occur (if any)
+      // THEN: Errors are emitted through the error event
       watcher = new FileWatcher({ paths: [tempDir] });
       
       const errors: Error[] = [];

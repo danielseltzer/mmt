@@ -35,6 +35,10 @@ describe('ConfigService', () => {
 
   describe('successful loading', () => {
     it('should load valid config with absolute paths', () => {
+      // GIVEN: A valid YAML config file with absolute paths
+      // WHEN: Loading the config file
+      // THEN: Returns parsed config with vaultPath and indexPath
+      
       // Create vault directory
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
@@ -53,6 +57,10 @@ describe('ConfigService', () => {
     });
 
     it('should load config when index path does not exist', () => {
+      // GIVEN: A config with valid vault but non-existent index path
+      // WHEN: Loading the config
+      // THEN: Succeeds because index directory will be created later by indexer
+      
       // Create vault directory
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
@@ -70,16 +78,25 @@ describe('ConfigService', () => {
 
   describe('config path validation', () => {
     it('should exit when config path is empty', () => {
+      // GIVEN: An empty string as config path
+      // WHEN: Attempting to load config
+      // THEN: Exits with error about required config path
       expect(() => configService.load('')).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration path is required'));
     });
 
     it('should exit when config path is relative', () => {
+      // GIVEN: A relative path to config file
+      // WHEN: Validating the config path
+      // THEN: Exits with error requiring absolute paths (explicit over implicit)
       expect(() => configService.load('./config.yaml')).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config path must be absolute'));
     });
 
     it('should exit when config file does not exist', () => {
+      // GIVEN: A path to a non-existent config file
+      // WHEN: Attempting to load the config
+      // THEN: Exits with error message and code 1 (fail-fast)
       const configPath = join(tempDir, 'missing.yaml');
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config file not found'));
@@ -88,6 +105,9 @@ describe('ConfigService', () => {
 
   describe('YAML parsing', () => {
     it('should exit on invalid YAML', () => {
+      // GIVEN: A config file with invalid YAML syntax
+      // WHEN: Attempting to parse the YAML
+      // THEN: Exits with YAML parsing error message
       const configPath = join(tempDir, 'invalid.yaml');
       writeFileSync(configPath, '{ invalid yaml content ]');
       
@@ -96,6 +116,9 @@ describe('ConfigService', () => {
     });
 
     it('should exit on empty config file', () => {
+      // GIVEN: An empty config file
+      // WHEN: Attempting to validate the empty config
+      // THEN: Exits with validation error (no defaults policy)
       const configPath = join(tempDir, 'empty.yaml');
       writeFileSync(configPath, '');
       
@@ -106,6 +129,9 @@ describe('ConfigService', () => {
 
   describe('schema validation', () => {
     it('should exit when vaultPath is missing', () => {
+      // GIVEN: A config file missing required vaultPath field
+      // WHEN: Validating against schema
+      // THEN: Exits with Zod validation error for missing required field
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `indexPath: ${join(tempDir, 'index')}`);
       
@@ -114,6 +140,9 @@ describe('ConfigService', () => {
     });
 
     it('should exit when indexPath is missing', () => {
+      // GIVEN: A config file missing required indexPath field
+      // WHEN: Validating against schema
+      // THEN: Exits with Zod validation error (both fields are required)
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `vaultPath: ${join(tempDir, 'vault')}`);
       
@@ -122,6 +151,9 @@ describe('ConfigService', () => {
     });
 
     it('should exit when extra fields are present', () => {
+      // GIVEN: A config file with unrecognized fields
+      // WHEN: Validating with strict schema
+      // THEN: Exits with error about unrecognized fields (strict validation)
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
       
@@ -135,6 +167,9 @@ describe('ConfigService', () => {
 
   describe('path validation', () => {
     it('should exit when vaultPath is relative', () => {
+      // GIVEN: A config with relative vault path
+      // WHEN: Validating path requirements
+      // THEN: Exits requiring absolute path (no implicit resolution)
       const configPath = join(tempDir, 'config.yaml');
       writeFileSync(configPath, `vaultPath: ./vault\nindexPath: ${join(tempDir, 'index')}`);
       
@@ -143,6 +178,9 @@ describe('ConfigService', () => {
     });
 
     it('should exit when indexPath is relative', () => {
+      // GIVEN: A config with relative index path
+      // WHEN: Validating path requirements
+      // THEN: Exits requiring absolute path for explicit configuration
       const vaultPath = join(tempDir, 'vault');
       mkdirSync(vaultPath);
       
@@ -154,6 +192,9 @@ describe('ConfigService', () => {
     });
 
     it('should exit when vault directory does not exist', () => {
+      // GIVEN: A config pointing to non-existent vault directory
+      // WHEN: Validating vault path exists
+      // THEN: Exits with error about missing vault directory
       const configPath = join(tempDir, 'config.yaml');
       const vaultPath = join(tempDir, 'non-existent-vault');
       const indexPath = join(tempDir, 'index');
@@ -164,6 +205,9 @@ describe('ConfigService', () => {
     });
 
     it('should exit when vault path is a file', () => {
+      // GIVEN: A vault path that points to a file instead of directory
+      // WHEN: Validating vault path is a directory
+      // THEN: Exits with error that vault must be a directory
       // Create a file instead of directory
       const vaultPath = join(tempDir, 'vault.txt');
       writeFileSync(vaultPath, 'not a directory');
@@ -179,6 +223,9 @@ describe('ConfigService', () => {
 
   describe('error message format', () => {
     it('should show example config on any error', () => {
+      // GIVEN: Any configuration error
+      // WHEN: Displaying error message
+      // THEN: Shows example config format to help user fix the issue
       expect(() => configService.load('')).toThrow();
       
       expect(consoleErrorSpy).toHaveBeenCalledWith('Example config format:');

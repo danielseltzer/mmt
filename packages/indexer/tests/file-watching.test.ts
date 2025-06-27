@@ -31,6 +31,8 @@ describe('VaultIndexer file watching', () => {
 
   it('should update index when file is modified', async () => {
     // GIVEN: An indexer with file watching enabled
+    // WHEN: Modifying an existing markdown file
+    // THEN: The index is automatically updated with the change
     indexer = new VaultIndexer({
       vaultPath: tempDir,
       fileSystem,
@@ -62,6 +64,8 @@ describe('VaultIndexer file watching', () => {
 
   it('should add new files to index', async () => {
     // GIVEN: An indexer with file watching enabled
+    // WHEN: Creating a new markdown file in the vault
+    // THEN: The new file is automatically added to the index
     indexer = new VaultIndexer({
       vaultPath: tempDir,
       fileSystem,
@@ -87,7 +91,9 @@ describe('VaultIndexer file watching', () => {
   });
 
   it('should remove deleted files from index', async () => {
-    // GIVEN: An indexer with file watching enabled and a second file
+    // GIVEN: An indexer with file watching enabled and multiple files
+    // WHEN: Deleting a file from the vault
+    // THEN: The deleted file is automatically removed from the index
     await writeFile(join(tempDir, 'to-delete.md'), '# To Delete\n\nWill be removed');
     
     indexer = new VaultIndexer({
@@ -116,7 +122,9 @@ describe('VaultIndexer file watching', () => {
   });
 
   it('should respect ignorePatterns', async () => {
-    // GIVEN: An indexer with ignore patterns
+    // GIVEN: An indexer with ignore patterns configured
+    // WHEN: Creating files that match the ignore patterns
+    // THEN: Ignored files are not added to the index
     indexer = new VaultIndexer({
       vaultPath: tempDir,
       fileSystem,
@@ -144,6 +152,8 @@ describe('VaultIndexer file watching', () => {
 
   it('should not watch when fileWatching is disabled', async () => {
     // GIVEN: An indexer with file watching disabled
+    // WHEN: Making changes to vault files
+    // THEN: The index remains unchanged (no automatic updates)
     indexer = new VaultIndexer({
       vaultPath: tempDir,
       fileSystem,
