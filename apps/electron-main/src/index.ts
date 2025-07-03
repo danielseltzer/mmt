@@ -6,6 +6,9 @@ import { createContext } from './api/context.js';
 import { createApplicationMenu } from './menu.js';
 import { isDev, isTest, getPreloadPath, getRendererPath } from './utils/paths.js';
 
+// Export types for renderer
+export type { AppRouter } from './api/router.js';
+
 
 let mainWindow: BrowserWindow | null = null;
 

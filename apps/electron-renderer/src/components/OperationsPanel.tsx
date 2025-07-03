@@ -42,7 +42,9 @@ export function OperationsPanel({ onClose }: OperationsPanelProps) {
             {operations.map((op) => (
               <button
                 key={op.id}
-                onClick={() => setSelectedOperation(op.id)}
+                onClick={() => {
+                  setSelectedOperation(op.id);
+                }}
                 className={`w-full flex items-center gap-2 p-3 rounded-md border transition-colors ${
                   selectedOperation === op.id
                     ? 'bg-primary text-primary-foreground border-primary'

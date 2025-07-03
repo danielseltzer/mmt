@@ -11,8 +11,9 @@ export const scriptingRouter = t.router({
       scriptPath: z.string(),
       options: z.record(z.unknown()).optional(),
     }))
-    .mutation(async ({ input }) => {
-      // TODO: Use ScriptRunner
+    .mutation(({ input }) => {
+      // TODO: Use ScriptRunner with input.scriptPath and input.options
+      console.log('Running script:', input.scriptPath, input.options);
       return {
         success: true,
         result: {
@@ -29,8 +30,9 @@ export const scriptingRouter = t.router({
     .input(z.object({
       scriptPath: z.string(),
     }))
-    .query(async ({ input }) => {
-      // TODO: Validate script syntax
+    .query(({ input }) => {
+      // TODO: Validate script syntax for input.scriptPath
+      console.log('Validating script:', input.scriptPath);
       return {
         valid: true,
         errors: [],
@@ -38,7 +40,7 @@ export const scriptingRouter = t.router({
     }),
 
   // Get script templates
-  getTemplates: t.procedure.query(async () => {
+  getTemplates: t.procedure.query(() => {
     return {
       templates: [
         {

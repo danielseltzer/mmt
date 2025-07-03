@@ -58,7 +58,9 @@ export function DocumentTable() {
                   <input
                     type="checkbox"
                     checked={selectedDocuments.includes(doc.path)}
-                    onChange={() => toggleDocument(doc.path)}
+                    onChange={() => {
+                      toggleDocument(doc.path);
+                    }}
                     className="rounded"
                   />
                 </td>

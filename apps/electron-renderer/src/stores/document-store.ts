@@ -25,7 +25,9 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   error: null,
 
   // Actions
-  setDocuments: (documents) => set({ documents }),
+  setDocuments: (documents) => {
+    set({ documents });
+  },
   
   toggleDocument: (path) => {
     const { selectedDocuments } = get();
@@ -41,13 +43,17 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     set({ selectedDocuments: documents.map((d) => d.path) });
   },
 
-  clearSelection: () => set({ selectedDocuments: [] }),
+  clearSelection: () => {
+    set({ selectedDocuments: [] });
+  },
 
-  executeQuery: async (_query) => {
+  executeQuery: async (query) => {
     set({ isLoading: true, error: null });
     try {
       // TODO: Call tRPC to execute query
-      // For now, mock some data
+      // For now, mock some data based on query
+      console.log('Executing query:', query);
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
       const mockDocuments: Document[] = [
         {
           path: '/vault/notes/example.md',
@@ -71,5 +77,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  setError: (error) => set({ error }),
+  setError: (error) => {
+    set({ error });
+  },
 }));

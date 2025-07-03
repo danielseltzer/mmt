@@ -10,8 +10,9 @@ export const configRouter = t.router({
     .input(z.object({
       configPath: z.string(),
     }))
-    .mutation(async ({ input }) => {
-      // TODO: Implement config loading
+    .mutation(({ input }) => {
+      // TODO: Implement config loading from input.configPath
+      console.log('Loading config from:', input.configPath);
       return {
         success: true,
         config: {
@@ -22,7 +23,7 @@ export const configRouter = t.router({
     }),
 
   // Get current configuration
-  get: t.procedure.query(async () => {
+  get: t.procedure.query(() => {
     // TODO: Return current config
     return null;
   }),
@@ -32,8 +33,9 @@ export const configRouter = t.router({
     .input(z.object({
       config: z.record(z.unknown()),
     }))
-    .query(async ({ input }) => {
+    .query(({ input }) => {
       // TODO: Validate config using @mmt/config
+      console.log('Validating config:', input.config);
       return { valid: true, errors: [] };
     }),
 });

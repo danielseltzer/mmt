@@ -120,7 +120,7 @@ export const indexerRouter = t.router({
     .input(z.object({
       path: z.string(),
     }))
-    .query(async ({ input, ctx }) => {
+    .query(({ input, ctx }) => {
       const { indexer } = ctx;
       const documents = indexer.getAllDocuments();
       const document = documents.find(d => d.path === input.path);
