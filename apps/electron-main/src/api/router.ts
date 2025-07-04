@@ -1,23 +1,20 @@
 import { initTRPC } from '@trpc/server';
-import { z } from 'zod';
 import { configRouter } from './routers/config.js';
 import { indexerRouter } from './routers/indexer.js';
 import { operationsRouter } from './routers/operations.js';
 import { scriptingRouter } from './routers/scripting.js';
-
-// Context type for our tRPC instance
-export type Context = {
-  // Add context properties as needed
-};
+import { queryRouter } from './routers/query.js';
+import type { Context } from './context.js';
 
 const t = initTRPC.context<Context>().create();
 
 // Main app router
-export const router = t.router({
+export const appRouter = t.router({
   config: configRouter,
   indexer: indexerRouter,
   operations: operationsRouter,
   scripting: scriptingRouter,
+  query: queryRouter,
   
   // System utilities
   ping: t.procedure.query(() => 'pong'),
@@ -29,4 +26,5 @@ export const router = t.router({
   })),
 });
 
-export type AppRouter = typeof router;
+export type AppRouter = typeof appRouter;
+export type { Context } from './context.js';

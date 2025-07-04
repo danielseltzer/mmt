@@ -1,5 +1,5 @@
 {
-  "name": "@mmt/electron-main",
+  "name": "@mmt/table-view",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,30 +15,29 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "clean": "rm -rf dist",
-    "lint": "eslint src",
+    "lint": "eslint src tests",
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@mmt/config": "workspace:*",
-    "@mmt/document-operations": "workspace:*",
-    "@mmt/document-set": "workspace:^",
     "@mmt/entities": "workspace:*",
-    "@mmt/file-relocator": "workspace:*",
-    "@mmt/filesystem-access": "workspace:*",
-    "@mmt/indexer": "workspace:*",
-    "@mmt/query-parser": "workspace:*",
-    "@mmt/scripting": "workspace:*",
-    "@trpc/server": "^10.45.2",
-    "electron-trpc": "^0.6.0",
-    "zod": "^3.24.1"
+    "@tanstack/react-table": "^8.20.6",
+    "clsx": "^2.1.1",
+    "react": "^18.3.1",
+    "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
-    "@types/node": "^20.19.0",
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^18.3.20",
     "@vitest/ui": "^3.2.4",
-    "electron": "^36.4.0",
+    "happy-dom": "^18.0.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
   }
 }

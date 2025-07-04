@@ -15,6 +15,7 @@
     "@mmt/entities": "workspace:*",
     "@tanstack/react-query": "^5.62.14",
     "@tanstack/react-table": "^8.20.6",
+    "@trpc/client": "^10.45.2",
     "clsx": "^2.1.1",
     "electron-trpc": "^0.6.0",
     "react": "^18.3.1",
@@ -24,6 +25,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@mmt/electron-main": "workspace:*",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
     "@vitejs/plugin-react": "^4.5.2",

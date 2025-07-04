@@ -24,7 +24,7 @@ function createWindow() {
   });
 
   // Load URL without await
-  mainWindow.loadURL('http://localhost:5173');
+  void mainWindow.loadURL('http://localhost:5173');
   
   // Open DevTools
   mainWindow.webContents.openDevTools();
@@ -34,7 +34,7 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   console.log('App ready');
   createWindow();
 });

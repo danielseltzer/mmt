@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -50,13 +50,13 @@ async function createWindow() {
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void shell.openExternal(url);
     return { action: 'deny' };
   });
 }
 
 // App event handlers
-app.whenReady().then(createWindow).catch((error) => {
+void app.whenReady().then(createWindow).catch((error: unknown) => {
   console.error('Failed to create window:', error);
   app.quit();
 });
@@ -78,7 +78,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    void createWindow();
   }
 });
 

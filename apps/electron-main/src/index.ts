@@ -1,14 +1,14 @@
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-// import { createIPCHandler } from 'electron-trpc/main';
-// import { router } from './api/router.js';
+import { createIPCHandler } from 'electron-trpc/main';
+import { appRouter } from './api/router.js';
+import { createContext } from './api/context.js';
 import { createApplicationMenu } from './menu.js';
 import { isDev, isTest, getPreloadPath, getRendererPath } from './utils/paths.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Export types for renderer
+export type { AppRouter } from './api/router.js';
+
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -28,11 +28,25 @@ async function createWindow() {
   });
 
   // Set up IPC handler
-  // TODO: Set up tRPC handler once we fix the import
-  // createIPCHandler({
-  //   router,
-  //   windows: [mainWindow],
-  // });
+  try {
+    // Get config (for now, use test values - in production, load from args or config file)
+    const config = {
+      vaultPath: process.env.MMT_VAULT_PATH || join(app.getPath('documents'), 'mmt-vault'),
+      indexPath: process.env.MMT_INDEX_PATH || join(app.getPath('userData'), 'mmt-index'),
+    };
+    
+    // Create context with all services
+    const context = await createContext(config);
+    
+    // Set up IPC handler
+    createIPCHandler({
+      router: appRouter,
+      createContext: () => Promise.resolve(context),
+      windows: [mainWindow],
+    });
+  } catch (error) {
+    console.error('Failed to set up IPC handler:', error);
+  }
 
   // Set up application menu
   const menu = createApplicationMenu(mainWindow);
@@ -67,13 +81,13 @@ async function createWindow() {
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void shell.openExternal(url);
     return { action: 'deny' };
   });
 }
 
 // App event handlers
-app.whenReady().then(createWindow);
+void app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -83,7 +97,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    void createWindow();
   }
 });
 

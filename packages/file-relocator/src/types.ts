@@ -2,11 +2,11 @@ export type LinkType = 'wikilink' | 'markdown';
 
 export interface Link {
   type: LinkType;
-  raw: string;      // The full raw link text, e.g., "[[Tasks/task1]]" or "[text](path.md)"
-  target: string;   // The path/target being linked to
-  line: number;     // Line number where the link appears
-  text?: string;    // Link text for markdown links
-  anchor?: string;  // Optional anchor/heading reference
+  raw: string; // The full raw link text, e.g., "[[Tasks/task1]]" or "[text](path.md)"
+  target: string; // The path/target being linked to
+  line: number; // Line number where the link appears
+  text?: string; // Link text for markdown links
+  anchor?: string; // Optional anchor/heading reference
 }
 
 export interface FileReferences {

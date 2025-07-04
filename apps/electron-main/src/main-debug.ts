@@ -48,17 +48,13 @@ async function createWindow() {
       console.error('❌ Failed to load:', errorCode, errorDescription);
     });
 
-    mainWindow.webContents.on('crashed' as any, () => {
-      console.error('❌ Renderer crashed');
-    });
-
-    mainWindow.webContents.on('render-process-gone' as any, (event: any, details: any) => {
+    mainWindow.webContents.on('render-process-gone', (_event, details) => {
       console.error('❌ Render process gone:', details);
     });
 
     // Log console messages from renderer
     mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-      console.log(`[Renderer ${level}] ${message}${sourceId ? ` (${sourceId}:${line})` : ''}`);
+      console.log(`[Renderer ${String(level)}] ${message}${sourceId ? ` (${sourceId}:${String(line)})` : ''}`);
     });
 
     // Load the dev server
@@ -100,8 +96,8 @@ async function createWindow() {
 // App event handlers
 app.whenReady().then(() => {
   console.log('📍 App ready, creating window...');
-  createWindow();
-}).catch((error) => {
+  void createWindow();
+}).catch((error: unknown) => {
   console.error('❌ App ready error:', error);
   app.quit();
 });
@@ -117,7 +113,7 @@ app.on('before-quit', () => {
   console.log('📍 App quitting...');
 });
 
-app.on('will-quit', (event) => {
+app.on('will-quit', () => {
   console.log('📍 App will quit');
 });
 

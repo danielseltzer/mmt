@@ -34,7 +34,7 @@ export class FileRelocator {
     
     for (const filePath of files) {
       // Skip the target file itself
-      if (filePath === targetFilePath) continue;
+      if (filePath === targetFilePath) {continue;}
       
       const links = await this.findLinksInFile(filePath, targetName, targetRelative, vaultPath);
       if (links.length > 0) {
@@ -73,7 +73,7 @@ export class FileRelocator {
         const fullPath = path.join(dirPath, entryName);
         
         // Skip excluded paths
-        if (this.isExcluded(fullPath)) continue;
+        if (this.isExcluded(fullPath)) {continue;}
         
         // Get file stats to check if it's a directory
         try {
@@ -124,10 +124,10 @@ export class FileRelocator {
       }
       
       // Skip if in code block
-      if (inCodeBlock) continue;
+      if (inCodeBlock) {continue;}
       
       // Skip HTML comments
-      if (line.includes('<!--') && line.includes('-->')) continue;
+      if (line.includes('<!--') && line.includes('-->')) {continue;}
       
       // Find wikilinks
       const wikilinks = this.findWikilinksInLine(line, targetName, targetRelative);
@@ -236,7 +236,7 @@ export class FileRelocator {
     }
     
     // Partial path match (e.g., "Tasks/task1" matching "Tasks/task1.md")
-    if (normalizedTarget.endsWith('/' + normalizedLink)) {
+    if (normalizedTarget.endsWith(`/${ normalizedLink}`)) {
       return true;
     }
     
@@ -333,12 +333,12 @@ export class FileRelocator {
       newTarget = newTarget.replace(/\\/g, '/');
       const anchor = link.anchor ? `#${link.anchor}` : '';
       return `[[${newTarget}${anchor}]]`;
-    } else {
+    } 
       // For markdown links, preserve relative path structure
       const newTarget = newRelativePath.replace(/\\/g, '/');
       const anchor = link.anchor ? `#${link.anchor}` : '';
       return `[${link.text || ''}](${newTarget}${anchor})`;
-    }
+    
   }
 
   /**
