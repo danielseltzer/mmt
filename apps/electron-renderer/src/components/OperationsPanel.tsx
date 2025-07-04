@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useDocumentStore } from '../stores/document-store';
+import { useOperationStore } from '../stores/operation-store';
+import { useUIStore } from '../stores/ui-store';
+import type { ScriptOperation } from '@mmt/entities';
 
 interface OperationsPanelProps {
   onClose: () => void;
@@ -7,7 +10,68 @@ interface OperationsPanelProps {
 
 export function OperationsPanel({ onClose }: OperationsPanelProps) {
   const selectedDocuments = useDocumentStore((state) => state.selectedDocuments);
+  const addOperation = useOperationStore((state) => state.addOperation);
+  const showNotification = useUIStore((state) => state.showNotification);
+  
   const [selectedOperation, setSelectedOperation] = useState<string>('');
+  const [operationParams, setOperationParams] = useState<Record<string, unknown>>({});
+  
+  const handlePreview = () => {
+    if (!selectedOperation || selectedDocuments.length === 0) return;
+    
+    // TODO: Implement preview functionality
+    showNotification({
+      type: 'info',
+      title: 'Preview not yet implemented',
+      message: 'This feature will show a preview of changes before execution',
+      duration: 3000,
+    });
+  };
+  
+  const handleExecute = () => {
+    if (!selectedOperation || selectedDocuments.length === 0) return;
+    
+    const operation: ScriptOperation = {
+      type: selectedOperation as ScriptOperation['type'],
+      ...operationParams,
+    };
+    
+    // Validate operation parameters
+    if (selectedOperation === 'move' && !operationParams.destination) {
+      showNotification({
+        type: 'error',
+        title: 'Invalid operation',
+        message: 'Please specify a destination folder',
+        duration: 3000,
+      });
+      return;
+    }
+    
+    if (selectedOperation === 'rename' && !operationParams.newName) {
+      showNotification({
+        type: 'error',
+        title: 'Invalid operation',
+        message: 'Please specify a new name pattern',
+        duration: 3000,
+      });
+      return;
+    }
+    
+    // Add operation to queue
+    addOperation(operation, selectedDocuments);
+    
+    showNotification({
+      type: 'success',
+      title: 'Operation queued',
+      message: `${selectedOperation} operation added to queue for ${selectedDocuments.length} files`,
+      duration: 3000,
+    });
+    
+    // Reset form
+    setSelectedOperation('');
+    setOperationParams({});
+    onClose();
+  };
 
   const operations = [
     { id: 'move', label: 'Move Files', icon: '📁' },
@@ -67,6 +131,8 @@ export function OperationsPanel({ onClose }: OperationsPanelProps) {
                   type="text"
                   placeholder="Destination folder"
                   className="w-full px-3 py-2 border rounded-md bg-background"
+                  value={operationParams.destination as string ?? ''}
+                  onChange={(e) => setOperationParams({ ...operationParams, destination: e.target.value })}
                 />
               )}
               {selectedOperation === 'rename' && (
@@ -74,12 +140,16 @@ export function OperationsPanel({ onClose }: OperationsPanelProps) {
                   type="text"
                   placeholder="New name pattern (use {name} for current name)"
                   className="w-full px-3 py-2 border rounded-md bg-background"
+                  value={operationParams.newName as string ?? ''}
+                  onChange={(e) => setOperationParams({ ...operationParams, newName: e.target.value })}
                 />
               )}
               {selectedOperation === 'updateFrontmatter' && (
                 <textarea
                   placeholder="Frontmatter updates (YAML format)"
                   className="w-full px-3 py-2 border rounded-md bg-background h-24"
+                  value={operationParams.updates as string ?? ''}
+                  onChange={(e) => setOperationParams({ ...operationParams, updates: e.target.value })}
                 />
               )}
             </div>
@@ -89,13 +159,15 @@ export function OperationsPanel({ onClose }: OperationsPanelProps) {
 
       <div className="p-4 border-t space-y-2">
         <button
-          disabled={!selectedOperation}
+          disabled={!selectedOperation || selectedDocuments.length === 0}
+          onClick={() => handlePreview()}
           className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Preview Changes
         </button>
         <button
-          disabled={!selectedOperation}
+          disabled={!selectedOperation || selectedDocuments.length === 0}
+          onClick={() => handleExecute()}
           className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Execute Operation

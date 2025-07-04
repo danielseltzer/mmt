@@ -113,7 +113,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   apps/electron-main:
     dependencies:
@@ -198,14 +198,14 @@ importers:
         specifier: ^8.20.6
         version: 8.21.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@trpc/client':
-        specifier: ^11.4.3
-        version: 11.4.3(@trpc/server@11.4.3(typescript@5.8.3))(typescript@5.8.3)
+        specifier: ^10.45.2
+        version: 10.45.2(@trpc/server@11.4.3(typescript@5.8.3))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
       electron-trpc:
         specifier: ^0.6.0
-        version: 0.6.2(@trpc/client@11.4.3(@trpc/server@11.4.3(typescript@5.8.3))(typescript@5.8.3))(@trpc/server@11.4.3(typescript@5.8.3))(electron@36.4.0)
+        version: 0.6.2(@trpc/client@10.45.2(@trpc/server@11.4.3(typescript@5.8.3)))(@trpc/server@11.4.3(typescript@5.8.3))(electron@36.4.0)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -222,6 +222,9 @@ importers:
         specifier: ^5.0.2
         version: 5.0.6(@types/react@18.3.23)(react@18.3.1)
     devDependencies:
+      '@mmt/electron-main':
+        specifier: workspace:*
+        version: link:../electron-main
       '@types/react':
         specifier: ^18.3.20
         version: 18.3.23
@@ -270,7 +273,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/document-operations:
     dependencies:
@@ -298,7 +301,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/document-set:
     dependencies:
@@ -326,7 +329,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/entities:
     dependencies:
@@ -342,7 +345,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.6.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/file-relocator:
     dependencies:
@@ -361,7 +364,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.6.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/filesystem-access:
     dependencies:
@@ -380,7 +383,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.6.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/indexer:
     dependencies:
@@ -414,7 +417,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/query-parser:
     dependencies:
@@ -473,7 +476,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
   packages/vault:
     dependencies:
@@ -504,7 +507,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^1.6.0
-        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
+        version: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
 
 packages:
 
@@ -1158,6 +1161,11 @@ packages:
   '@tanstack/table-core@8.21.3':
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
+
+  '@trpc/client@10.45.2':
+    resolution: {integrity: sha512-ykALM5kYWTLn1zYuUOZ2cPWlVfrXhc18HzBDyRhoPYN0jey4iQHEFSEowfnhg1RvYnrAVjNBgHNeSAXjrDbGwg==}
+    peerDependencies:
+      '@trpc/server': 10.45.2
 
   '@trpc/client@11.4.3':
     resolution: {integrity: sha512-i2suttUCfColktXT8bqex5kHW5jpT15nwUh0hGSDiW1keN621kSUQKcLJ095blqQAUgB+lsmgSqSMmB4L9shQQ==}
@@ -3929,6 +3937,10 @@ snapshots:
 
   '@tanstack/table-core@8.21.3': {}
 
+  '@trpc/client@10.45.2(@trpc/server@11.4.3(typescript@5.8.3))':
+    dependencies:
+      '@trpc/server': 11.4.3(typescript@5.8.3)
+
   '@trpc/client@11.4.3(@trpc/server@10.45.2)(typescript@5.8.3)':
     dependencies:
       '@trpc/server': 10.45.2
@@ -4239,18 +4251,6 @@ snapshots:
       sirv: 2.0.4
       vitest: 1.6.1(@types/node@20.19.0)(@vitest/ui@1.6.1)(happy-dom@18.0.1)
 
-  '@vitest/ui@3.2.3(vitest@1.6.1)':
-    dependencies:
-      '@vitest/utils': 3.2.3
-      fflate: 0.8.2
-      flatted: 3.3.3
-      pathe: 2.0.3
-      sirv: 3.0.1
-      tinyglobby: 0.2.14
-      tinyrainbow: 2.0.0
-      vitest: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)
-    optional: true
-
   '@vitest/ui@3.2.3(vitest@3.2.3)':
     dependencies:
       '@vitest/utils': 3.2.3
@@ -4261,6 +4261,18 @@ snapshots:
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
       vitest: 3.2.3(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1)(jiti@1.21.7)(tsx@4.20.3)(yaml@2.8.0)
+
+  '@vitest/ui@3.2.4(vitest@1.6.1)':
+    dependencies:
+      '@vitest/utils': 3.2.4
+      fflate: 0.8.2
+      flatted: 3.3.3
+      pathe: 2.0.3
+      sirv: 3.0.1
+      tinyglobby: 0.2.14
+      tinyrainbow: 2.0.0
+      vitest: 1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
+    optional: true
 
   '@vitest/ui@3.2.4(vitest@3.2.4)':
     dependencies:
@@ -4665,6 +4677,15 @@ snapshots:
   eastasianwidth@0.2.0: {}
 
   electron-to-chromium@1.5.166: {}
+
+  electron-trpc@0.6.2(@trpc/client@10.45.2(@trpc/server@11.4.3(typescript@5.8.3)))(@trpc/server@11.4.3(typescript@5.8.3))(electron@36.4.0):
+    dependencies:
+      '@trpc/client': 10.45.2(@trpc/server@11.4.3(typescript@5.8.3))
+      '@trpc/server': 11.4.3(typescript@5.8.3)
+      debug: 4.4.1
+      electron: 36.4.0
+    transitivePeerDependencies:
+      - supports-color
 
   electron-trpc@0.6.2(@trpc/client@11.4.3(@trpc/server@10.45.2)(typescript@5.8.3))(@trpc/server@10.45.2)(electron@36.4.0):
     dependencies:
@@ -6471,7 +6492,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.3)(happy-dom@18.0.1):
+  vitest@1.6.1(@types/node@20.19.0)(@vitest/ui@3.2.4)(happy-dom@18.0.1):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
@@ -6495,7 +6516,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.0
-      '@vitest/ui': 3.2.3(vitest@1.6.1)
+      '@vitest/ui': 3.2.4(vitest@1.6.1)
       happy-dom: 18.0.1
     transitivePeerDependencies:
       - less

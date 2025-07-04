@@ -48,10 +48,6 @@ async function createWindow() {
       console.error('❌ Failed to load:', errorCode, errorDescription);
     });
 
-    mainWindow.webContents.on('crashed', () => {
-      console.error('❌ Renderer crashed');
-    });
-
     mainWindow.webContents.on('render-process-gone', (_event, details) => {
       console.error('❌ Render process gone:', details);
     });

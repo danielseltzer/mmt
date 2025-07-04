@@ -488,7 +488,7 @@ export class ScriptRunner {
     try {
       switch (operation.type) {
         case 'move': {
-          if (operation.destination === undefined || operation.destination === null) {
+          if (operation.destination === undefined || operation.destination === null || operation.destination === '') {
             throw new Error('Move operation requires destination');
           }
           // Build full target path by combining destination directory with filename
@@ -598,7 +598,7 @@ export class ScriptRunner {
     try {
       switch (operation.type) {
         case 'move': {
-          if (operation.destination === undefined || operation.destination === null) {
+          if (operation.destination === undefined || operation.destination === null || operation.destination === '') {
             throw new Error('Move operation requires destination');
           }
           // Build full target path by combining destination directory with filename

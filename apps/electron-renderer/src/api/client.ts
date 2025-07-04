@@ -1,9 +1,11 @@
 import { createTRPCProxyClient } from '@trpc/client';
 import { ipcLink } from 'electron-trpc/renderer';
-import type { AppRouter } from '@mmt/electron-main';
+
+// TODO: Fix type import from @mmt/electron-main
+// import type { AppRouter } from '@mmt/electron-main';
 
 // Create tRPC client
-export const api = createTRPCProxyClient<AppRouter>({
+export const api: any = createTRPCProxyClient<any>({
   links: [ipcLink()],
 });
 
