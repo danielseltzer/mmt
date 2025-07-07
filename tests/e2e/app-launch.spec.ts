@@ -1,27 +1,26 @@
 import { test, expect } from '@playwright/test';
-import { launchElectron, closeElectron } from './electron-helpers';
+import { launchElectronWithTestVault, closeElectronAndCleanup, TestContext } from './electron-helpers';
 
 test.describe('Electron App Launch', () => {
-  let electronApp: any;
-  let page: any;
+  let context: TestContext;
 
   test.beforeAll(async () => {
-    const result = await launchElectron();
-    electronApp = result.app;
-    page = result.page;
+    context = await launchElectronWithTestVault();
   });
 
   test.afterAll(async () => {
-    await closeElectron(electronApp);
+    await closeElectronAndCleanup(context);
   });
 
   test('should launch the application', async () => {
+    const { page } = context;
     // Check window title
     const title = await page.title();
     expect(title).toBe('MMT - Markdown Management Toolkit');
   });
 
   test('should display the main header', async () => {
+    const { page } = context;
     // Check header is visible
     const header = await page.locator('header');
     await expect(header).toBeVisible();
@@ -32,6 +31,7 @@ test.describe('Electron App Launch', () => {
   });
 
   test('should display the query bar', async () => {
+    const { page } = context;
     // Check query input
     const queryInput = await page.locator('input[placeholder*="Enter query"]');
     await expect(queryInput).toBeVisible();
@@ -46,6 +46,7 @@ test.describe('Electron App Launch', () => {
   });
 
   test('should display the document table area', async () => {
+    const { page } = context;
     // Check for empty state message
     const emptyState = await page.locator('text=No documents found');
     await expect(emptyState).toBeVisible();
@@ -55,6 +56,7 @@ test.describe('Electron App Launch', () => {
   });
 
   test('should display the status bar', async () => {
+    const { page } = context;
     // Check status bar exists
     const statusBar = await page.locator('div:has-text("0 document")');
     await expect(statusBar).toBeVisible();
@@ -65,6 +67,7 @@ test.describe('Electron App Launch', () => {
   });
 
   test('should have operations button disabled when no documents selected', async () => {
+    const { page } = context;
     const operationsButton = await page.locator('button:has-text("Operations")');
     await expect(operationsButton).toBeVisible();
     await expect(operationsButton).toBeDisabled();

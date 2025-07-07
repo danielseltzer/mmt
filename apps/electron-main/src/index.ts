@@ -1,10 +1,16 @@
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import { join } from 'path';
-import { createIPCHandler } from 'electron-trpc/main';
+import { createRequire } from 'module';
 import { appRouter } from './api/router.js';
 import { createContext } from './api/context.js';
 import { createApplicationMenu } from './menu.js';
 import { isDev, isTest, getPreloadPath, getRendererPath } from './utils/paths.js';
+
+// electron-trpc doesn't support ESM properly in any version (tested 0.5.2, 0.7.1, 1.0.0-alpha)
+// It tries to import named exports from 'electron' which is a CommonJS module
+// Work around by using CommonJS require
+const require = createRequire(import.meta.url);
+const { createIPCHandler } = require('electron-trpc/main');
 
 // Export types for renderer
 export type { AppRouter } from './api/router.js';
@@ -13,13 +19,21 @@ export type { AppRouter } from './api/router.js';
 let mainWindow: BrowserWindow | null = null;
 
 async function createWindow() {
+  // Check if running in test mode with offscreen flag
+  const isOffscreenTest = process.argv.includes('--test-offscreen');
+  
+  const preloadPath = getPreloadPath();
+  console.log('Using preload script:', preloadPath);
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    x: isOffscreenTest ? -10000 : undefined, // Position off-screen in test mode
+    y: isOffscreenTest ? -10000 : undefined,
     webPreferences: {
-      preload: getPreloadPath(),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -62,9 +76,11 @@ async function createWindow() {
     await mainWindow.loadFile(rendererPath);
   }
 
-  // Show window when ready
+  // Show window when ready (unless in offscreen test mode)
   mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
+    if (!process.argv.includes('--test-offscreen')) {
+      mainWindow?.show();
+    }
   });
 
   // Log any console messages from renderer

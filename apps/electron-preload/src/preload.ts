@@ -1,48 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-// Expose IPC for electron-trpc
-// This matches what electron-trpc expects for the ipcLink
+// Manually expose electronTRPC for version 0.5.2
 contextBridge.exposeInMainWorld('electronTRPC', {
-  invoke: (procedurePath: string, args?: unknown) => 
-    ipcRenderer.invoke('electron-trpc', { procedurePath, args }),
-  subscribe: (
-    procedurePath: string,
-    args: unknown,
-    onData: (data: unknown) => void,
-    onError: (error: unknown) => void
-  ) => {
-    const subscriptionId = Math.random().toString(36).substring(7);
-    
-    // Send subscription request
-    ipcRenderer.send('electron-trpc-subscription', {
-      type: 'start',
-      subscriptionId,
-      procedurePath,
-      args,
-    });
-    
-    // Listen for subscription updates
-    const dataHandler = (_: any, message: any) => {
-      if (message.subscriptionId === subscriptionId) {
-        if (message.type === 'data') {
-          onData(message.data);
-        } else if (message.type === 'error') {
-          onError(message.error);
-        }
-      }
-    };
-    
-    ipcRenderer.on('electron-trpc-subscription-data', dataHandler);
-    
-    // Return unsubscribe function
-    return () => {
-      ipcRenderer.send('electron-trpc-subscription', {
-        type: 'stop',
-        subscriptionId,
-      });
-      ipcRenderer.removeListener('electron-trpc-subscription-data', dataHandler);
-    };
-  },
+  sendMessage: (message: any) => ipcRenderer.send('electron-trpc.main', message),
+  onMessage: (callback: (message: any) => void) => 
+    ipcRenderer.on('electron-trpc.renderer', (_event, message) => callback(message)),
 });
 
 // Expose additional APIs if needed
