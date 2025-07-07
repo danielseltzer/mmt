@@ -185,7 +185,9 @@ describe('Table View Component', () => {
     
     const checkboxes = screen.getAllByRole('checkbox').slice(1); // Skip header checkbox
     await userEvent.click(checkboxes[0]); // Select first
-    await userEvent.click(checkboxes[2], { shiftKey: true }); // Shift-click third
+    
+    // Simulate shift-click with fireEvent
+    fireEvent.click(checkboxes[2], { shiftKey: true });
     
     // THEN: First three rows should be selected
     await waitFor(() => {

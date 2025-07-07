@@ -162,7 +162,7 @@ export function TableView({
           const date = getValue() as Date;
           return (
             <span data-testid="modified-cell">
-              {date.toLocaleDateString()}
+              {date.toLocaleDateString('en-US')}
             </span>
           );
         },

@@ -18,7 +18,8 @@
     "lint": "eslint src tests",
     "type-check": "tsc --noEmit",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "demo": "vite serve demo"
   },
   "dependencies": {
     "@mmt/entities": "workspace:*",
@@ -32,9 +33,13 @@
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
     "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.6",
+    "@vitejs/plugin-react": "^4.5.2",
     "@vitest/ui": "^3.2.4",
     "happy-dom": "^18.0.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.8.3",
+    "vite": "^6.3.5",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {

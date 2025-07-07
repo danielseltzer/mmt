@@ -1,21 +1,19 @@
 import { test, expect } from '@playwright/test';
-import { launchElectron, closeElectron } from './electron-helpers';
+import { launchElectronWithTestVault, closeElectronAndCleanup, TestContext } from './electron-helpers';
 
 test.describe('Query Bar Functionality', () => {
-  let electronApp: any;
-  let page: any;
+  let context: TestContext;
 
   test.beforeAll(async () => {
-    const result = await launchElectron();
-    electronApp = result.app;
-    page = result.page;
+    context = await launchElectronWithTestVault();
   });
 
   test.afterAll(async () => {
-    await closeElectron(electronApp);
+    await closeElectronAndCleanup(context);
   });
 
   test('should allow typing in the query input', async () => {
+    const { page } = context;
     const queryInput = await page.locator('input[placeholder*="Enter query"]');
     
     // Type a query
@@ -24,6 +22,7 @@ test.describe('Query Bar Functionality', () => {
   });
 
   test('should enable search button when query is entered', async () => {
+    const { page } = context;
     const queryInput = await page.locator('input[placeholder*="Enter query"]');
     const searchButton = await page.locator('button:has-text("Search")');
     
@@ -37,6 +36,7 @@ test.describe('Query Bar Functionality', () => {
   });
 
   test('should clear query when clear button is clicked', async () => {
+    const { page } = context;
     const queryInput = await page.locator('input[placeholder*="Enter query"]');
     const clearButton = await page.locator('button:has-text("Clear")');
     
@@ -50,6 +50,7 @@ test.describe('Query Bar Functionality', () => {
   });
 
   test('should display example queries', async () => {
+    const { page } = context;
     // Check for example queries
     await expect(page.locator('code:has-text("tag:project")')).toBeVisible();
     await expect(page.locator('code:has-text("path:*/archive/*")')).toBeVisible();
@@ -57,6 +58,7 @@ test.describe('Query Bar Functionality', () => {
   });
 
   test('should trigger search on Enter key', async () => {
+    const { page } = context;
     const queryInput = await page.locator('input[placeholder*="Enter query"]');
     
     // Type and press Enter

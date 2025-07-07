@@ -11,6 +11,8 @@
     "preview:electron": "electron-vite preview",
     "test": "turbo run test:run",
     "test:watch": "turbo test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "clean": "turbo clean && rm -rf node_modules && rm -rf dist",

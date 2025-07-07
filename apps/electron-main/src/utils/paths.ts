@@ -16,12 +16,12 @@ export function isTest(): boolean {
 
 export function getPreloadPath(): string {
   if (isTest()) {
-    // In test, use the preload path from environment or default
-    return process.env.ELECTRON_PRELOAD_PATH || join(__dirname, '../preload/preload.js');
+    // In test, preload is built to apps/electron-preload/dist
+    return process.env.ELECTRON_PRELOAD_PATH || join(__dirname, '../../../../apps/electron-preload/dist/preload.js');
   }
   if (isDev()) {
     // In development, preload is in electron-preload package
-    return join(__dirname, '../../../../electron-preload/dist/preload.js');
+    return join(__dirname, '../../../../apps/electron-preload/dist/preload.js');
   }
   // In production, it's bundled in the same directory
   return join(__dirname, '../preload.js');
@@ -29,8 +29,8 @@ export function getPreloadPath(): string {
 
 export function getRendererPath(): string {
   if (isTest()) {
-    // In test, renderer is in the dist folder
-    return join(__dirname, '../renderer/index.html');
+    // In test, renderer is built to apps/electron-renderer/dist
+    return join(__dirname, '../../../../apps/electron-renderer/dist/index.html');
   }
   if (isDev()) {
     throw new Error('Use dev server URL in development');
