@@ -47,6 +47,8 @@ async function createWindow() {
     const config = {
       vaultPath: process.env.MMT_VAULT_PATH || join(app.getPath('documents'), 'mmt-vault'),
       indexPath: process.env.MMT_INDEX_PATH || join(app.getPath('userData'), 'mmt-index'),
+      apiPort: 3001,
+      webPort: 5173,
     };
     
     // Create context with all services

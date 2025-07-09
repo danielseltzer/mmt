@@ -1,3 +1,5 @@
 # Simple test configuration
 vaultPath: /Users/danielseltzer/code/mmt/test-vault
 indexPath: /Users/danielseltzer/code/mmt/.mmt-data/indexes/test
+apiPort: 3001
+webPort: 5173

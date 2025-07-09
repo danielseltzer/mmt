@@ -25,6 +25,8 @@ describe('Entity Schemas', () => {
       const config: Config = {
         vaultPath: '/Users/test/vault',
         indexPath: '/Users/test/.mmt/index',
+        apiPort: 3001,
+        webPort: 5173,
       };
       
       const result = ConfigSchema.safeParse(config);

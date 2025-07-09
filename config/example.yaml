@@ -7,6 +7,10 @@ vaultPath: /Users/username/Documents/MyVault
 # REQUIRED: Where to store the index (relative or absolute)
 indexPath: .mmt-data/indexes/default
 
+# REQUIRED: API and web server ports
+apiPort: 3001
+webPort: 5173
+
 # OPTIONAL: Cache configuration
 cache:
   enabled: true

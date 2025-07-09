@@ -9,6 +9,15 @@
 import { z } from 'zod';
 
 /**
+ * Custom Zod schema for absolute paths.
+ * Enforces that paths must be absolute at the schema validation level.
+ */
+const absolutePath = z.string().refine(
+  (path) => path.startsWith('/') || (process.platform === 'win32' && /^[A-Za-z]:[\\/]/u.test(path)),
+  { message: 'Path must be absolute' }
+);
+
+/**
  * Main configuration schema for MMT.
  * 
  * The configuration is the entry point for all MMT operations, whether through
@@ -28,13 +37,13 @@ export const ConfigSchema = z.object({
    * Absolute path to the markdown vault directory.
    * This is the root directory containing all markdown files to be managed.
    */
-  vaultPath: z.string().describe('Absolute path to the markdown vault'),
+  vaultPath: absolutePath.describe('Absolute path to the markdown vault'),
   
   /**
    * Absolute path to store the vault index.
    * The index database will be created here if it doesn't exist.
    */
-  indexPath: z.string().describe('Absolute path to store the vault index'),
+  indexPath: absolutePath.describe('Absolute path to store the vault index'),
   
   /**
    * File watching configuration for real-time index updates.
@@ -64,6 +73,18 @@ export const ConfigSchema = z.object({
       'node_modules/**'
     ]),
   }).default({}).optional(),
+  
+  /**
+   * Port number for the API server.
+   * Must be explicitly configured - no defaults.
+   */
+  apiPort: z.number().int().min(1).max(65535).describe('Port for the API server'),
+  
+  /**
+   * Port number for the web development server.
+   * Must be explicitly configured - no defaults.
+   */
+  webPort: z.number().int().min(1).max(65535).describe('Port for the web server'),
 }).strict();
 
 export type Config = z.infer<typeof ConfigSchema>;

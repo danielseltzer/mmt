@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "types": ["node"],
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test"],
+  "references": [
+    { "path": "../../packages/entities" },
+    { "path": "../../packages/config" },
+    { "path": "../../packages/indexer" },
+    { "path": "../../packages/file-relocator" },
+    { "path": "../../packages/filesystem-access" },
+    { "path": "../../packages/document-operations" },
+    { "path": "../../packages/document-set" },
+    { "path": "../../packages/query-parser" },
+    { "path": "../../packages/scripting" }
+  ]
+}

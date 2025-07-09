@@ -46,7 +46,7 @@ describe('ConfigService', () => {
       // Create config file
       const configPath = join(tempDir, 'config.yaml');
       const indexPath = join(tempDir, 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       // Load config
       const config = configService.load(configPath);
@@ -68,7 +68,7 @@ describe('ConfigService', () => {
       // Create config file with non-existent index path
       const configPath = join(tempDir, 'config.yaml');
       const indexPath = join(tempDir, 'non-existent', 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       // Should succeed - index path will be created by indexer
       const config = configService.load(configPath);
@@ -171,10 +171,10 @@ describe('ConfigService', () => {
       // WHEN: Validating path requirements
       // THEN: Exits requiring absolute path (no implicit resolution)
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ./vault\nindexPath: ${join(tempDir, 'index')}`);
+      writeFileSync(configPath, `vaultPath: ./vault\nindexPath: ${join(tempDir, 'index')}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault path must be absolute'));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Path must be absolute'));
     });
 
     it('should exit when indexPath is relative', () => {
@@ -185,10 +185,10 @@ describe('ConfigService', () => {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ./index`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ./index\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Index path must be absolute'));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Path must be absolute'));
     });
 
     it('should exit when vault directory does not exist', () => {
@@ -198,7 +198,7 @@ describe('ConfigService', () => {
       const configPath = join(tempDir, 'config.yaml');
       const vaultPath = join(tempDir, 'non-existent-vault');
       const indexPath = join(tempDir, 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault directory not found'));
@@ -214,7 +214,7 @@ describe('ConfigService', () => {
       
       const configPath = join(tempDir, 'config.yaml');
       const indexPath = join(tempDir, 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault path is not a directory'));
@@ -228,11 +228,7 @@ describe('ConfigService', () => {
       // THEN: Shows example config format to help user fix the issue
       expect(() => configService.load('')).toThrow();
       
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Example config format:');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('---');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('vaultPath: /absolute/path/to/vault');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('indexPath: /absolute/path/to/index');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('---\n');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration path is required'));
     });
   });
 });

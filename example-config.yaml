@@ -10,6 +10,12 @@ vaultPath: /Users/username/Documents/my-notes
 # Absolute path where MMT will store its index database
 indexPath: /Users/username/.mmt/my-notes-index
 
+# Port for the API server (required, no defaults)
+apiPort: 3001
+
+# Port for the web server (required, no defaults)
+webPort: 5173
+
 # Optional: File watching configuration for automatic index updates
 # Uncomment to enable real-time synchronization when files change
 # fileWatching:
