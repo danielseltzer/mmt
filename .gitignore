@@ -22,6 +22,7 @@ lerna-debug.log*
 coverage/
 .nyc_output/
 *.lcov
+test-results/
 
 # Environment and config
 .env
