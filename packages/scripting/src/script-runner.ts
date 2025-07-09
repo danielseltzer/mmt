@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'url';
 import { join, basename } from 'path';
-import type { Table } from 'arquero';
+import type { ColumnTable } from 'arquero';
+type Table = ColumnTable;
 import type {
   ScriptContext,
   OperationPipeline,
