@@ -9,8 +9,9 @@ import type {
 import { fromDocuments, fromTable } from '@mmt/document-set';
 import * as aq from 'arquero';
 
-// Import Table type from arquero
-import type { Table } from 'arquero';
+// Use the actual Arquero ColumnTable type for proper method signatures
+import type { ColumnTable } from 'arquero';
+type Table = ColumnTable;
 import { ResultFormatter } from './result-formatter.js';
 import { writeFile } from 'fs/promises';
 import { dirname } from 'path';

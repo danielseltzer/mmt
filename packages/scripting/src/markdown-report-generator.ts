@@ -1,5 +1,6 @@
 import type { ScriptExecutionResult, OperationPipeline, OutputConfig, AgentAnalysis } from '@mmt/entities';
-import type { Table } from 'arquero';
+import type { ColumnTable } from 'arquero';
+type Table = ColumnTable;
 import { writeFile, unlink } from 'fs/promises';
 import { dirname, basename } from 'path';
 import { mkdir } from 'fs/promises';
@@ -251,10 +252,10 @@ _This report was automatically generated. For questions or issues, please refer 
    * Convert Arquero table to markdown table format
    */
   private tableToMarkdown(table: Table): string {
-    const rows = table.objects();
+    const rows = table.objects() as Record<string, unknown>[];
     if (rows.length === 0) {return '_No data_';}
     
-    const headers = Object.keys(rows[0] as Record<string, unknown>);
+    const headers = Object.keys(rows[0]);
     const lines: string[] = [];
     
     // Header
@@ -262,7 +263,7 @@ _This report was automatically generated. For questions or issues, please refer 
     lines.push(`|${ headers.map(() => '---').join('|') }|`);
     
     // Rows
-    rows.forEach((row: Record<string, unknown>) => {
+    rows.forEach((row) => {
       const values = headers.map(h => {
         const val = row[h];
         if (val === null || val === undefined) {return '';}

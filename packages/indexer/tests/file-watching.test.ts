@@ -5,6 +5,21 @@ import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
+// Test helper: Poll until condition is met or timeout
+async function waitForCondition(
+  condition: () => boolean, 
+  timeout = 1000, 
+  interval = 50
+): Promise<void> {
+  const start = Date.now();
+  while (!condition() && Date.now() - start < timeout) {
+    await new Promise(resolve => setTimeout(resolve, interval));
+  }
+  if (!condition()) {
+    throw new Error(`Condition not met within ${timeout}ms timeout`);
+  }
+}
+
 describe('VaultIndexer file watching', () => {
   let tempDir: string;
   let indexer: VaultIndexer;
@@ -81,8 +96,8 @@ describe('VaultIndexer file watching', () => {
     // WHEN: Creating a new file
     await writeFile(join(tempDir, 'new.md'), '# New File\n\nNew content');
     
-    // Wait for file watcher to process
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for file watcher to process - poll until condition is met
+    await waitForCondition(() => indexer.getAllDocuments().length === 2, 2000);
     
     // THEN: The new file should be in the index
     const docs = indexer.getAllDocuments();
