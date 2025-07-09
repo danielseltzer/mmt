@@ -1,59 +1,97 @@
 # Handoff Summary
 
-## High-Level Goal
-Migrating MMT from Electron to a web-based architecture while maintaining strict design principles:
-- No environment variables
-- No default values (explicit configuration required)
-- Clean separation of concerns
-- No mocks in tests
+## Current State
 
-## Current Session Progress
+Successfully migrated MMT from Electron to React web app architecture (PR #103). The application now runs as:
+- REST API server (Express + TypeScript) on port 3001
+- React web app (Vite + React 19) on port 5173
+- Control manager tool orchestrates both services
 
-### Completed
-1. **Fixed Critical Design Violations**
-   - Added `apiPort` and `webPort` to ConfigSchema (no defaults)
-   - Removed `process.env.PORT` usage from API server
-   - Removed default ports from control manager
-   - All ports now require explicit configuration
+### What Works
+- Document indexing and display
+- Search functionality with debouncing
+- Table view with sorting and selection
+- Playwright E2E tests confirm no console errors
+- Clean TypeScript build (except scripting package)
 
-2. **Updated Configuration Files**
-   - Added required port fields to all config files
-   - Updated example configs with port documentation
+### Known Issues
+- Scripting package has Arquero type errors (pre-existing)
+- One file-watching test fails in indexer (pre-existing)
 
-## Immediate Problems to Fix
+## Priority Plan
 
-### 1. Mixed File Types in src/ Directories
-**Problem**: Found mix of legitimate source files and build artifacts in src/ directories
+### P0 - Critical Issues to Resolve First
+1. **#92** - Fix tRPC version mismatch blocking builds
+   - May be obsolete after Electron removal - needs verification
+   
+2. **#93** - E2E tests hang when launching Electron with Playwright
+   - Likely obsolete after migration - should close if confirmed
+   
+3. **#96** - Fix lint and test errors across packages
+   - Still relevant - need clean builds for stability
 
-**Primary Source Files (need TypeScript conversion):**
-- `apps/api-server/src/app.js`
-- `apps/api-server/src/server.js`
-- `apps/web/src/stores/document-store.js`
+4. **#16** - Implement State Management
+   - Partially complete (Zustand in web app)
+   - May need to verify/close
 
-**Build Artifacts (should not be in src/):**
-- All `.d.ts` and `.d.ts.map` files in any src/ directory
-- All `.js` files in src/ that have corresponding `.ts` files
+5. **#13** - Implement Table View Component
+   - Complete - should close
 
-### 2. TypeScript Migration Incomplete
-The API server has JavaScript files mixed with TypeScript files, violating the project's consistency standards.
+### P1 - Core Features
+1. **#20** - Performance Optimization
+   - Important for 5000+ file handling
+   
+2. **#31** - Advanced Scripting Features
+3. **#30** - Script Builder UI Component
+4. **#18** - Create Reports Package
+5. **#14** - Build View Persistence Package
 
-## Next Steps (Priority Order)
+### P2 - Enhancements
+1. **#86** - Fix flaky file watcher test
+2. **#88** - Fix remaining ESLint errors
+3. **#89-91** - Table view component fixes
+4. **#22** - Add Similarity Features
+5. **#21** - Create QM Provider Package
+6. **#12** - Create Document Previews Package
 
-1. **Clean Build Artifacts**
-   - Remove all `.js`, `.d.ts`, and `.d.ts.map` files from src/ directories where corresponding `.ts` files exist
-   - These are TypeScript compilation artifacts that belong in dist/
+## Next Steps
 
-2. **Complete TypeScript Migration**
-   - Convert `apps/api-server/src/app.js` to TypeScript
-   - Convert `apps/api-server/src/server.js` to TypeScript
-   - Convert `apps/web/src/stores/document-store.js` to TypeScript
+1. **Verify and Close Obsolete Issues**
+   - Check if #92, #93 still apply post-migration
+   - Close #13 (table view complete)
+   - Update #16 if state management sufficient
 
-3. **Fix Remaining Test/Lint Issues**
-   - Fix file-relocator lint errors (26 errors)
-   - Fix @mmt/config test failure
-   - Fix @mmt/table-view test failures
+2. **Fix Build/Test Issues**
+   - Resolve #96 lint/test errors
+   - Fix scripting package Arquero types
+   - Fix flaky file watcher test
 
-## Important Context
-- The prebuild check was catching real issues but was removed as it was added prematurely
-- Some JS files are legitimate source files, not all are build artifacts
-- The project enforces strict "no defaults" policy - all configuration must be explicit
+3. **Implement Core Features**
+   - Script Builder UI (#30)
+   - Performance optimization for large vaults (#20)
+   - View persistence (#14)
+
+## How to Run
+
+```bash
+# Development
+pnpm dev                # Start both API and web servers
+# OR separately:
+pnpm run dev:api       # API server only
+pnpm run dev:web       # Web server only
+
+# Testing
+pnpm test              # Run unit tests
+# For E2E tests, first start servers, then:
+npx playwright test tests/e2e/web/simple-app-test.spec.ts --config=playwright-simple.config.ts
+
+# Build
+pnpm clean && pnpm install && pnpm build
+```
+
+## Key Files Changed
+- `/apps/api-server/*` - New REST API
+- `/apps/web/*` - New React web app
+- `/tools/control-manager/*` - Service orchestration
+- `tsconfig.base.json` - moduleResolution changed to "node"
+- All config files now require `apiPort` and `webPort`
