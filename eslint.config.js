@@ -197,5 +197,23 @@ export default tseslint.config(
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off'
     }
+  },
+  
+  // Node.js environment for packages
+  {
+    files: ['packages/**/*.js', 'packages/**/*.ts', 'apps/api-server/**/*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        exports: 'writable',
+        module: 'writable',
+        require: 'readonly',
+        global: 'readonly'
+      }
+    }
   }
 );

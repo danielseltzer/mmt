@@ -1,2 +1,2 @@
-export { TableView } from './TableView.js';
-export type { TableViewProps } from './TableView.js';
+export { TableView } from './TableView';
+export type { TableViewProps } from './TableView';

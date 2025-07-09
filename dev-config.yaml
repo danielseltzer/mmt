@@ -1,0 +1,8 @@
+# Development configuration
+vaultPath: /Users/danielseltzer/code/mmt/test-vault
+indexPath: /Users/danielseltzer/code/mmt/.index
+fileWatching:
+  enabled: true
+  debounceMs: 500
+apiPort: 3001
+webPort: 5173

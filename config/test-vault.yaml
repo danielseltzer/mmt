@@ -3,6 +3,8 @@
 
 vaultPath: /Users/danielseltzer/Documents/ObsidianVault  # UPDATE THIS PATH
 indexPath: .mmt-data/indexes/test
+apiPort: 3001
+webPort: 5173
 
 # Optional settings
 cache:

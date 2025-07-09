@@ -12,10 +12,15 @@
     { "path": "./packages/filesystem-access" },
     { "path": "./packages/config" },
     { "path": "./packages/indexer" },
-    { "path": "./packages/core-operations" },
     { "path": "./packages/document-operations" },
     { "path": "./packages/document-set" },
+    { "path": "./packages/file-relocator" },
+    { "path": "./packages/query-parser" },
     { "path": "./packages/scripting" },
-    { "path": "./apps/cli" }
+    { "path": "./packages/table-view" },
+    { "path": "./packages/vault" },
+    { "path": "./apps/cli" },
+    { "path": "./apps/api-server" },
+    { "path": "./apps/web" }
   ]
 }

@@ -52,3 +52,6 @@ import { CommandResults } from './cli.schema.js';
 
 // Also export the CommandResults helper
 export { CommandResults };
+
+// Export API schemas for REST endpoints
+export * from './api-schemas.js';

@@ -69,30 +69,28 @@ export class ConfigService {
             const unrecognized = zodIssue.keys ?? [];
             return `  - Unrecognized fields: ${unrecognized.join(', ')}\n    Allowed fields: vaultPath, indexPath`;
           }
+          // Special handling for path validation errors
+          if (issue.message === 'Path must be absolute' && issue.path.length > 0) {
+            const fieldName = issue.path.join('.');
+            const value = issue.path.reduce((obj: unknown, key) => {
+              if (typeof obj === 'object' && obj !== null && key in obj) {
+                return (obj as Record<string, unknown>)[key];
+              }
+              return undefined;
+            }, rawConfig);
+            return `  - ${fieldName}: Path must be absolute, got: ${String(value)}`;
+          }
           return `  - ${issue.path.join('.')}: ${issue.message}`;
         }).join('\n');
         
         this.exitWithError(
           `Configuration validation failed:\n${issues}\n\n` +
-          `Valid config example:\n` +
-          `---\n` +
+          `Example config:\n` +
           `vaultPath: /absolute/path/to/vault\n` +
-          `indexPath: /absolute/path/to/index\n` +
-          `---\n\n` +
-          `Note: Only vaultPath and indexPath are currently supported.`
+          `indexPath: /absolute/path/to/index`
         );
       }
       this.exitWithError(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    // Validate vault path is absolute (only if it exists after schema validation)
-    if (config.vaultPath && !isAbsolute(config.vaultPath)) {
-      this.exitWithError(`Vault path must be absolute, got: ${config.vaultPath}`);
-    }
-
-    // Validate index path is absolute (only if it exists after schema validation)
-    if (config.indexPath && !isAbsolute(config.indexPath)) {
-      this.exitWithError(`Index path must be absolute, got: ${config.indexPath}`);
     }
 
     // Check vault directory exists
@@ -117,17 +115,12 @@ export class ConfigService {
   }
 
   /**
-   * Exit the process with an error message and example config.
+   * Exit the process with an error message.
    * 
    * @param message - Error message to display
    */
   private exitWithError(message: string): never {
     console.error(`\nError: ${message}\n`);
-    console.error('Example config format:');
-    console.error('---');
-    console.error('vaultPath: /absolute/path/to/vault');
-    console.error('indexPath: /absolute/path/to/index');
-    console.error('---\n');
     process.exit(1);
   }
 }

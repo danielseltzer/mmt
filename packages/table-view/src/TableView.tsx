@@ -312,7 +312,7 @@ export function TableView({
                     onClick={header.column.getToggleSortingHandler()}
                     onContextMenu={(e) => handleColumnContextMenu(e, header.id)}
                   >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {String(flexRender(header.column.columnDef.header, header.getContext()))}
                     {header.column.getIsSorted() && (
                       <span className="ml-1">
                         {header.column.getIsSorted() === 'asc' ? '↑' : '↓'}
@@ -349,7 +349,7 @@ export function TableView({
               >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="p-2">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    {String(flexRender(cell.column.columnDef.cell, cell.getContext()))}
                   </td>
                 ))}
               </tr>
