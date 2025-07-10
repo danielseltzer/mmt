@@ -77,6 +77,86 @@ describe('Table View Component', () => {
     }
   });
 
+  it('handles documents with undefined dates gracefully', () => {
+    // GIVEN: Documents with missing or undefined modified dates
+    documents = [
+      {
+        path: '/test/doc1.md',
+        content: 'Test content',
+        metadata: {
+          name: 'doc1',
+          modified: undefined as any, // This is what causes the error
+          size: 100,
+          frontmatter: {},
+          tags: [],
+          links: [],
+        },
+      },
+      {
+        path: '/test/doc2.md',
+        content: 'Test content 2',
+        metadata: {
+          name: 'doc2',
+          modified: null as any, // Also test null
+          size: 100,
+          frontmatter: {},
+          tags: [],
+          links: [],
+        },
+      },
+    ];
+    
+    // WHEN: Rendering the table
+    // THEN: Should not throw error
+    expect(() => render(<TestTableView />)).not.toThrow();
+    
+    // And should render the documents
+    expect(screen.getByText('2 documents')).toBeInTheDocument();
+    expect(screen.getByText('doc1')).toBeInTheDocument();
+    expect(screen.getByText('doc2')).toBeInTheDocument();
+    
+    // Should display '-' for null/undefined dates
+    const modifiedCells = screen.getAllByTestId('modified-cell');
+    expect(modifiedCells[0]).toHaveTextContent('-');
+    expect(modifiedCells[1]).toHaveTextContent('-');
+  });
+
+  it('handles empty documents array', () => {
+    // GIVEN: No documents
+    documents = [];
+    
+    // WHEN: Rendering the table
+    render(<TestTableView />);
+    
+    // THEN: Should show 0 documents
+    expect(screen.getByText('0 documents')).toBeInTheDocument();
+  });
+
+  it('handles invalid dates gracefully', () => {
+    // GIVEN: Document with an invalid date
+    documents = [
+      {
+        path: '/test/invalid-date.md',
+        content: 'Test content',
+        metadata: {
+          name: 'invalid-date',
+          modified: new Date('invalid') as any, // Creates an Invalid Date object
+          size: 100,
+          frontmatter: {},
+          tags: [],
+          links: [],
+        },
+      },
+    ];
+    
+    // WHEN: Rendering the table
+    render(<TestTableView />);
+    
+    // THEN: Should display 'Invalid Date'
+    const modifiedCell = screen.getByTestId('modified-cell');
+    expect(modifiedCell).toHaveTextContent('Invalid Date');
+  });
+
   it('renders 500 documents without performance issues', async () => {
     // GIVEN: 500 real documents
     documents = createTestDocuments(500);

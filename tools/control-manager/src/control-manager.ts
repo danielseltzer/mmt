@@ -37,9 +37,18 @@ export class MMTControlManager {
   private processes = new Map<string, ManagedProcess>();
   private config: MMTConfig | null = null;
   private options: ControlOptions;
+  private cleanupHandlers: (() => void)[] = [];
   
   constructor(options: ControlOptions) {
     this.options = options;
+    
+    // Register process cleanup on exit
+    const exitHandler = () => {
+      this.cleanup();
+    };
+    
+    process.on('exit', exitHandler);
+    this.cleanupHandlers.push(() => process.off('exit', exitHandler));
   }
   
   /**
@@ -146,7 +155,13 @@ export class MMTControlManager {
     });
     
     // Wait for API to be ready
-    await this.waitForReady('api', port);
+    try {
+      await this.waitForReady('api', port);
+    } catch (error) {
+      // Clean up the process if it fails to start
+      await this.stop('api');
+      throw error;
+    }
   }
   
   /**
@@ -193,7 +208,13 @@ export class MMTControlManager {
     });
     
     // Wait for web server to be ready
-    await this.waitForWebReady(port);
+    try {
+      await this.waitForWebReady(port);
+    } catch (error) {
+      // Clean up the process if it fails to start
+      await this.stop('web');
+      throw error;
+    }
   }
   
   /**
@@ -224,8 +245,27 @@ export class MMTControlManager {
    * Stop all managed servers
    */
   async stopAll(): Promise<void> {
+    const promises: Promise<void>[] = [];
+    
+    // Stop all processes in parallel
     for (const [name] of this.processes.entries()) {
-      await this.stop(name as 'api' | 'web');
+      promises.push(this.stop(name as 'api' | 'web'));
+    }
+    
+    // Wait for all to complete, but don't fail if some error
+    await Promise.allSettled(promises);
+    
+    // Force kill any remaining processes
+    for (const [name, managed] of this.processes.entries()) {
+      try {
+        if (!managed.process.killed) {
+          this.log(`Force killing ${managed.name}...`);
+          managed.process.kill('SIGKILL');
+        }
+      } catch (err) {
+        // Process might already be dead
+      }
+      this.processes.delete(name);
     }
   }
   
@@ -234,8 +274,14 @@ export class MMTControlManager {
    */
   private async waitForReady(service: string, port: number, timeout = 30000): Promise<void> {
     const startTime = Date.now();
+    const managed = this.processes.get(service);
     
     while (Date.now() - startTime < timeout) {
+      // Check if process died
+      if (managed && managed.process.exitCode !== null) {
+        throw new Error(`${service} process exited with code ${managed.process.exitCode}`);
+      }
+      
       if (await this.isPortInUse(port)) {
         // For API, also check health endpoint
         if (service === 'api') {
@@ -255,6 +301,13 @@ export class MMTControlManager {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
+    // Timeout reached - kill the process before throwing
+    if (managed) {
+      this.log(`${service} timeout - killing process`);
+      managed.process.kill();
+      this.processes.delete(service);
+    }
+    
     throw new Error(`${service} did not become ready within ${timeout}ms`);
   }
   
@@ -263,13 +316,26 @@ export class MMTControlManager {
    */
   private async waitForWebReady(port: number, timeout = 30000): Promise<void> {
     const startTime = Date.now();
+    const managed = this.processes.get('web');
     
     while (Date.now() - startTime < timeout) {
+      // Check if process died
+      if (managed && managed.process.exitCode !== null) {
+        throw new Error(`Web process exited with code ${managed.process.exitCode}`);
+      }
+      
       if (await this.isPortInUse(port)) {
         this.log(`✓ web server is ready`);
         return;
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Timeout reached - kill the process before throwing
+    if (managed) {
+      this.log(`Web server timeout - killing process`);
+      managed.process.kill();
+      this.processes.delete('web');
     }
     
     throw new Error(`Web server did not become ready within ${timeout}ms`);
@@ -325,6 +391,27 @@ export class MMTControlManager {
   private log(message: string): void {
     if (!this.options.silent) {
       console.log(`[MMT Control] ${message}`);
+    }
+  }
+  
+  /**
+   * Synchronous cleanup for process exit
+   */
+  private cleanup(): void {
+    // Kill all processes synchronously
+    for (const [name, managed] of this.processes.entries()) {
+      try {
+        if (!managed.process.killed) {
+          managed.process.kill('SIGKILL');
+        }
+      } catch (err) {
+        // Process might already be dead
+      }
+    }
+    
+    // Remove event handlers
+    for (const handler of this.cleanupHandlers) {
+      handler();
     }
   }
 }
