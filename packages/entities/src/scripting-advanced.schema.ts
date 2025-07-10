@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ScriptOperationSchema, SelectCriteriaSchema, ExecuteOptionsSchema } from './scripting.schema.js';
+import { ScriptOperationSchema, SelectCriteriaSchema, ExecuteOptionsSchema, SuccessResultSchema } from './scripting.schema.js';
 import { DocumentSchema } from './document.schema.js';
 
 /**
@@ -135,6 +135,36 @@ export const AdvancedOperationPipelineSchema: z.ZodType<any> = z.object({
     .describe('Pipeline context for storing intermediate values'),
 }).describe('Advanced operation pipeline with control flow and error handling');
 
+/**
+ * Advanced result schemas that work with AdvancedScriptOperation
+ */
+export const AdvancedSuccessResultSchema = z.object({
+  item: DocumentSchema,
+  operation: AdvancedScriptOperationSchema,
+  result: z.any().optional(),
+});
+
+export const AdvancedFailureResultSchema = z.object({
+  item: DocumentSchema,
+  operation: AdvancedScriptOperationSchema,
+  error: z.instanceof(Error),
+});
+
+export const AdvancedSkippedResultSchema = z.object({
+  item: DocumentSchema,
+  operation: AdvancedScriptOperationSchema,
+  reason: z.string(),
+});
+
+export const AdvancedScriptExecutionResultSchema = z.object({
+  successful: z.array(AdvancedSuccessResultSchema),
+  failed: z.array(AdvancedFailureResultSchema),
+  skipped: z.array(AdvancedSkippedResultSchema),
+  totalDocuments: z.number(),
+  executionTime: z.number(),
+  context: z.record(z.string(), z.any()).optional(),
+});
+
 // Type exports
 export type ConditionalOperation = z.infer<typeof ConditionalOperationSchema>;
 export type TryCatchOperation = z.infer<typeof TryCatchOperationSchema>;
@@ -147,3 +177,7 @@ export type BranchOperation = z.infer<typeof BranchOperationSchema>;
 export type AdvancedScriptOperation = z.infer<typeof AdvancedScriptOperationSchema>;
 export type AdvancedExecuteOptions = z.infer<typeof AdvancedExecuteOptionsSchema>;
 export type AdvancedOperationPipeline = z.infer<typeof AdvancedOperationPipelineSchema>;
+export type AdvancedSuccessResult = z.infer<typeof AdvancedSuccessResultSchema>;
+export type AdvancedFailureResult = z.infer<typeof AdvancedFailureResultSchema>;
+export type AdvancedSkippedResult = z.infer<typeof AdvancedSkippedResultSchema>;
+export type AdvancedScriptExecutionResult = z.infer<typeof AdvancedScriptExecutionResultSchema>;

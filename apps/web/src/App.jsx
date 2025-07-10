@@ -2,7 +2,8 @@ import { useEffect } from 'react'
 import { QueryBar } from './components/QueryBar'
 import { DocumentTable } from './components/DocumentTable'
 import { useDocumentStore } from './stores/document-store'
-import './App.css'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 
 function App() {
   const fetchDocuments = useDocumentStore(state => state.fetchDocuments)
@@ -13,20 +14,21 @@ function App() {
   }, [fetchDocuments])
 
   return (
-    <div className="App">
-      <header className="app-header">
-        <h1>MMT - Markdown Management Toolkit</h1>
-      </header>
-      
-      <main className="app-main">
-        <div className="toolbar">
-          <QueryBar />
-        </div>
-        
-        <div className="content">
-          <DocumentTable />
-        </div>
-      </main>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-4">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-2xl">MMT - Markdown Management Toolkit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <QueryBar />
+              <Separator />
+              <DocumentTable />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

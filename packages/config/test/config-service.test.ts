@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -7,30 +7,36 @@ import { ConfigService } from '../src/config-service.js';
 describe('ConfigService', () => {
   let tempDir: string;
   let configService: ConfigService;
-  let processExitSpy: any;
-  let consoleErrorSpy: any;
-
+  let originalExit: typeof process.exit;
+  let originalConsoleError: typeof console.error;
+  let capturedErrors: string[] = [];
+  
   beforeEach(() => {
     // Create temp directory for tests
     tempDir = mkdtempSync(join(tmpdir(), 'mmt-config-test-'));
     configService = new ConfigService();
+    capturedErrors = [];
     
-    // Mock process.exit to prevent test runner from exiting
-    processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+    // Override process.exit to throw instead
+    originalExit = process.exit;
+    process.exit = ((code?: number) => {
       throw new Error(`Process exited with code ${code}`);
-    });
+    }) as any;
     
-    // Mock console.error to capture error messages
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Override console.error to capture output
+    originalConsoleError = console.error;
+    console.error = ((...args: any[]) => {
+      capturedErrors.push(args.join(' '));
+    }) as any;
   });
 
   afterEach(() => {
     // Clean up temp directory
     rmSync(tempDir, { recursive: true, force: true });
     
-    // Restore mocks
-    processExitSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
+    // Restore originals
+    process.exit = originalExit;
+    console.error = originalConsoleError;
   });
 
   describe('successful loading', () => {
@@ -82,7 +88,7 @@ describe('ConfigService', () => {
       // WHEN: Attempting to load config
       // THEN: Exits with error about required config path
       expect(() => configService.load('')).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration path is required'));
+      expect(capturedErrors.join(' ')).toContain('Configuration path is required');
     });
 
     it('should exit when config path is relative', () => {
@@ -90,7 +96,7 @@ describe('ConfigService', () => {
       // WHEN: Validating the config path
       // THEN: Exits with error requiring absolute paths (explicit over implicit)
       expect(() => configService.load('./config.yaml')).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config path must be absolute'));
+      expect(capturedErrors.join(' ')).toContain('Config path must be absolute');
     });
 
     it('should exit when config file does not exist', () => {
@@ -99,7 +105,7 @@ describe('ConfigService', () => {
       // THEN: Exits with error message and code 1 (fail-fast)
       const configPath = join(tempDir, 'missing.yaml');
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config file not found'));
+      expect(capturedErrors.join(' ')).toContain('Config file not found');
     });
   });
 
@@ -112,7 +118,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, '{ invalid yaml content ]');
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid YAML'));
+      expect(capturedErrors.join(' ')).toContain('Invalid YAML');
     });
 
     it('should exit on empty config file', () => {
@@ -123,7 +129,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, '');
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration validation failed'));
+      expect(capturedErrors.join(' ')).toContain('Configuration validation failed');
     });
   });
 
@@ -136,7 +142,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `indexPath: ${join(tempDir, 'index')}`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('vaultPath: Required'));
+      expect(capturedErrors.join(' ')).toContain('vaultPath: Required');
     });
 
     it('should exit when indexPath is missing', () => {
@@ -147,7 +153,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${join(tempDir, 'vault')}`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('indexPath: Required'));
+      expect(capturedErrors.join(' ')).toContain('indexPath: Required');
     });
 
     it('should exit when extra fields are present', () => {
@@ -161,7 +167,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\nextraField: value`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized fields'));
+      expect(capturedErrors.join(' ')).toContain('Unrecognized fields');
     });
   });
 
@@ -174,7 +180,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ./vault\nindexPath: ${join(tempDir, 'index')}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Path must be absolute'));
+      expect(capturedErrors.join(' ')).toContain('Path must be absolute');
     });
 
     it('should exit when indexPath is relative', () => {
@@ -188,7 +194,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ./index\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Path must be absolute'));
+      expect(capturedErrors.join(' ')).toContain('Path must be absolute');
     });
 
     it('should exit when vault directory does not exist', () => {
@@ -201,7 +207,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault directory not found'));
+      expect(capturedErrors.join(' ')).toContain('Vault directory not found');
     });
 
     it('should exit when vault path is a file', () => {
@@ -217,7 +223,7 @@ describe('ConfigService', () => {
       writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Vault path is not a directory'));
+      expect(capturedErrors.join(' ')).toContain('Vault path is not a directory');
     });
   });
 
@@ -228,7 +234,7 @@ describe('ConfigService', () => {
       // THEN: Shows example config format to help user fix the issue
       expect(() => configService.load('')).toThrow();
       
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Configuration path is required'));
+      expect(capturedErrors.join(' ')).toContain('Configuration path is required');
     });
   });
 });

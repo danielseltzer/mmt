@@ -26,24 +26,24 @@
     "@tanstack/react-table": "^8.20.6",
     "@tanstack/react-virtual": "^3.13.12",
     "clsx": "^2.1.1",
-    "react": "^18.3.1",
     "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
-    "@types/react": "^18.3.20",
-    "@types/react-dom": "^18.3.6",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
     "@vitest/ui": "^3.2.4",
     "happy-dom": "^18.0.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "react": "^18.0.0"
+    "react": "^19.0.0"
   }
 }

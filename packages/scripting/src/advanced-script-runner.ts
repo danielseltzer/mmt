@@ -9,10 +9,10 @@ import type {
   MapOperation,
   ReduceOperation,
   BranchOperation,
-  ScriptExecutionResult,
-  SuccessResult,
-  FailureResult,
-  SkippedResult,
+  AdvancedScriptExecutionResult,
+  AdvancedSuccessResult,
+  AdvancedFailureResult,
+  AdvancedSkippedResult,
   ParallelConfig,
   AdvancedExecuteOptions,
   ScriptContext,
@@ -49,13 +49,13 @@ export class AdvancedScriptRunner {
   async executeAdvancedPipeline(
     pipeline: AdvancedOperationPipeline,
     documents: Document[]
-  ): Promise<ScriptExecutionResult> {
+  ): Promise<AdvancedScriptExecutionResult> {
     // Initialize pipeline context
     this.pipelineContext = pipeline.context || {};
     this.options = pipeline.options;
     
     const startTime = new Date();
-    const results: (SuccessResult | FailureResult | SkippedResult)[] = [];
+    const results: (AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[] = [];
     
     // Process operations
     for (const operation of pipeline.operations) {
@@ -65,7 +65,7 @@ export class AdvancedScriptRunner {
           documents,
           (operation as ParallelOperation).config
         );
-        results.push(...parallelResults.succeeded, ...parallelResults.failed, ...parallelResults.skipped);
+        results.push(...parallelResults.successful, ...parallelResults.failed, ...parallelResults.skipped);
       } else if (operation.type === 'forEach') {
         const forEachResults = await this.executeForEach(
           operation as ForEachOperation,
@@ -91,22 +91,19 @@ export class AdvancedScriptRunner {
     
     const endTime = new Date();
     
-    const succeeded = results.filter((r): r is SuccessResult => 
+    const succeeded = results.filter((r): r is AdvancedSuccessResult => 
       'item' in r && 'operation' in r && !('error' in r) && !('reason' in r)
     );
-    const failed = results.filter((r): r is FailureResult => 'error' in r);
-    const skipped = results.filter((r): r is SkippedResult => 'reason' in r);
+    const failed = results.filter((r): r is AdvancedFailureResult => 'error' in r);
+    const skipped = results.filter((r): r is AdvancedSkippedResult => 'reason' in r);
     
     return {
-      attempted: documents,
-      succeeded,
+      successful: succeeded,
       failed,
       skipped,
-      stats: {
-        duration: endTime.getTime() - startTime.getTime(),
-        startTime,
-        endTime,
-      },
+      totalDocuments: documents.length,
+      executionTime: endTime.getTime() - startTime.getTime(),
+      context: this.pipelineContext,
     };
   }
 
@@ -116,7 +113,7 @@ export class AdvancedScriptRunner {
   private async executeOperation(
     operation: AdvancedScriptOperation,
     document: Document
-  ): Promise<SuccessResult | FailureResult | SkippedResult> {
+  ): Promise<AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult> {
     // Handle advanced operation types
     if ('type' in operation) {
       switch (operation.type) {
@@ -156,7 +153,7 @@ export class AdvancedScriptRunner {
   private async executeConditional(
     operation: ConditionalOperation,
     document: Document
-  ): Promise<SuccessResult | FailureResult | SkippedResult> {
+  ): Promise<AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult> {
     try {
       const condition = operation.condition(document);
       
@@ -186,8 +183,8 @@ export class AdvancedScriptRunner {
   private async executeTryCatch(
     operation: TryCatchOperation,
     document: Document
-  ): Promise<SuccessResult | FailureResult | SkippedResult> {
-    let tryResult: SuccessResult | FailureResult | SkippedResult;
+  ): Promise<AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult> {
+    let tryResult: AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult;
     
     try {
       tryResult = await this.executeOperation(operation.try, document);
@@ -216,7 +213,7 @@ export class AdvancedScriptRunner {
   private async executeMap(
     operation: MapOperation,
     document: Document
-  ): Promise<SuccessResult | FailureResult> {
+  ): Promise<AdvancedSuccessResult | AdvancedFailureResult> {
     try {
       const result = await operation.transform(document);
       
@@ -231,7 +228,7 @@ export class AdvancedScriptRunner {
       return {
         item: document,
         operation,
-        details: { transformResult: result },
+        result: { transformResult: result },
       };
     } catch (error) {
       return {
@@ -248,13 +245,13 @@ export class AdvancedScriptRunner {
   private async executeStandardOperation(
     operation: ScriptOperation,
     document: Document
-  ): Promise<SuccessResult | FailureResult | SkippedResult> {
+  ): Promise<AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult> {
     // For now, just return a preview result for standard operations
     // The full implementation would integrate with document-operations package
     return {
       item: document,
       operation,
-      details: {
+      result: {
         preview: true,
         operationType: operation.type,
         wouldAffect: document.path,
@@ -269,13 +266,14 @@ export class AdvancedScriptRunner {
     operations: AdvancedScriptOperation[],
     documents: Document[],
     config?: ParallelConfig
-  ): Promise<ScriptExecutionResult> {
+  ): Promise<AdvancedScriptExecutionResult> {
+    const startTime = new Date();
     const maxConcurrency = config?.maxConcurrency || 5;
     const batchSize = config?.batchSize;
     const timeout = config?.timeout;
     
     const limit = pLimit(maxConcurrency);
-    const results: (SuccessResult | FailureResult | SkippedResult)[] = [];
+    const results: (AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[] = [];
     
     // Process documents in batches if specified
     if (batchSize) {
@@ -298,7 +296,8 @@ export class AdvancedScriptRunner {
       results.push(...allResults.flat());
     }
     
-    return this.aggregateResults(results, documents);
+    const endTime = new Date();
+    return this.aggregateResults(results, documents, startTime, endTime);
   }
 
   /**
@@ -308,9 +307,9 @@ export class AdvancedScriptRunner {
     operations: AdvancedScriptOperation[],
     document: Document,
     timeout?: number
-  ): Promise<(SuccessResult | FailureResult | SkippedResult)[]> {
+  ): Promise<(AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[]> {
     const executeWithTimeout = async () => {
-      const results: (SuccessResult | FailureResult | SkippedResult)[] = [];
+      const results: (AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[] = [];
       
       for (const operation of operations) {
         const result = await this.executeOperation(operation, document);
@@ -361,16 +360,16 @@ export class AdvancedScriptRunner {
   private async executeForEach(
     operation: ForEachOperation,
     documents: Document[]
-  ): Promise<(SuccessResult | FailureResult | SkippedResult)[]> {
+  ): Promise<(AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[]> {
     if (operation.parallel) {
       return this.executeParallelOperations(
         [operation.operation],
         documents,
         operation.parallel
-      ).then(r => [...r.succeeded, ...r.failed, ...r.skipped]);
+      ).then(r => [...r.successful, ...r.failed, ...r.skipped]);
     }
     
-    const results: (SuccessResult | FailureResult | SkippedResult)[] = [];
+    const results: (AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[] = [];
     for (const doc of documents) {
       const result = await this.executeOperation(operation.operation, doc);
       results.push(result);
@@ -384,8 +383,8 @@ export class AdvancedScriptRunner {
   private async executeBranch(
     operation: BranchOperation,
     documents: Document[]
-  ): Promise<(SuccessResult | FailureResult | SkippedResult)[]> {
-    const branchResults: Map<string, (SuccessResult | FailureResult | SkippedResult)[]> = new Map();
+  ): Promise<(AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[]> {
+    const branchResults: Map<string, (AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[]> = new Map();
     
     // Execute each branch
     for (const branch of operation.branches) {
@@ -397,7 +396,7 @@ export class AdvancedScriptRunner {
         );
         branchResults.set(
           branch.name,
-          [...results.succeeded, ...results.failed, ...results.skipped]
+          [...results.successful, ...results.failed, ...results.skipped]
         );
       }
     }
@@ -411,27 +410,24 @@ export class AdvancedScriptRunner {
    * Aggregate results into execution result
    */
   private aggregateResults(
-    results: (SuccessResult | FailureResult | SkippedResult)[],
+    results: (AdvancedSuccessResult | AdvancedFailureResult | AdvancedSkippedResult)[],
     documents: Document[],
     startTime: Date,
     endTime: Date
-  ): ScriptExecutionResult {
-    const succeeded = results.filter((r): r is SuccessResult => 
+  ): AdvancedScriptExecutionResult {
+    const succeeded = results.filter((r): r is AdvancedSuccessResult => 
       'item' in r && 'operation' in r && !('error' in r) && !('reason' in r)
     );
-    const failed = results.filter((r): r is FailureResult => 'error' in r);
-    const skipped = results.filter((r): r is SkippedResult => 'reason' in r);
+    const failed = results.filter((r): r is AdvancedFailureResult => 'error' in r);
+    const skipped = results.filter((r): r is AdvancedSkippedResult => 'reason' in r);
     
     return {
-      attempted: documents,
-      succeeded,
+      successful: succeeded,
       failed,
       skipped,
-      stats: {
-        duration: endTime.getTime() - startTime.getTime(),
-        startTime,
-        endTime,
-      },
+      totalDocuments: documents.length,
+      executionTime: endTime.getTime() - startTime.getTime(),
+      context: this.pipelineContext,
     };
   }
 }

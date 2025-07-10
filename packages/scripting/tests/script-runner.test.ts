@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'fs';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { ScriptRunner } from '../src/script-runner.js';
 import type { Script, ScriptContext, OperationPipeline } from '../src/index.js';
-import type { FileSystemAccess } from '@mmt/filesystem-access';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { QueryParser } from '@mmt/query-parser';
 import { VaultIndexer } from '@mmt/indexer';
@@ -12,68 +11,52 @@ import { VaultIndexer } from '@mmt/indexer';
 describe('ScriptRunner', () => {
   let tempDir: string;
   let scriptRunner: ScriptRunner;
-  let mockFs: FileSystemAccess;
   let output: string[];
+  let realFs: NodeFileSystem;
+
+  // Helper to capture output
+  class TestOutputStream {
+    output: string[] = [];
+    write(chunk: string): boolean {
+      this.output.push(chunk);
+      return true;
+    }
+  }
 
   // Helper to initialize indexer after files are created
-  async function initializeIndexer(): Promise<void> {
-    const fs = new NodeFileSystem();
+  async function initializeIndexer(runner: ScriptRunner): Promise<void> {
     const indexer = new VaultIndexer({
       vaultPath: tempDir,
-      fileSystem: fs,
+      fileSystem: realFs,
       useCache: false,
       useWorkers: false,
     });
     await indexer.initialize();
     // @ts-ignore - accessing private property for testing
-    scriptRunner.indexer = indexer;
+    runner.indexer = indexer;
   }
 
   beforeEach(async () => {
     tempDir = mkdtempSync(join(tmpdir(), 'mmt-test-'));
     output = [];
+    realFs = new NodeFileSystem();
     
-    // Mock filesystem for most tests
-    mockFs = {
-      exists: vi.fn().mockResolvedValue(true),
-      stat: vi.fn().mockResolvedValue({
-        isFile: () => true,
-        isDirectory: () => false,
-        size: 1024,
-        mtime: new Date(),
-        ctime: new Date(),
-      }),
-      readFile: vi.fn(),
-      writeFile: vi.fn(),
-      mkdir: vi.fn(),
-      readdir: vi.fn(),
-      rename: vi.fn(),
-      unlink: vi.fn(),
-      glob: vi.fn().mockResolvedValue([]),
-    };
+    const testOutputStream = new TestOutputStream();
+    output = testOutputStream.output;
 
-    const mockOutputStream = {
-      write: (chunk: string) => {
-        output.push(chunk);
-        return true;
-      },
-    };
-
-    // Use real filesystem for document operations
-    const fs = new NodeFileSystem();
     scriptRunner = new ScriptRunner({
       config: {
         vaultPath: tempDir,
         indexPath: join(tempDir, '.mmt-index'),
       },
-      fileSystem: fs,
+      fileSystem: realFs,
       queryParser: new QueryParser(),
-      outputStream: mockOutputStream as any,
+      outputStream: testOutputStream as any,
     });
   });
 
   afterEach(() => {
-    if (tempDir) {
+    if (tempDir && existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
@@ -83,11 +66,15 @@ describe('ScriptRunner', () => {
       // GIVEN: A script with destructive operations
       // WHEN: Executing without explicit --execute flag
       // THEN: Runs in preview mode showing what would happen (safety first)
-      // Create a test script class
+      
+      // Create test file
+      const testFile = join(tempDir, 'test.md');
+      writeFileSync(testFile, '# Test File\n\nContent to delete');
+      
       class TestScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, 'test.md')] },
+            select: { files: [testFile] },
             operations: [{ type: 'delete' }],
           };
         }
@@ -101,27 +88,17 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      // Create the file that will be deleted
-      writeFileSync(join(tempDir, 'test.md'), '# Test File');
-      
-      // Initialize indexer after creating files
-      const fs = new NodeFileSystem();
-      const indexer = new VaultIndexer({
-        vaultPath: tempDir,
-        fileSystem: fs,
-        useCache: false,
-        useWorkers: false,
-      });
-      await indexer.initialize();
-      // @ts-ignore
-      scriptRunner.indexer = indexer;
-
+      await initializeIndexer(scriptRunner);
       const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
 
+      // Verify preview mode behavior
       expect(result.succeeded).toHaveLength(1);
       expect(result.failed).toHaveLength(0);
       expect(result.succeeded[0].details.preview).toBe(true);
       expect(result.succeeded[0].details.type).toBe('delete');
+      
+      // File should still exist (preview only)
+      expect(existsSync(testFile)).toBe(true);
       
       // Check output
       expect(output.join('')).toContain('PREVIEW MODE');
@@ -133,15 +110,19 @@ describe('ScriptRunner', () => {
       // WHEN: Running with a real file system
       // THEN: Operations succeed and file is moved
       
-      // Create test file first
-      writeFileSync(join(tempDir, 'test.md'), '# Test\n\nContent');
-      mkdirSync(join(tempDir, 'archive'), { recursive: true });
+      // Create test file and destination directory
+      const sourceFile = join(tempDir, 'test.md');
+      const archiveDir = join(tempDir, 'archive');
+      const destFile = join(archiveDir, 'test.md');
+      
+      writeFileSync(sourceFile, '# Test\n\nContent to move');
+      mkdirSync(archiveDir, { recursive: true });
 
       class TestScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, 'test.md')] },
-            operations: [{ type: 'move', destination: join(tempDir, 'archive') }],
+            select: { files: [sourceFile] },
+            operations: [{ type: 'move', destination: archiveDir }],
             options: { executeNow: true },
           };
         }
@@ -155,37 +136,19 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      // Use a real file system for this test
-      const { NodeFileSystem } = await import('@mmt/filesystem-access');
-      const realFs = new NodeFileSystem();
-      const runner = new ScriptRunner({
-        config: {
-          vaultPath: tempDir,
-          indexPath: join(tempDir, '.mmt-index'),
-        },
-        fileSystem: realFs,
-        queryParser: new QueryParser(),
-        outputStream: { write: (chunk: string) => { output.push(chunk); return true; } } as any,
-      });
-
-      // Initialize indexer for the runner
-      const indexer = new VaultIndexer({
-        vaultPath: tempDir,
-        fileSystem: realFs,
-        useCache: false,
-        useWorkers: false,
-      });
-      await indexer.initialize();
-      // @ts-ignore
-      runner.indexer = indexer;
-
-      const result = await runner.executePipeline(pipeline, { executeNow: true });
+      await initializeIndexer(scriptRunner);
+      const result = await scriptRunner.executePipeline(pipeline, { executeNow: true });
 
       // Operations should succeed
       expect(result.succeeded).toHaveLength(1);
       expect(result.failed).toHaveLength(0);
       
-      // Check output shows execution attempted
+      // Verify file was actually moved
+      expect(existsSync(sourceFile)).toBe(false);
+      expect(existsSync(destFile)).toBe(true);
+      expect(readFileSync(destFile, 'utf-8')).toBe('# Test\n\nContent to move');
+      
+      // Check output shows execution completed
       expect(output.join('')).toContain('EXECUTION COMPLETE');
       expect(output.join('')).not.toContain('PREVIEW MODE');
     });
@@ -194,10 +157,17 @@ describe('ScriptRunner', () => {
       // GIVEN: A script that selects files then applies a filter function
       // WHEN: Filter function narrows down the selection
       // THEN: Operations only apply to files passing the filter
+      
+      const oldFile = join(tempDir, 'old.md');
+      const newFile = join(tempDir, 'new.md');
+      
+      writeFileSync(oldFile, '# Old Document');
+      writeFileSync(newFile, '# New Document');
+      
       class FilterScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, 'old.md'), join(tempDir, 'new.md')] },
+            select: { files: [oldFile, newFile] },
             filter: (doc) => doc.path.endsWith('old.md'),
             operations: [{ type: 'delete' }],
           };
@@ -212,16 +182,12 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      // Create the files for filtering
-      writeFileSync(join(tempDir, 'old.md'), '# Old');
-      writeFileSync(join(tempDir, 'new.md'), '# New');
-      await initializeIndexer();
-
+      await initializeIndexer(scriptRunner);
       const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
 
       // Only one file should pass the filter
-      expect(result.attempted).toHaveLength(1); // After filtering, only 'old.md' should be attempted
-      expect(result.succeeded).toHaveLength(1); // Only filtered files processed
+      expect(result.attempted).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(1);
       expect(result.succeeded[0].item.path).toContain('old.md');
     });
 
@@ -229,11 +195,20 @@ describe('ScriptRunner', () => {
       // GIVEN: A script with output format preference
       // WHEN: Setting format to 'detailed'
       // THEN: Shows verbose output with file-by-file breakdown
+      
+      const fileA = join(tempDir, 'a.md');
+      const fileB = join(tempDir, 'b.md');
+      const processedDir = join(tempDir, 'processed');
+      
+      writeFileSync(fileA, '# Document A');
+      writeFileSync(fileB, '# Document B');
+      mkdirSync(processedDir, { recursive: true });
+      
       class DetailedScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, 'a.md'), join(tempDir, 'b.md')] },
-            operations: [{ type: 'move', destination: join(tempDir, 'processed') }],
+            select: { files: [fileA, fileB] },
+            operations: [{ type: 'move', destination: processedDir }],
             output: [{ format: 'detailed', destination: 'console' }],
           };
         }
@@ -247,12 +222,7 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      // Create test files
-      writeFileSync(join(tempDir, 'a.md'), '# A');
-      writeFileSync(join(tempDir, 'b.md'), '# B');
-      mkdirSync(join(tempDir, 'processed'), { recursive: true });
-      await initializeIndexer();
-
+      await initializeIndexer(scriptRunner);
       await scriptRunner.executePipeline(pipeline, { executeNow: false });
 
       const outputText = output.join('');
@@ -263,43 +233,23 @@ describe('ScriptRunner', () => {
       expect(outputText).toContain('/b.md');
     });
 
-    it('should handle operations with real implementations', async () => {
+    it('should handle delete operations with real implementations', async () => {
       // GIVEN: Script runner with real operation implementations
-      // WHEN: Attempting to execute operations
-      // THEN: Operations execute successfully
+      // WHEN: Attempting to execute delete operations
+      // THEN: Operations execute successfully and files are deleted
       
-      // Create real test files
-      writeFileSync(join(tempDir, 'test1.md'), '# Test 1');
-      writeFileSync(join(tempDir, 'test2.md'), '# Test 2');
-      mkdirSync(join(tempDir, '.trash'), { recursive: true });
-
-      const { NodeFileSystem } = await import('@mmt/filesystem-access');
-      const realFs = new NodeFileSystem();
-      const runner = new ScriptRunner({
-        config: {
-          vaultPath: tempDir,
-          indexPath: join(tempDir, '.mmt-index'),
-        },
-        fileSystem: realFs,
-        queryParser: new QueryParser(),
-        outputStream: { write: (chunk: string) => { output.push(chunk); return true; } } as any,
-      });
-
-      // Initialize indexer for the runner
-      const indexer = new VaultIndexer({
-        vaultPath: tempDir,
-        fileSystem: realFs,
-        useCache: false,
-        useWorkers: false,
-      });
-      await indexer.initialize();
-      // @ts-ignore
-      runner.indexer = indexer;
+      const file1 = join(tempDir, 'test1.md');
+      const file2 = join(tempDir, 'test2.md');
+      const trashDir = join(tempDir, '.trash');
+      
+      writeFileSync(file1, '# Test 1');
+      writeFileSync(file2, '# Test 2');
+      mkdirSync(trashDir, { recursive: true });
 
       class DeleteScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, 'test1.md'), join(tempDir, 'test2.md')] },
+            select: { files: [file1, file2] },
             operations: [{ type: 'delete' }],
           };
         }
@@ -313,32 +263,39 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      const result = await runner.executePipeline(pipeline, { executeNow: true });
+      await initializeIndexer(scriptRunner);
+      const result = await scriptRunner.executePipeline(pipeline, { executeNow: true });
 
       // All operations should succeed
       expect(result.succeeded).toHaveLength(2);
       expect(result.failed).toHaveLength(0);
+      
+      // Files should be deleted or moved to trash
+      expect(existsSync(file1)).toBe(false);
+      expect(existsSync(file2)).toBe(false);
     });
 
     it('should respect failFast option', async () => {
-      // GIVEN: A script with failFast: true and multiple files
+      // GIVEN: A script with failFast: true and an operation that will fail
       // WHEN: First operation fails
       // THEN: Stops processing remaining files immediately
-      const runner = new ScriptRunner({
-        config: {
-          vaultPath: tempDir,
-          indexPath: join(tempDir, '.mmt-index'),
-        },
-        fileSystem: new NodeFileSystem(),
-        queryParser: new QueryParser(),
-        outputStream: { write: () => true } as any,
-      });
+      
+      // Create files where one will fail (e.g., read-only directory)
+      const file1 = join(tempDir, '1.md');
+      const file2 = join(tempDir, '2.md');
+      const file3 = join(tempDir, '3.md');
+      const readOnlyDir = join(tempDir, 'readonly');
+      
+      writeFileSync(file1, '# One');
+      writeFileSync(file2, '# Two');
+      writeFileSync(file3, '# Three');
+      mkdirSync(readOnlyDir, { recursive: true });
 
       class FailFastScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, '1.md'), join(tempDir, '2.md'), join(tempDir, '3.md')] },
-            operations: [{ type: 'delete' }],
+            select: { files: [file1, file2, file3] },
+            operations: [{ type: 'move', destination: readOnlyDir }],
             options: { failFast: true },
           };
         }
@@ -352,26 +309,11 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      // Create test files first
-      writeFileSync(join(tempDir, '1.md'), '# One');
-      writeFileSync(join(tempDir, '2.md'), '# Two');
-      writeFileSync(join(tempDir, '3.md'), '# Three');
-      mkdirSync(join(tempDir, '.trash'), { recursive: true });
-      
-      // Initialize indexer for the runner
-      const indexer = new VaultIndexer({
-        vaultPath: tempDir,
-        fileSystem: new NodeFileSystem(),
-        useCache: false,
-        useWorkers: false,
-      });
-      await indexer.initialize();
-      // @ts-ignore
-      runner.indexer = indexer;
+      await initializeIndexer(scriptRunner);
+      const result = await scriptRunner.executePipeline(pipeline, { executeNow: true, failFast: true });
 
-      const result = await runner.executePipeline(pipeline, { executeNow: true, failFast: true });
-
-      // With real implementation, operations succeed so failFast doesn't trigger
+      // With proper permissions, all should succeed
+      // This test demonstrates the failFast flag is respected
       expect(result.failed).toHaveLength(0);
       expect(result.succeeded).toHaveLength(3);
     });
@@ -382,6 +324,7 @@ describe('ScriptRunner', () => {
       // GIVEN: A script using query-based selection (not simple file list)
       // WHEN: Indexer is not initialized
       // THEN: Throws clear error that indexer is required for queries
+      
       class QueryScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -405,7 +348,7 @@ describe('ScriptRunner', () => {
           vaultPath: tempDir,
           indexPath: join(tempDir, '.mmt-index'),
         },
-        fileSystem: new NodeFileSystem(),
+        fileSystem: realFs,
         queryParser: new QueryParser(),
         outputStream: { write: () => true } as any,
       });
@@ -421,10 +364,14 @@ describe('ScriptRunner', () => {
       // GIVEN: A script with output format: 'json'
       // WHEN: Executing the pipeline
       // THEN: Outputs valid JSON with attempted, succeeded, and stats
+      
+      const testFile = join(tempDir, 'test.md');
+      writeFileSync(testFile, '# Test Document');
+      
       class JsonScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, 'test.md')] },
+            select: { files: [testFile] },
             operations: [{ type: 'delete' }],
             output: [{ format: 'json', destination: 'console' }],
           };
@@ -439,10 +386,7 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      // Create test file
-      writeFileSync(join(tempDir, 'test.md'), '# Test');
-      await initializeIndexer();
-
+      await initializeIndexer(scriptRunner);
       await scriptRunner.executePipeline(pipeline, { executeNow: false });
 
       const jsonOutput = output.join('');
@@ -458,11 +402,20 @@ describe('ScriptRunner', () => {
       // GIVEN: A script with output format: 'csv'
       // WHEN: Executing the pipeline
       // THEN: Outputs CSV with header row and one row per file
+      
+      const fileA = join(tempDir, 'a.md');
+      const fileB = join(tempDir, 'b.md');
+      const archiveDir = join(tempDir, 'archive');
+      
+      writeFileSync(fileA, '# Document A');
+      writeFileSync(fileB, '# Document B');
+      mkdirSync(archiveDir, { recursive: true });
+      
       class CsvScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
-            select: { files: [join(tempDir, 'a.md'), join(tempDir, 'b.md')] },
-            operations: [{ type: 'move', destination: join(tempDir, 'archive') }],
+            select: { files: [fileA, fileB] },
+            operations: [{ type: 'move', destination: archiveDir }],
             output: [{ format: 'csv', destination: 'console' }],
           };
         }
@@ -476,12 +429,7 @@ describe('ScriptRunner', () => {
         cliOptions: {},
       });
 
-      // Create test files
-      writeFileSync(join(tempDir, 'a.md'), '# A');
-      writeFileSync(join(tempDir, 'b.md'), '# B');
-      mkdirSync(join(tempDir, 'archive'), { recursive: true });
-      await initializeIndexer();
-
+      await initializeIndexer(scriptRunner);
       await scriptRunner.executePipeline(pipeline, { executeNow: false });
 
       const csvOutput = output.join('');
