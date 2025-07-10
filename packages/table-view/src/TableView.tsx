@@ -11,6 +11,7 @@ import {
   ColumnOrderState,
   ColumnSizingState,
 } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Document } from '@mmt/entities';
 import { clsx } from 'clsx';
 import { ColumnConfig } from './ColumnConfig.js';
@@ -21,6 +22,7 @@ export interface TableViewProps {
   onOperationRequest?: (request: { operation: string; documentPaths: string[] }) => void;
   onLoadContent?: (path: string) => Promise<string>;
   initialColumns?: string[];
+  disableVirtualization?: boolean; // For testing
 }
 
 interface ContextMenuState {
@@ -30,19 +32,16 @@ interface ContextMenuState {
   columnId?: string;
 }
 
-const ROW_LIMIT = 500;
-
 export function TableView({
   documents,
   onSelectionChange,
   onOperationRequest,
   onLoadContent,
   initialColumns = ['name', 'path', 'modified', 'size', 'tags'],
+  disableVirtualization = false,
 }: TableViewProps) {
-  // Limit documents to 500
-  const displayDocuments = useMemo(() => documents.slice(0, ROW_LIMIT), [documents]);
+  // Use all documents with virtual scrolling
   const totalCount = documents.length;
-  const isLimited = totalCount > ROW_LIMIT;
 
   // Table state
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -62,17 +61,23 @@ export function TableView({
   // Track last selected index for shift-click
   const lastSelectedIndex = useRef<number>(-1);
 
-  // Load content when preview column is visible
+  // Ref for the scrollable container
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Load content when preview column is visible (only for visible items)
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
+  
   useEffect(() => {
     if (columnVisibility.preview && onLoadContent) {
-      displayDocuments.forEach(async (doc) => {
+      const visibleDocs = documents.slice(visibleRange.start, visibleRange.end);
+      visibleDocs.forEach(async (doc) => {
         if (!contentCache[doc.path]) {
           const content = await onLoadContent(doc.path);
           setContentCache((prev) => ({ ...prev, [doc.path]: content }));
         }
       });
     }
-  }, [columnVisibility.preview, displayDocuments, onLoadContent, contentCache]);
+  }, [columnVisibility.preview, documents, onLoadContent, contentCache, visibleRange]);
 
   // Handle row click with shift support
   const handleRowClick = useCallback((index: number, shiftKey: boolean) => {
@@ -83,14 +88,14 @@ export function TableView({
       const newSelection: RowSelectionState = {};
       
       for (let i = start; i <= end; i++) {
-        const rowId = displayDocuments[i]?.path;
+        const rowId = documents[i]?.path;
         if (rowId) newSelection[rowId] = true;
       }
       
       setRowSelection((prev) => ({ ...prev, ...newSelection }));
     } else {
       // Regular click
-      const rowId = displayDocuments[index]?.path;
+      const rowId = documents[index]?.path;
       if (rowId) {
         setRowSelection((prev) => ({
           ...prev,
@@ -99,7 +104,7 @@ export function TableView({
       }
     }
     lastSelectedIndex.current = index;
-  }, [displayDocuments]);
+  }, [documents]);
 
   // Column definitions
   const columns = useMemo<ColumnDef<Document>[]>(
@@ -220,7 +225,7 @@ export function TableView({
 
   // Create table instance
   const table = useReactTable({
-    data: displayDocuments,
+    data: documents,
     columns,
     state: {
       sorting,
@@ -240,6 +245,30 @@ export function TableView({
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
   });
+
+  // Virtual scrolling setup (only when not disabled)
+  const { rows } = table.getRowModel();
+  
+  const rowVirtualizer = useVirtualizer({
+    count: disableVirtualization ? 0 : rows.length,
+    getScrollElement: () => disableVirtualization ? null : tableContainerRef.current,
+    estimateSize: () => 40, // Estimated row height
+    overscan: 10, // Number of items to render outside visible area
+    onChange: (instance) => {
+      if (disableVirtualization) return;
+      // Update visible range for content loading
+      const items = instance.getVirtualItems();
+      if (items.length > 0) {
+        setVisibleRange({
+          start: items[0].index,
+          end: items[items.length - 1].index + 1,
+        });
+      }
+    },
+  });
+
+  const virtualItems = disableVirtualization ? [] : rowVirtualizer.getVirtualItems();
+  const totalSize = disableVirtualization ? 0 : rowVirtualizer.getTotalSize();
 
   // Handle selection changes
   useEffect(() => {
@@ -273,13 +302,11 @@ export function TableView({
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Header with limit message and column config */}
+      {/* Header with document count and column config */}
       <div className="flex items-center justify-between p-2 border-b">
-        {isLimited && (
-          <div className="text-sm text-muted-foreground">
-            Showing first {ROW_LIMIT} of {totalCount} results
-          </div>
-        )}
+        <div className="text-sm text-muted-foreground">
+          {totalCount} documents
+        </div>
         <ColumnConfig
           columns={[
             { id: 'name', label: 'Name' },
@@ -294,10 +321,10 @@ export function TableView({
         />
       </div>
 
-      {/* Table */}
-      <div className="flex-1 overflow-auto">
+      {/* Table with virtual scrolling */}
+      <div className="flex-1 overflow-auto" ref={tableContainerRef}>
         <table className="w-full">
-          <thead className="bg-muted sticky top-0">
+          <thead className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -312,7 +339,7 @@ export function TableView({
                     onClick={header.column.getToggleSortingHandler()}
                     onContextMenu={(e) => handleColumnContextMenu(e, header.id)}
                   >
-                    {String(flexRender(header.column.columnDef.header, header.getContext()))}
+                    <>{flexRender(header.column.columnDef.header, header.getContext())}</>
                     {header.column.getIsSorted() && (
                       <span className="ml-1">
                         {header.column.getIsSorted() === 'asc' ? '↑' : '↓'}
@@ -330,30 +357,65 @@ export function TableView({
               </tr>
             ))}
           </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row, index) => (
-              <tr
-                key={row.id}
-                data-testid={`row-${row.id}`}
-                className={clsx(
-                  'border-b hover:bg-muted/50 transition-colors',
-                  row.getIsSelected() && 'bg-muted/30'
-                )}
-                onClick={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (target.tagName !== 'INPUT') {
-                    handleRowClick(index, e.shiftKey);
-                  }
-                }}
-                onContextMenu={handleRowContextMenu}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-2">
-                    {String(flexRender(cell.column.columnDef.cell, cell.getContext()))}
-                  </td>
-                ))}
-              </tr>
-            ))}
+          <tbody style={disableVirtualization ? {} : { height: `${totalSize}px`, position: 'relative' }}>
+            {disableVirtualization ? (
+              // Non-virtualized rendering for tests
+              rows.map((row, index) => (
+                <tr
+                  key={row.id}
+                  data-testid={`row-${row.id}`}
+                  className={clsx(
+                    'border-b hover:bg-muted/50 transition-colors',
+                    row.getIsSelected() && 'bg-muted/30'
+                  )}
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.tagName !== 'INPUT') {
+                      handleRowClick(index, e.shiftKey);
+                    }
+                  }}
+                  onContextMenu={handleRowContextMenu}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="p-2">
+                      <>{flexRender(cell.column.columnDef.cell, cell.getContext())}</>
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              // Virtualized rendering for production
+              virtualItems.map((virtualItem) => {
+                const row = rows[virtualItem.index];
+                return (
+                  <tr
+                    key={row.id}
+                    data-testid={`row-${row.id}`}
+                    className={clsx(
+                      'border-b hover:bg-muted/50 transition-colors absolute w-full',
+                      row.getIsSelected() && 'bg-muted/30'
+                    )}
+                    style={{
+                      height: `${virtualItem.size}px`,
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.tagName !== 'INPUT') {
+                        handleRowClick(virtualItem.index, e.shiftKey);
+                      }
+                    }}
+                    onContextMenu={handleRowContextMenu}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="p-2">
+                        <>{flexRender(cell.column.columnDef.cell, cell.getContext())}</>
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
