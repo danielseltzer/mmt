@@ -2,6 +2,16 @@
 
 A desktop application for managing large markdown vaults with bulk operations, sophisticated filtering, and optional vector similarity search.
 
+## Critical Rules for Contributors
+
+- Mocks are forbidden. No mocks, test fakes or doubles. Read the testing strategy doc for more info.
+- No defaults for configuration, no env var overrides for config values, no cascading or default config file locations. Explicit everything is required.
+- Don't guess at calls or symbols, look up the correct and current form of a call or symbol.
+- Don't make decisions about design without checking in first.
+- Always use git workflow -- work from a github issue and open a branch, create a pr when done.
+- Don't invest functionality that isn't needed. Keep it simple and clear. 
+- Always run the complete clean/install/build/lint/test cycle after completing an issue and report any lint or test failures.
+
 ## Configuration
 
 MMT requires explicit configuration with no defaults. Create a YAML config file:
