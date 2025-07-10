@@ -28,4 +28,20 @@ export type {
   OutputConfig,
   OperationReadyDocumentSet,
   ToDocumentSetOptions,
+  // Advanced types
+  AdvancedScriptOperation,
+  AdvancedOperationPipeline,
+  ConditionalOperation,
+  TryCatchOperation,
+  ParallelOperation,
+  ForEachOperation,
+  MapOperation,
+  ReduceOperation,
+  BranchOperation,
+  ParallelConfig,
+  AdvancedExecuteOptions,
 } from '@mmt/entities';
+
+// Export advanced scripting features
+export { AdvancedScriptRunner } from './advanced-script-runner.js';
+export { AdvancedScriptBuilder, mmt, operations } from './advanced-builder.js';
