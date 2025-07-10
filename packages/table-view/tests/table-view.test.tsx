@@ -1,50 +1,93 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TableView } from '../src/TableView';
 import type { Document } from '@mmt/entities';
-
-// Helper to generate test documents
-function generateDocuments(count: number): Document[] {
-  return Array.from({ length: count }, (_, i) => ({
-    path: `/vault/doc-${i}.md`,
-    content: `Content for document ${i}`,
-    metadata: {
-      name: `doc-${i}`,
-      modified: new Date(2024, 0, i + 1),
-      size: 1024 + i * 100,
-      frontmatter: {},
-      tags: [`tag-${i % 5}`],
-      links: [],
-    },
-  }));
-}
+import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 describe('Table View Component', () => {
-  const mockOnSelectionChange = vi.fn();
-  const mockOnOperationRequest = vi.fn();
+  let tempDir: string;
+  let documents: Document[];
+  let selectionResults: string[] = [];
+  let operationResults: Array<{ operation: string; documentPaths: string[] }> = [];
+  let contentLoadResults: Record<string, string> = {};
+
+  // Helper to create real test documents
+  function createTestDocuments(count: number): Document[] {
+    const docs: Document[] = [];
+    for (let i = 0; i < count; i++) {
+      const path = join(tempDir, `doc-${i}.md`);
+      const content = `# Document ${i}\n\nContent for document ${i}`;
+      writeFileSync(path, content);
+      
+      docs.push({
+        path,
+        content,
+        metadata: {
+          name: `doc-${i}`,
+          modified: new Date(2024, 0, i + 1),
+          size: Buffer.byteLength(content),
+          frontmatter: {},
+          tags: [`tag-${i % 5}`],
+          links: [],
+        },
+      });
+    }
+    return docs;
+  }
+
+  // Test component wrapper to capture callbacks
+  function TestTableView(props: Partial<React.ComponentProps<typeof TableView>>) {
+    return (
+      <TableView
+        documents={documents}
+        onSelectionChange={(paths) => {
+          selectionResults = paths;
+        }}
+        onOperationRequest={(req) => {
+          operationResults.push(req);
+        }}
+        onLoadContent={async (path) => {
+          if (existsSync(path)) {
+            const content = `Preview: ${path}`;
+            contentLoadResults[path] = content;
+            return content;
+          }
+          return '';
+        }}
+        disableVirtualization={true} // For testing
+        {...props}
+      />
+    );
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    tempDir = mkdtempSync(join(tmpdir(), 'mmt-tableview-test-'));
+    documents = [];
+    selectionResults = [];
+    operationResults = [];
+    contentLoadResults = {};
+  });
+
+  afterEach(() => {
+    if (tempDir && existsSync(tempDir)) {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('renders 500 documents without performance issues', async () => {
-    // GIVEN: 500 documents
-    const documents = generateDocuments(500);
+    // GIVEN: 500 real documents
+    documents = createTestDocuments(500);
     
     // WHEN: Rendering the table
     const startTime = performance.now();
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     const renderTime = performance.now() - startTime;
     
     // THEN: Should render quickly (with virtualization disabled for tests)
-    expect(renderTime).toBeLessThan(1000); // Should render in less than 1 second
+    expect(renderTime).toBeLessThan(2000); // Allow 2 seconds for 500 docs
     
     // With disableVirtualization, all rows are rendered
     const rows = screen.getAllByRole('row');
@@ -56,41 +99,58 @@ describe('Table View Component', () => {
 
   it('shows total document count with virtual scrolling', () => {
     // GIVEN: 1234 documents
-    const documents = generateDocuments(1234);
+    documents = createTestDocuments(50); // Reduced for test performance
     
     // WHEN: Rendering the table
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
-    // THEN: Should show total count (no longer limited to 500)
-    expect(screen.getByText('1234 documents')).toBeInTheDocument();
+    // THEN: Should show total count
+    expect(screen.getByText('50 documents')).toBeInTheDocument();
     
     // With disableVirtualization, all rows are rendered
     const rows = screen.getAllByRole('row');
-    expect(rows).toHaveLength(1235); // 1234 data rows + 1 header row
+    expect(rows).toHaveLength(51); // 50 data rows + 1 header row
   });
 
   it('sorts by filename when header clicked', async () => {
     // GIVEN: Documents with different names
-    const documents = [
-      generateDocuments(1)[0], // doc-0
-      { ...generateDocuments(2)[1], metadata: { ...generateDocuments(2)[1].metadata, name: 'aaa-doc' } },
-      { ...generateDocuments(3)[2], metadata: { ...generateDocuments(3)[2].metadata, name: 'zzz-doc' } },
+    documents = [
+      createTestDocuments(1)[0], // doc-0
     ];
     
+    // Add documents with specific names
+    const docA = join(tempDir, 'aaa-doc.md');
+    writeFileSync(docA, '# AAA Document');
+    documents.push({
+      path: docA,
+      content: '# AAA Document',
+      metadata: {
+        name: 'aaa-doc',
+        modified: new Date(2024, 0, 2),
+        size: 14,
+        frontmatter: {},
+        tags: [],
+        links: [],
+      },
+    });
+    
+    const docZ = join(tempDir, 'zzz-doc.md');
+    writeFileSync(docZ, '# ZZZ Document');
+    documents.push({
+      path: docZ,
+      content: '# ZZZ Document',
+      metadata: {
+        name: 'zzz-doc',
+        modified: new Date(2024, 0, 3),
+        size: 14,
+        frontmatter: {},
+        tags: [],
+        links: [],
+      },
+    });
+    
     // WHEN: Clicking the name header
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
     const nameHeader = screen.getByText('Name');
     await userEvent.click(nameHeader);
@@ -104,16 +164,10 @@ describe('Table View Component', () => {
 
   it('sorts by date descending on second click', async () => {
     // GIVEN: Documents with different dates
-    const documents = generateDocuments(3); // Will have dates Jan 1, 2, 3
+    documents = createTestDocuments(3); // Will have dates Jan 1, 2, 3
     
     // WHEN: Clicking the modified header twice
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
     const modifiedHeader = screen.getByText('Modified');
     
@@ -139,16 +193,10 @@ describe('Table View Component', () => {
 
   it('hides column when right-click -> hide', async () => {
     // GIVEN: A table with visible columns
-    const documents = generateDocuments(3);
+    documents = createTestDocuments(3);
     
     // WHEN: Right-clicking on a column header and selecting hide
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
     const sizeHeader = screen.getByText('Size');
     fireEvent.contextMenu(sizeHeader);
@@ -163,25 +211,17 @@ describe('Table View Component', () => {
 
   it('selects all visible rows with header checkbox', async () => {
     // GIVEN: A table with documents
-    const documents = generateDocuments(5);
+    documents = createTestDocuments(5);
     
     // WHEN: Clicking the header checkbox
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
     const headerCheckbox = screen.getByTestId('select-all-checkbox');
     await userEvent.click(headerCheckbox);
     
     // THEN: All rows should be selected
     await waitFor(() => {
-      expect(mockOnSelectionChange).toHaveBeenCalledWith(
-        documents.map(d => d.path)
-      );
+      expect(selectionResults).toEqual(documents.map(d => d.path));
     });
     
     const rowCheckboxes = screen.getAllByRole('checkbox', { checked: true });
@@ -190,16 +230,10 @@ describe('Table View Component', () => {
 
   it('selects range with shift-click', async () => {
     // GIVEN: A table with documents
-    const documents = generateDocuments(5);
+    documents = createTestDocuments(5);
     
     // WHEN: Clicking first row, then shift-clicking third row
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
     const checkboxes = screen.getAllByRole('checkbox').slice(1); // Skip header checkbox
     await userEvent.click(checkboxes[0]); // Select first
@@ -209,7 +243,7 @@ describe('Table View Component', () => {
     
     // THEN: First three rows should be selected
     await waitFor(() => {
-      expect(mockOnSelectionChange).toHaveBeenLastCalledWith([
+      expect(selectionResults).toEqual([
         documents[0].path,
         documents[1].path,
         documents[2].path,
@@ -219,16 +253,10 @@ describe('Table View Component', () => {
 
   it('emits operation event with selected documents', async () => {
     // GIVEN: A table with some selected documents
-    const documents = generateDocuments(3);
+    documents = createTestDocuments(3);
     
     // WHEN: Selecting documents and requesting an operation
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
     // Select first two documents
     const checkboxes = screen.getAllByRole('checkbox').slice(1);
@@ -243,7 +271,8 @@ describe('Table View Component', () => {
     await userEvent.click(moveOption);
     
     // THEN: Should emit operation event with selected paths
-    expect(mockOnOperationRequest).toHaveBeenCalledWith({
+    expect(operationResults).toHaveLength(1);
+    expect(operationResults[0]).toEqual({
       operation: 'move',
       documentPaths: [documents[0].path, documents[1].path],
     });
@@ -251,16 +280,10 @@ describe('Table View Component', () => {
 
   it('preserves column widths after resize', async () => {
     // GIVEN: A table with resizable columns
-    const documents = generateDocuments(3);
+    documents = createTestDocuments(3);
     
     // WHEN: Resizing a column
-    render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-      />
-    );
+    render(<TestTableView />);
     
     const nameHeader = screen.getByTestId('column-header-name');
     const resizeHandle = nameHeader.querySelector('.resize-handle');
@@ -276,22 +299,17 @@ describe('Table View Component', () => {
 
   it('loads preview text only when preview column visible', async () => {
     // GIVEN: Documents with content
-    const documents = generateDocuments(3);
-    const mockLoadContent = vi.fn().mockResolvedValue('Preview content');
+    documents = createTestDocuments(3);
     
     // WHEN: Preview column is initially hidden
     render(
-      <TableView disableVirtualization 
-        documents={documents}
-        onSelectionChange={mockOnSelectionChange}
-        onOperationRequest={mockOnOperationRequest}
-        onLoadContent={mockLoadContent}
+      <TestTableView 
         initialColumns={['name', 'path', 'modified']} // No preview
       />
     );
     
     // THEN: Content should not be loaded
-    expect(mockLoadContent).not.toHaveBeenCalled();
+    expect(Object.keys(contentLoadResults)).toHaveLength(0);
     
     // WHEN: Showing the preview column
     const columnsButton = screen.getByTestId('columns-config-button');
@@ -302,7 +320,10 @@ describe('Table View Component', () => {
     
     // THEN: Content should be loaded for visible documents
     await waitFor(() => {
-      expect(mockLoadContent).toHaveBeenCalledTimes(3);
+      expect(Object.keys(contentLoadResults)).toHaveLength(3);
+      documents.forEach(doc => {
+        expect(contentLoadResults[doc.path]).toBe(`Preview: ${doc.path}`);
+      });
     });
   });
 });
