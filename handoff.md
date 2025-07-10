@@ -1,97 +1,174 @@
-# Handoff Summary
+# Handoff Summary - UI Foundation Work
 
-## Current State
+## Current Mission: shadcn/ui Integration (Issue #111)
 
-Successfully migrated MMT from Electron to React web app architecture (PR #103). The application now runs as:
-- REST API server (Express + TypeScript) on port 3001
-- React web app (Vite + React 19) on port 5173
-- Control manager tool orchestrates both services
+**Objective**: Replace basic CSS with professional component library to establish solid UI foundation before building filtering and operations features.
 
-### What Works
-- Document indexing and display
-- Search functionality with debouncing
-- Table view with sorting and selection
-- Playwright E2E tests confirm no console errors
-- Clean TypeScript build (except scripting package)
+### Context
+- Current web app uses basic CSS and is "hard to work with"
+- Need modern, accessible component library before implementing core user workflows
+- User wants to see basic working version ASAP, no need for gradual migration
+- No backward compatibility needed - total replacement approach
 
-### Known Issues
-- Scripting package has Arquero type errors (pre-existing)
-- One file-watching test fails in indexer (pre-existing)
+## Project State
 
-## Priority Plan
+### Architecture
+- **Framework**: React 19.1.0 + Vite 6.3.5
+- **Current Styling**: Plain CSS in `apps/web/src/App.css`
+- **State Management**: Zustand (`apps/web/src/stores/document-store`)
+- **API**: REST server on port 3001, web app on port 5173
+- **Table Component**: Uses TanStack Table + React Virtual in `@mmt/table-view`
 
-### P0 - Critical Issues to Resolve First
-1. **#92** - Fix tRPC version mismatch blocking builds
-   - May be obsolete after Electron removal - needs verification
-   
-2. **#93** - E2E tests hang when launching Electron with Playwright
-   - Likely obsolete after migration - should close if confirmed
-   
-3. **#96** - Fix lint and test errors across packages
-   - Still relevant - need clean builds for stability
-
-4. **#16** - Implement State Management
-   - Partially complete (Zustand in web app)
-   - May need to verify/close
-
-5. **#13** - Implement Table View Component
-   - Complete - should close
-
-### P1 - Core Features
-1. **#20** - Performance Optimization
-   - Important for 5000+ file handling
-   
-2. **#31** - Advanced Scripting Features
-3. **#30** - Script Builder UI Component
-4. **#18** - Create Reports Package
-5. **#14** - Build View Persistence Package
-
-### P2 - Enhancements
-1. **#86** - Fix flaky file watcher test
-2. **#88** - Fix remaining ESLint errors
-3. **#89-91** - Table view component fixes
-4. **#22** - Add Similarity Features
-5. **#21** - Create QM Provider Package
-6. **#12** - Create Document Previews Package
-
-## Next Steps
-
-1. **Verify and Close Obsolete Issues**
-   - Check if #92, #93 still apply post-migration
-   - Close #13 (table view complete)
-   - Update #16 if state management sufficient
-
-2. **Fix Build/Test Issues**
-   - Resolve #96 lint/test errors
-   - Fix scripting package Arquero types
-   - Fix flaky file watcher test
-
-3. **Implement Core Features**
-   - Script Builder UI (#30)
-   - Performance optimization for large vaults (#20)
-   - View persistence (#14)
-
-## How to Run
-
-```bash
-# Development
-pnpm dev                # Start both API and web servers
-# OR separately:
-pnpm run dev:api       # API server only
-pnpm run dev:web       # Web server only
-
-# Testing
-pnpm test              # Run unit tests
-# For E2E tests, first start servers, then:
-npx playwright test tests/e2e/web/simple-app-test.spec.ts --config=playwright-simple.config.ts
-
-# Build
-pnpm clean && pnpm install && pnpm build
+### Current Web App Structure
+```
+apps/web/
+├── src/
+│   ├── App.jsx                 # Main app component
+│   ├── App.css                 # Basic CSS (to be replaced)
+│   ├── components/
+│   │   ├── QueryBar.jsx        # Search input
+│   │   └── DocumentTable.jsx   # Table wrapper
+│   ├── stores/
+│   │   └── document-store.js   # Zustand state
+│   └── main.jsx
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
 ```
 
-## Key Files Changed
-- `/apps/api-server/*` - New REST API
-- `/apps/web/*` - New React web app
-- `/tools/control-manager/*` - Service orchestration
-- `tsconfig.base.json` - moduleResolution changed to "node"
-- All config files now require `apiPort` and `webPort`
+### How to Run
+```bash
+# Start development servers
+pnpm dev
+# OR individually:
+pnpm run dev:api       # API server only
+pnpm run dev:web       # Web server only
+```
+
+## Immediate Task: shadcn/ui Foundation
+
+### Priority: P0 - Foundation Setup
+**Goal**: Get basic shadcn/ui working with existing components replaced
+
+#### Phase 1: Foundation (Priority 1)
+1. **Install shadcn/ui dependencies**
+   ```bash
+   cd apps/web
+   pnpm add -D tailwindcss postcss autoprefixer
+   pnpm add @radix-ui/react-slot class-variance-authority lucide-react tailwind-merge tailwindcss-animate
+   ```
+
+2. **Configure Tailwind CSS**
+   - Create `tailwind.config.js`
+   - Create `postcss.config.js` 
+   - Replace `App.css` with `globals.css` using Tailwind
+
+3. **Setup shadcn/ui**
+   - Run `pnx shadcn@latest init`
+   - Configure `components.json`
+   - Update `vite.config.ts` for path aliases
+   - Update `tsconfig.json` for path resolution
+
+#### Phase 2: Core Components (Priority 2)
+1. **Install essential components**
+   ```bash
+   pnx shadcn@latest add button input table card badge separator dropdown-menu
+   ```
+
+2. **Replace existing components**
+   - Convert `App.jsx` to use shadcn/ui layout (Card, Separator)
+   - Replace `QueryBar.jsx` with shadcn/ui Input + Search icon
+   - Replace `DocumentTable.jsx` with shadcn/ui Table components
+   - Create `src/lib/utils.ts` with utility functions
+
+3. **Test basic functionality**
+   - Ensure document loading works
+   - Verify search still functions
+   - Confirm table displays data correctly
+
+### Detailed Implementation Plan
+See `SHADCN_IMPLEMENTATION_PLAN.md` for complete technical specifications.
+
+## API Compatibility Requirements
+
+**CRITICAL**: Do not modify APIs without approval. If UI needs different data format, ASK FIRST.
+
+### Current API Contracts
+- Document store: `useDocumentStore()` with `fetchDocuments()`, `setSearchQuery()`
+- Document type from `@mmt/entities`
+- TableView props from `@mmt/table-view`
+
+### If API Mismatches Occur
+1. Document the specific mismatch
+2. Propose solution options
+3. Request approval before making changes
+4. Prefer UI adaptation over API changes
+
+## Success Criteria for Phase 1-2
+
+### Must Have
+- [ ] App loads without errors
+- [ ] Professional appearance (shadcn/ui styling)
+- [ ] Search functionality works
+- [ ] Document table displays data
+- [ ] Consistent design system in place
+
+### Demo Ready
+- [ ] Clean, modern interface
+- [ ] Responsive layout
+- [ ] Accessible components
+- [ ] TypeScript compilation without errors
+- [ ] All existing functionality preserved
+
+## Milestone 4 Context
+
+**Ultimate Goal**: Core user workflow
+1. Run app from command line
+2. Select all files in vault
+3. Add filters incrementally (text search, frontmatter, date)
+4. Apply operations (move to folder, update frontmatter)
+
+**Current Milestone 4 Issues**:
+- #111 - UI Foundation (THIS TASK)
+- #108 - CLI: Interactive document selection and filtering
+- #109 - Query Parser: Support text search, date filters
+- #110 - Web App: Add filter builder UI
+- #18 - Reports Package (CSV export)
+- #14 - View Persistence Package
+
+## Next Session Tasks
+
+### Immediate (Start Here)
+1. **Setup shadcn/ui foundation** (Phase 1 from plan)
+   - Install dependencies
+   - Configure Tailwind CSS
+   - Setup component system
+
+2. **Replace core components** (Phase 2 from plan)
+   - Convert App.jsx to modern layout
+   - Replace QueryBar with shadcn/ui components
+   - Replace DocumentTable with shadcn/ui Table
+
+3. **Verify functionality**
+   - Test document loading
+   - Verify search works
+   - Ensure table displays correctly
+
+### After Basic UI Works
+4. **Create GitHub issue update** for #111 with progress
+5. **Identify next priority** from Milestone 4 issues
+6. **Plan filter builder UI** implementation (#110)
+
+## Important Notes
+
+- **No gradual migration needed** - total replacement approach
+- **Speed over perfection** - get basic version working first
+- **Ask before API changes** - UI should adapt to existing APIs
+- **Focus on foundation** - advanced features come after basic UI works
+- **Use git workflow** - no special rollback planning needed
+
+## Reference Documents
+- `SHADCN_IMPLEMENTATION_PLAN.md` - Complete technical implementation guide
+- `SCRIPTING_CHEATSHEET.md` - Advanced scripting features reference
+- Issue #111 - UI Foundation GitHub issue
+- Milestone 4 - Core User Experience milestone
