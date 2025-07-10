@@ -6,6 +6,7 @@ export default {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../packages/table-view/src/**/*.{js,ts,jsx,tsx}",
   ],
   prefix: "",
   theme: {
@@ -73,5 +74,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 }

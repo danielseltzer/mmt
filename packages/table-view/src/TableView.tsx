@@ -147,6 +147,7 @@ export function TableView({
         id: 'name',
         accessorFn: (doc) => doc.metadata.name,
         header: 'Name',
+        size: 200,
         cell: ({ getValue }) => (
           <span data-testid="name-cell">{getValue() as string}</span>
         ),
@@ -155,32 +156,63 @@ export function TableView({
         id: 'path',
         accessorKey: 'path',
         header: 'Path',
-        cell: ({ getValue }) => (
-          <span className="text-sm text-muted-foreground">{getValue() as string}</span>
-        ),
+        size: 400,
+        cell: ({ getValue }) => {
+          const fullPath = getValue() as string;
+          // Remove common vault paths
+          const relativePath = fullPath
+            .replace(/^\/Users\/[^/]+\/[^/]+\/[^/]+\/test-vault\//, '')
+            .replace(/^.*\/test-vault\//, '')
+            .replace(/^.*\/vault\//, '');
+          return (
+            <span className="text-sm text-muted-foreground truncate block" title={fullPath}>
+              {relativePath}
+            </span>
+          );
+        },
       },
       {
         id: 'modified',
         accessorFn: (doc) => doc.metadata.modified,
         header: 'Modified',
+        size: 120,
         cell: ({ getValue }) => {
-          const date = getValue() as Date;
+          const date = getValue() as Date | null | undefined;
           return (
             <span data-testid="modified-cell">
-              {date.toLocaleDateString('en-US')}
+              {date instanceof Date && !isNaN(date.getTime()) 
+                ? date.toLocaleDateString('en-US')
+                : date === null || date === undefined
+                  ? '-'
+                  : 'Invalid Date'
+              }
             </span>
           );
         },
         sortingFn: (rowA, rowB, columnId) => {
-          const a = rowA.getValue(columnId) as Date;
-          const b = rowB.getValue(columnId) as Date;
-          return a.getTime() - b.getTime();
+          const a = rowA.getValue(columnId) as Date | null | undefined;
+          const b = rowB.getValue(columnId) as Date | null | undefined;
+          
+          // Handle null/undefined dates - put them at the end
+          if (!a && !b) return 0;
+          if (!a) return 1;
+          if (!b) return -1;
+          
+          // Handle invalid dates
+          const aTime = a.getTime();
+          const bTime = b.getTime();
+          if (isNaN(aTime) && isNaN(bTime)) return 0;
+          if (isNaN(aTime)) return 1;
+          if (isNaN(bTime)) return -1;
+          
+          return aTime - bTime;
         },
       },
       {
         id: 'size',
         accessorFn: (doc) => doc.metadata.size,
         header: 'Size',
+        size: 100,
         cell: ({ getValue }) => {
           const size = getValue() as number;
           return (
@@ -194,11 +226,12 @@ export function TableView({
         id: 'tags',
         accessorFn: (doc) => doc.metadata.tags,
         header: 'Tags',
+        size: 200,
         cell: ({ getValue }) => {
-          const tags = getValue() as string[];
+          const tags = getValue() as string[] | undefined;
           return (
             <div className="flex gap-1 flex-wrap">
-              {tags.map((tag) => (
+              {tags?.map((tag) => (
                 <span key={tag} className="px-2 py-1 text-xs bg-secondary rounded-md">
                   {tag}
                 </span>
@@ -323,8 +356,8 @@ export function TableView({
 
       {/* Table with virtual scrolling */}
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
-        <table className="w-full">
-          <thead className="bg-muted sticky top-0 z-10">
+        <table className="w-full border-collapse table-fixed">
+          <thead className="bg-muted/50 backdrop-blur sticky top-0 z-10 border-t">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -332,7 +365,7 @@ export function TableView({
                     key={header.id}
                     data-testid={`column-header-${header.id}`}
                     className={clsx(
-                      'text-left p-2 relative',
+                      'text-left p-2 relative border-b border-r first:border-l',
                       header.column.getCanSort() && 'cursor-pointer select-none'
                     )}
                     style={{ width: header.getSize() }}
@@ -377,7 +410,11 @@ export function TableView({
                   onContextMenu={handleRowContextMenu}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="p-2">
+                    <td 
+                      key={cell.id} 
+                      className="p-2 border-b border-r first:border-l overflow-hidden"
+                      style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize() }}
+                    >
                       <>{flexRender(cell.column.columnDef.cell, cell.getContext())}</>
                     </td>
                   ))}
@@ -408,7 +445,11 @@ export function TableView({
                     onContextMenu={handleRowContextMenu}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="p-2">
+                      <td 
+                        key={cell.id} 
+                        className="p-2 border-b border-r first:border-l overflow-hidden"
+                        style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize() }}
+                      >
                         <>{flexRender(cell.column.columnDef.cell, cell.getContext())}</>
                       </td>
                     ))}
