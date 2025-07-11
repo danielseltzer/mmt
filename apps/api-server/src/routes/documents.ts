@@ -21,14 +21,14 @@ export function documentsRouter(context: Context): Router {
         // Execute query
         // If no query provided, get all documents
         const results = q 
-          ? await context.indexer.query({
+          ? context.indexer.query({
               conditions: [{
                 field: 'content',
-                operator: 'contains',
+                operator: 'contains' as const,
                 value: q
               }]
             })
-          : await context.indexer.getAllDocuments();
+          : context.indexer.getAllDocuments();
         
         // Apply pagination
         const start = offset;
