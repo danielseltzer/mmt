@@ -118,9 +118,36 @@ export class QueryExecutor {
       case 'title':
         return this.compareValues(doc.title, operator, value);
       case 'content':
-        // For now, we don't have content in metadata
-        // This would require loading the file
-        return true;
+        // Since we don't store content in metadata, search across
+        // multiple text fields that users would expect to match
+        const searchValue = String(value).toLowerCase();
+        
+        // Search in title
+        if (doc.title.toLowerCase().includes(searchValue)) {
+          return true;
+        }
+        
+        // Search in basename
+        if (doc.basename.toLowerCase().includes(searchValue)) {
+          return true;
+        }
+        
+        // Search in path
+        if (doc.relativePath.toLowerCase().includes(searchValue)) {
+          return true;
+        }
+        
+        // Search in aliases
+        if (doc.aliases.some(alias => alias.toLowerCase().includes(searchValue))) {
+          return true;
+        }
+        
+        // Search in tags
+        if (doc.tags.some(tag => tag.toLowerCase().includes(searchValue))) {
+          return true;
+        }
+        
+        return false;
       default:
         return false;
     }

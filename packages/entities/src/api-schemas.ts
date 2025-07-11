@@ -5,8 +5,8 @@ import { z } from 'zod';
 // Documents API
 export const DocumentsQuerySchema = z.object({
   q: z.string().optional(),
-  limit: z.number().int().positive().max(1000).default(100),
-  offset: z.number().int().min(0).default(0),
+  limit: z.coerce.number().int().positive().max(1000).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
   sortBy: z.enum(['name', 'modified', 'size']).optional(),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
 });
