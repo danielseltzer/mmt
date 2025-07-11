@@ -3,6 +3,10 @@ import cors from 'cors';
 import { VaultIndexer } from '@mmt/indexer';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { Config } from '@mmt/entities';
+import { documentsRouter } from './routes/documents.js';
+import { configRouter } from './routes/config.js';
+import { operationsRouter } from './routes/operations.js';
+import type { Context } from './context.js';
 
 export async function createApp(config: Config): Promise<Express> {
   const app = express();
@@ -26,6 +30,15 @@ export async function createApp(config: Config): Promise<Express> {
   
   app.locals.indexer = indexer;
   
+  // Create context for routes
+  const context: Context = {
+    config,
+    indexer,
+    fileRelocator: null as any, // Not needed for current routes
+    operationRegistry: null as any, // Not needed for current routes
+    fs
+  };
+  
   // Health check
   app.get('/health', (req, res) => {
     res.json({
@@ -35,24 +48,10 @@ export async function createApp(config: Config): Promise<Express> {
     });
   });
   
-  // Documents endpoint
-  app.get('/api/documents', async (req, res) => {
-    try {
-      const documents = await indexer.getAllDocuments();
-      res.json({
-        documents: documents.map(doc => ({
-          path: doc.path,
-          metadata: {
-            name: doc.basename,
-            size: doc.size
-          }
-        })),
-        total: documents.length
-      });
-    } catch (error) {
-      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
-    }
-  });
+  // Mount API routes
+  app.use('/api/config', configRouter(context));
+  app.use('/api/documents', documentsRouter(context));
+  app.use('/api/operations', operationsRouter(context));
   
   return app;
 }

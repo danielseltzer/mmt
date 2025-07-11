@@ -56,7 +56,8 @@ describe('API Server', () => {
       
       expect(response.body).toEqual({
         documents: [],
-        total: 0
+        total: 0,
+        hasMore: false
       });
     });
 
@@ -81,7 +82,11 @@ describe('API Server', () => {
         path: expect.stringContaining('test.md'),
         metadata: {
           name: 'test',
-          size: expect.any(Number)
+          modified: expect.any(String), // ISO date string
+          size: expect.any(Number),
+          frontmatter: expect.any(Object),
+          tags: expect.any(Array),
+          links: expect.any(Array)
         }
       });
     });
