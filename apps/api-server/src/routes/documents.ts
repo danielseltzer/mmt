@@ -19,7 +19,16 @@ export function documentsRouter(context: Context): Router {
         const { q, limit, offset, sortBy, sortOrder } = req.query as any;
         
         // Execute query
-        const results = await context.indexer.query(q || '');
+        // If no query provided, get all documents
+        const results = q 
+          ? await context.indexer.query({
+              conditions: [{
+                field: 'content',
+                operator: 'contains',
+                value: q
+              }]
+            })
+          : await context.indexer.getAllDocuments();
         
         // Apply pagination
         const start = offset;
@@ -58,8 +67,8 @@ export function documentsRouter(context: Context): Router {
               name: doc.basename,
               modified: new Date(doc.mtime).toISOString(),
               size: doc.size,
-              frontmatter: doc.frontmatter,
-              tags: doc.tags,
+              frontmatter: doc.frontmatter || {},
+              tags: doc.tags || [],
               links: [], // TODO: get links from indexer
             },
           })),
