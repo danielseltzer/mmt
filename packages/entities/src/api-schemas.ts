@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FilterCriteriaSchema } from './filter-criteria.js';
 
 // Request/Response schemas for REST API
 
@@ -9,6 +10,15 @@ export const DocumentsQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
   sortBy: z.enum(['name', 'modified', 'size']).optional(),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
+  // Filter parameters - sent as JSON string in query param
+  filters: z.string().optional().transform((val) => {
+    if (!val) return {};
+    try {
+      return FilterCriteriaSchema.parse(JSON.parse(val));
+    } catch {
+      return {};
+    }
+  }),
 });
 
 export const DocumentsResponseSchema = z.object({

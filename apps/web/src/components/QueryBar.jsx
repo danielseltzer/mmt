@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDocumentStore } from '../stores/document-store';
+import { FilterBar } from './FilterBar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
@@ -18,15 +19,20 @@ export function QueryBar() {
   }, [query, setSearchQuery, fetchDocuments]);
   
   return (
-    <div className="relative max-w-md">
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <Input
-        type="text"
-        placeholder="Search documents..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="pl-10"
-      />
+    <div className="space-y-2 mb-2">
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search all fields..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-10 h-8 text-sm"
+          />
+        </div>
+      </div>
+      <FilterBar />
     </div>
   );
 }
