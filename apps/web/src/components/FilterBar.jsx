@@ -5,12 +5,20 @@ import { Input } from '@/components/ui/input';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
 
 export function FilterBar() {
-  const { documents, filteredDocuments, filters, setFilters } = useDocumentStore();
+  const { documents, filteredDocuments, totalCount, vaultTotal, filters, setFilters } = useDocumentStore();
   const [localFilters, setLocalFilters] = useState(filters || {});
   
   // Apply filters when they change
   useEffect(() => {
-    setFilters(localFilters);
+    // Clean up filters - remove empty strings
+    const cleanFilters = Object.entries(localFilters).reduce((acc, [key, value]) => {
+      if (value !== '' && value !== undefined && value !== null) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+    
+    setFilters(cleanFilters);
   }, [localFilters, setFilters]);
   
   // Extract unique folders from current documents
@@ -44,12 +52,12 @@ export function FilterBar() {
       parts.push(`Tags: ${localFilters.tags.length} tags`);
     }
     
-    if (localFilters.date) {
-      parts.push(`Date: ${localFilters.date.operator}${localFilters.date.value}`);
+    if (localFilters.dateExpression) {
+      parts.push(`Date: ${localFilters.dateExpression}`);
     }
     
-    if (localFilters.size) {
-      parts.push(`Size: ${localFilters.size.operator}${localFilters.size.value}`);
+    if (localFilters.sizeExpression) {
+      parts.push(`Size: ${localFilters.sizeExpression}`);
     }
     
     return parts.length > 0 ? ' | ' + parts.join(' | ') : '';
@@ -103,62 +111,38 @@ export function FilterBar() {
       {/* Date filter */}
       <Input
         type="text"
-        placeholder="Date..."
-        value={localFilters.date ? `${localFilters.date.operator}${localFilters.date.value}` : ''}
+        placeholder="< 7 days"
+        value={localFilters.dateExpression || ''}
         onChange={(e) => {
-          const value = e.target.value.trim();
-          if (!value) {
-            const { date, ...rest } = localFilters;
-            setLocalFilters(rest);
-            return;
-          }
-          
-          // Parse date filter (e.g., "-30d", "<1/1/2025")
-          const match = value.match(/^([<>]=?)(.+)$/);
-          if (match) {
-            setLocalFilters({ 
-              ...localFilters, 
-              date: { 
-                operator: match[1], 
-                value: match[2] 
-              } 
-            });
-          }
+          const value = e.target.value;
+          setLocalFilters({ 
+            ...localFilters, 
+            dateExpression: value || undefined
+          });
         }}
-        className="h-8 w-24 text-sm"
+        className="h-8 w-32 text-sm"
+        title="Examples: < 7 days, last 30 days, > 2024-01-01, since 2024"
       />
       
       {/* Size filter */}
       <Input
         type="text"
-        placeholder="Size..."
-        value={localFilters.size ? `${localFilters.size.operator}${localFilters.size.value}` : ''}
+        placeholder="over 1mb"
+        value={localFilters.sizeExpression || ''}
         onChange={(e) => {
-          const value = e.target.value.trim();
-          if (!value) {
-            const { size, ...rest } = localFilters;
-            setLocalFilters(rest);
-            return;
-          }
-          
-          // Parse size filter (e.g., "<1k", ">10M")
-          const match = value.match(/^([<>]=?)(.+)$/);
-          if (match) {
-            setLocalFilters({ 
-              ...localFilters, 
-              size: { 
-                operator: match[1], 
-                value: match[2] 
-              } 
-            });
-          }
+          const value = e.target.value;
+          setLocalFilters({ 
+            ...localFilters, 
+            sizeExpression: value || undefined
+          });
         }}
         className="h-8 w-24 text-sm"
+        title="Examples: under 10k, > 1mb, <= 500k, at least 100k"
       />
       
       {/* Active filter summary */}
       <span className="text-sm text-muted-foreground ml-auto">
-        {filteredDocuments.length}/{documents.length} docs{getFilterSummary()}
+        {filteredDocuments.length}/{vaultTotal} docs{getFilterSummary()}
       </span>
     </div>
   );

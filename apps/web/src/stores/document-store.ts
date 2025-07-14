@@ -1,10 +1,39 @@
 import { create } from 'zustand';
 import { Document, FilterCriteria } from '@mmt/entities';
 
+/**
+ * Document Store - Manages document fetching with server-side filtering
+ * 
+ * The store supports natural language filtering via the API:
+ * 
+ * Natural Language Date Expressions:
+ * - "last 30 days", "past 7 days" - Documents modified in the last N days
+ * - "yesterday", "today" - Documents modified on specific days
+ * - "this week", "this month", "this year" - Current period documents
+ * - "since 2024", "since January" - Documents since a specific time
+ * - "before 2025", "until December" - Documents before a specific time
+ * - "-30d" - Shorthand for last 30 days
+ * 
+ * Natural Language Size Expressions:
+ * - "over 1mb", "greater than 100k" - Files larger than specified size
+ * - "under 10k", "less than 5mb" - Files smaller than specified size
+ * - "at least 1gb", "at most 500k" - Inclusive size boundaries
+ * - Size units: b/bytes, k/kb, m/mb, g/gb
+ * 
+ * Example Usage:
+ * setFilters({
+ *   dateExpression: 'last 30 days',
+ *   sizeExpression: 'under 100k',
+ *   tags: ['important']
+ * });
+ * fetchDocuments();
+ */
 interface DocumentStoreState {
   // State
   documents: Document[];
   filteredDocuments: Document[];
+  totalCount: number; // Total number of documents matching the current filters
+  vaultTotal: number; // Total number of documents in the vault (unfiltered)
   loading: boolean;
   error: string | null;
   searchQuery: string;
@@ -23,6 +52,8 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   // State
   documents: [],
   filteredDocuments: [],
+  totalCount: 0,
+  vaultTotal: 0,
   loading: false,
   error: null,
   searchQuery: '',
@@ -50,6 +81,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       const params = new URLSearchParams();
       if (query) params.append('q', query);
       params.append('limit', limit.toString());
+      params.append('offset', '0');
       
       // Add filters as JSON if present
       if (filters && Object.keys(filters).length > 0) {
@@ -65,7 +97,13 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       
       const data = await response.json();
       // Server already filtered the documents
-      set({ documents: data.documents, filteredDocuments: data.documents, loading: false });
+      set({ 
+        documents: data.documents, 
+        filteredDocuments: data.documents, 
+        totalCount: data.total,
+        vaultTotal: data.vaultTotal,
+        loading: false 
+      });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Unknown error', loading: false });
     }

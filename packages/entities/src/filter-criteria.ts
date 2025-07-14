@@ -35,8 +35,14 @@ export const FilterCriteriaSchema = z.object({
   // Date filter
   date: DateFilterSchema.optional(),
   
+  // Natural language date expression (alternative to date)
+  dateExpression: z.string().optional(),
+  
   // File size filter
   size: SizeFilterSchema.optional(),
+  
+  // Natural language size expression (alternative to size)
+  sizeExpression: z.string().optional(),
 });
 
 export type FilterCriteria = z.infer<typeof FilterCriteriaSchema>;

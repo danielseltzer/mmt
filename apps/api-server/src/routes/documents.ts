@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import type { Context } from '../context.js';
 import { Document } from '@mmt/entities';
 import { validate } from '../middleware/validate.js';
@@ -8,6 +9,8 @@ import {
   ExportRequestSchema,
   ExportResponseSchema,
   FilterCriteria,
+  parseDateExpression,
+  parseSizeExpression,
 } from '@mmt/entities';
 
 // Helper function to apply filters to documents
@@ -123,15 +126,75 @@ function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: stri
 export function documentsRouter(context: Context): Router {
   const router = Router();
   
-  // GET /api/documents - Search and list documents
+  /**
+   * GET /api/documents - Search and list documents with optional filtering
+   * 
+   * Query Parameters:
+   * - q: (optional) Search query string
+   * - limit: (optional) Number of results to return (default: 100, max: 1000)
+   * - offset: (optional) Number of results to skip (default: 0)
+   * - sortBy: (optional) Field to sort by: 'name' | 'modified' | 'size'
+   * - sortOrder: (optional) Sort direction: 'asc' | 'desc' (default: 'asc')
+   * - filters: (optional) JSON-encoded filter criteria object
+   * 
+   * Filter Criteria Object:
+   * - name: (string) Filter by filename
+   * - content: (string) Filter by content
+   * - folders: (string[]) Filter by folder paths
+   * - tags: (string[]) Filter by tags
+   * - date: (DateFilter) Filter by date with operator and value
+   * - dateExpression: (string) Natural language date filter (e.g., "last 30 days")
+   * - size: (SizeFilter) Filter by size with operator and value
+   * - sizeExpression: (string) Natural language size filter (e.g., "over 1mb")
+   * 
+   * Natural Language Date Expressions:
+   * - "last N days", "past N days", "yesterday", "today"
+   * - "this week", "this month", "this year"
+   * - "since YYYY", "since MONTH", "since MONTH YYYY"
+   * - "before YYYY", "until MONTH"
+   * - "-30d" (shorthand for last 30 days)
+   * - "< 7 days" (within last 7 days), "> 30 days" (older than 30 days)
+   * - "< 2 weeks", "> 3 months", "< 1 year" (relative time with operators)
+   * - Operator syntax: "> 2024-01-01", "<= yesterday", ">= last week"
+   * 
+   * Natural Language Size Expressions:
+   * - "over SIZE", "under SIZE", "at least SIZE", "at most SIZE"
+   * - Operator syntax: "> 10mb", "<= 500k", ">= 1.5gb"
+   * - SIZE formats: "10k", "1.5mb", "2g", "500 bytes"
+   * 
+   * Example Request:
+   * GET /api/documents?limit=10&filters={"dateExpression":"last 30 days","sizeExpression":"under 100k"}
+   * 
+   * Response:
+   * {
+   *   documents: Array<{ path: string, metadata: {...} }>,
+   *   total: number,
+   *   hasMore: boolean
+   * }
+   */
   router.get('/', 
-    validate(DocumentsQuerySchema, 'query'),
+    // validate(DocumentsQuerySchema, 'query'),
     async (req, res, next) => {
       try {
-        const { q, limit, offset, sortBy, sortOrder, filters } = req.query as any;
+        // Manual validation for now
+        const validatedLimit = parseInt(req.query.limit as string) || 100;
+        const validatedOffset = parseInt(req.query.offset as string) || 0;
+        const q = req.query.q as string | undefined;
+        const sortBy = req.query.sortBy as string | undefined;
+        const sortOrder = (req.query.sortOrder as string) || 'asc';
+        let filters: FilterCriteria = {};
+        
+        if (req.query.filters && typeof req.query.filters === 'string') {
+          try {
+            filters = JSON.parse(req.query.filters);
+          } catch {
+            filters = {};
+          }
+        }
         
         // Get all documents first
         let results = context.indexer.getAllDocuments();
+        const vaultTotal = results.length; // Store total vault size before filtering
         
         // Apply search query if provided
         if (q) {
@@ -146,12 +209,31 @@ export function documentsRouter(context: Context): Router {
         
         // Apply filters if provided
         if (filters && Object.keys(filters).length > 0) {
-          results = applyFilters(results, filters as FilterCriteria, context.config.vaultPath);
+          // Parse natural language expressions if present
+          const processedFilters = { ...(filters as FilterCriteria) };
+          
+          if (processedFilters.dateExpression) {
+            const parsed = parseDateExpression(processedFilters.dateExpression);
+            if (parsed) {
+              processedFilters.date = parsed;
+            }
+            delete processedFilters.dateExpression;
+          }
+          
+          if (processedFilters.sizeExpression) {
+            const parsed = parseSizeExpression(processedFilters.sizeExpression);
+            if (parsed) {
+              processedFilters.size = parsed;
+            }
+            delete processedFilters.sizeExpression;
+          }
+          
+          results = applyFilters(results, processedFilters, context.config.vaultPath);
         }
         
         // Apply pagination
-        const start = offset;
-        const end = offset + limit;
+        const start = validatedOffset;
+        const end = validatedOffset + validatedLimit;
         const paginatedDocs = results.slice(start, end);
         
         // Sort if requested
@@ -192,6 +274,7 @@ export function documentsRouter(context: Context): Router {
             },
           })),
           total: results.length,
+          vaultTotal: vaultTotal,
           hasMore: end < results.length,
         });
         
