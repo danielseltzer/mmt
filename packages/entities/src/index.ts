@@ -56,3 +56,6 @@ export { CommandResults };
 
 // Export API schemas for REST endpoints
 export * from './api-schemas.js';
+
+// Export filter criteria schemas
+export * from './filter-criteria.js';

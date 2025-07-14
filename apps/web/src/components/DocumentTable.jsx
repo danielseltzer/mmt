@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
 export function DocumentTable() {
-  const { documents, loading, error } = useDocumentStore();
+  const { filteredDocuments, loading, error } = useDocumentStore();
   
   if (loading) {
     return (
@@ -27,15 +27,13 @@ export function DocumentTable() {
   }
   
   return (
-    <Card>
-      <CardContent className="p-0">
-        <TableView 
-          documents={documents}
-          onSelectionChange={(selectedIds) => {
-            console.log('Selected:', selectedIds);
-          }}
-        />
-      </CardContent>
-    </Card>
+    <div className="flex-1 overflow-hidden">
+      <TableView 
+        documents={filteredDocuments}
+        onSelectionChange={(selectedIds) => {
+          console.log('Selected:', selectedIds);
+        }}
+      />
+    </div>
   );
 }

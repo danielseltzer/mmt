@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,7 +11,6 @@ import {
   ColumnOrderState,
   ColumnSizingState,
 } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Document } from '@mmt/entities';
 import { clsx } from 'clsx';
 import { ColumnConfig } from './ColumnConfig.js';
@@ -22,7 +21,6 @@ export interface TableViewProps {
   onOperationRequest?: (request: { operation: string; documentPaths: string[] }) => void;
   onLoadContent?: (path: string) => Promise<string>;
   initialColumns?: string[];
-  disableVirtualization?: boolean; // For testing
 }
 
 interface ContextMenuState {
@@ -32,15 +30,14 @@ interface ContextMenuState {
   columnId?: string;
 }
 
+
 export function TableView({
   documents,
   onSelectionChange,
   onOperationRequest,
   onLoadContent,
   initialColumns = ['name', 'path', 'modified', 'size', 'tags'],
-  disableVirtualization = false,
 }: TableViewProps) {
-  // Use all documents with virtual scrolling
   const totalCount = documents.length;
 
   // Table state
@@ -59,25 +56,19 @@ export function TableView({
   const [contentCache, setContentCache] = useState<Record<string, string>>({});
   
   // Track last selected index for shift-click
-  const lastSelectedIndex = useRef<number>(-1);
+  const lastSelectedIndex = React.useRef<number>(-1);
 
-  // Ref for the scrollable container
-  const tableContainerRef = useRef<HTMLDivElement>(null);
-
-  // Load content when preview column is visible (only for visible items)
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
-  
+  // Load content when preview column is visible
   useEffect(() => {
     if (columnVisibility.preview && onLoadContent) {
-      const visibleDocs = documents.slice(visibleRange.start, visibleRange.end);
-      visibleDocs.forEach(async (doc) => {
+      documents.forEach(async (doc) => {
         if (!contentCache[doc.path]) {
           const content = await onLoadContent(doc.path);
           setContentCache((prev) => ({ ...prev, [doc.path]: content }));
         }
       });
     }
-  }, [columnVisibility.preview, documents, onLoadContent, contentCache, visibleRange]);
+  }, [columnVisibility.preview, documents, onLoadContent, contentCache]);
 
   // Handle row click with shift support
   const handleRowClick = useCallback((index: number, shiftKey: boolean) => {
@@ -111,10 +102,11 @@ export function TableView({
     () => [
       {
         id: 'select',
-        size: 40,
+        size: 30,
         header: ({ table }) => (
           <input
             type="checkbox"
+            className="h-3 w-3"
             data-testid="select-all-checkbox"
             checked={table.getIsAllRowsSelected()}
             ref={(el) => {
@@ -130,6 +122,7 @@ export function TableView({
           return (
             <input
               type="checkbox"
+              className="h-3 w-3"
               checked={row.getIsSelected()}
               onChange={(e) => {
                 if (e.nativeEvent instanceof MouseEvent && e.nativeEvent.shiftKey) {
@@ -148,24 +141,40 @@ export function TableView({
         accessorFn: (doc) => doc.metadata.name,
         header: 'Name',
         size: 200,
-        cell: ({ getValue }) => (
-          <span data-testid="name-cell">{getValue() as string}</span>
-        ),
+        cell: ({ getValue }) => {
+          const name = getValue() as string;
+          return (
+            <span 
+              data-testid="name-cell" 
+              className="block truncate text-sm"
+              title={name}
+            >
+              {name}
+            </span>
+          );
+        },
       },
       {
         id: 'path',
         accessorKey: 'path',
         header: 'Path',
-        size: 400,
+        size: 300,
         cell: ({ getValue }) => {
           const fullPath = getValue() as string;
-          // Remove common vault paths
-          const relativePath = fullPath
-            .replace(/^\/Users\/[^/]+\/[^/]+\/[^/]+\/test-vault\//, '')
-            .replace(/^.*\/test-vault\//, '')
-            .replace(/^.*\/vault\//, '');
+          // Remove vault root path but keep the leading slash
+          let relativePath = fullPath
+            .replace(/^\/Users\/danielseltzer\/Notes\/Personal-sync-250710/, '')
+            .replace(/^\/Users\/[^/]+\/[^/]+\/[^/]+\/test-vault/, '')
+            .replace(/^.*\/test-vault/, '')
+            .replace(/^.*\/vault/, '');
+          
+          // Ensure leading slash
+          if (!relativePath.startsWith('/')) {
+            relativePath = '/' + relativePath;
+          }
+          
           return (
-            <span className="text-sm text-muted-foreground truncate block" title={fullPath}>
+            <span className="text-xs text-muted-foreground truncate block" title={fullPath}>
               {relativePath}
             </span>
           );
@@ -175,23 +184,44 @@ export function TableView({
         id: 'modified',
         accessorFn: (doc) => doc.metadata.modified,
         header: 'Modified',
-        size: 120,
+        size: 80,
         cell: ({ getValue }) => {
-          const date = getValue() as Date | null | undefined;
+          const value = getValue() as string | Date | null | undefined;
+          let date: Date | null = null;
+          
+          // Handle string dates (from API) and Date objects
+          if (typeof value === 'string') {
+            date = new Date(value);
+          } else if (value instanceof Date) {
+            date = value;
+          }
+          
           return (
-            <span data-testid="modified-cell">
-              {date instanceof Date && !isNaN(date.getTime()) 
-                ? date.toLocaleDateString('en-US')
-                : date === null || date === undefined
-                  ? '-'
-                  : 'Invalid Date'
+            <span data-testid="modified-cell" className="text-sm">
+              {date && !isNaN(date.getTime()) 
+                ? date.toLocaleDateString('en-US', {
+                    year: '2-digit',
+                    month: 'numeric',
+                    day: 'numeric'
+                  })
+                : '-'
               }
             </span>
           );
         },
         sortingFn: (rowA, rowB, columnId) => {
-          const a = rowA.getValue(columnId) as Date | null | undefined;
-          const b = rowB.getValue(columnId) as Date | null | undefined;
+          const aValue = rowA.getValue(columnId) as string | Date | null | undefined;
+          const bValue = rowB.getValue(columnId) as string | Date | null | undefined;
+          
+          // Convert to dates
+          let a: Date | null = null;
+          let b: Date | null = null;
+          
+          if (typeof aValue === 'string') a = new Date(aValue);
+          else if (aValue instanceof Date) a = aValue;
+          
+          if (typeof bValue === 'string') b = new Date(bValue);
+          else if (bValue instanceof Date) b = bValue;
           
           // Handle null/undefined dates - put them at the end
           if (!a && !b) return 0;
@@ -212,30 +242,94 @@ export function TableView({
         id: 'size',
         accessorFn: (doc) => doc.metadata.size,
         header: 'Size',
-        size: 100,
+        size: 60,
         cell: ({ getValue }) => {
           const size = getValue() as number;
           return (
-            <span data-testid="size-cell">
-              {(size / 1024).toFixed(1)} KB
+            <span data-testid="size-cell" className="text-sm">
+              {(size / 1024).toFixed(1)}K
             </span>
           );
         },
       },
       {
         id: 'tags',
-        accessorFn: (doc) => doc.metadata.tags,
-        header: 'Tags',
+        accessorFn: (doc) => doc.metadata.frontmatter,
+        header: 'Metadata',
         size: 200,
-        cell: ({ getValue }) => {
-          const tags = getValue() as string[] | undefined;
-          return (
-            <div className="flex gap-1 flex-wrap">
-              {tags?.map((tag) => (
-                <span key={tag} className="px-2 py-1 text-xs bg-secondary rounded-md">
-                  {tag}
+        cell: ({ getValue, row }) => {
+          const frontmatter = getValue() as Record<string, any> | undefined;
+          const tags = row.original.metadata.tags || [];
+          
+          if (!frontmatter || Object.keys(frontmatter).length === 0) {
+            // If no frontmatter, show tags if any
+            if (tags.length === 0) return null;
+            return (
+              <div className="flex gap-1 items-center" title={tags.join(', ')}>
+                {tags.slice(0, 2).map((tag) => {
+                  const displayTag = tag.length > 15 ? tag.substring(0, 12) + '...' : tag;
+                  return (
+                    <span key={tag} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
+                      #{displayTag}
+                    </span>
+                  );
+                })}
+                {tags.length > 2 && (
+                  <span className="text-xs text-muted-foreground">
+                    +{tags.length - 2}
+                  </span>
+                )}
+              </div>
+            );
+          }
+          
+          // Show just the property names
+          const propertyNames = Object.keys(frontmatter)
+            .filter(key => {
+              const value = frontmatter[key];
+              // Skip complex values, nulls, and empty arrays
+              return value !== null && value !== undefined && 
+                     !(Array.isArray(value) && value.length === 0);
+            });
+          
+          if (propertyNames.length === 0 && tags.length > 0) {
+            // Fallback to showing tag count if no frontmatter
+            return (
+              <div className="flex gap-1 items-center" title={tags.join(', ')}>
+                <span className="px-1.5 py-0.5 text-xs bg-secondary rounded">
+                  {tags.length} tag{tags.length !== 1 ? 's' : ''}
                 </span>
-              ))}
+              </div>
+            );
+          }
+          
+          const tooltipText = propertyNames.map(key => {
+            const value = frontmatter[key];
+            let displayValue = value;
+            if (Array.isArray(value)) {
+              displayValue = value.join(', ');
+            } else if (typeof value === 'object' && value !== null) {
+              displayValue = JSON.stringify(value);
+            }
+            return `${key}: ${displayValue}`;
+          }).join('\n');
+          
+          return (
+            <div className="flex gap-1 items-center" title={tooltipText}>
+              {propertyNames.slice(0, 4).map((propName) => {
+                // Property names are usually shorter, so we can show more
+                const displayName = propName.length > 12 ? propName.substring(0, 10) + '...' : propName;
+                return (
+                  <span key={propName} className="px-1.5 py-0.5 text-xs bg-secondary rounded">
+                    {displayName}
+                  </span>
+                );
+              })}
+              {propertyNames.length > 4 && (
+                <span className="text-xs text-muted-foreground">
+                  +{propertyNames.length - 4}
+                </span>
+              )}
             </div>
           );
         },
@@ -279,29 +373,8 @@ export function TableView({
     columnResizeMode: 'onChange',
   });
 
-  // Virtual scrolling setup (only when not disabled)
+  // Get table rows
   const { rows } = table.getRowModel();
-  
-  const rowVirtualizer = useVirtualizer({
-    count: disableVirtualization ? 0 : rows.length,
-    getScrollElement: () => disableVirtualization ? null : tableContainerRef.current,
-    estimateSize: () => 40, // Estimated row height
-    overscan: 10, // Number of items to render outside visible area
-    onChange: (instance) => {
-      if (disableVirtualization) return;
-      // Update visible range for content loading
-      const items = instance.getVirtualItems();
-      if (items.length > 0) {
-        setVisibleRange({
-          start: items[0].index,
-          end: items[items.length - 1].index + 1,
-        });
-      }
-    },
-  });
-
-  const virtualItems = disableVirtualization ? [] : rowVirtualizer.getVirtualItems();
-  const totalSize = disableVirtualization ? 0 : rowVirtualizer.getTotalSize();
 
   // Handle selection changes
   useEffect(() => {
@@ -335,18 +408,15 @@ export function TableView({
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Header with document count and column config */}
-      <div className="flex items-center justify-between p-2 border-b">
-        <div className="text-sm text-muted-foreground">
-          {totalCount} documents
-        </div>
+      {/* Column config */}
+      <div className="flex justify-end mb-1">
         <ColumnConfig
           columns={[
             { id: 'name', label: 'Name' },
             { id: 'path', label: 'Path' },
             { id: 'modified', label: 'Modified' },
             { id: 'size', label: 'Size' },
-            { id: 'tags', label: 'Tags' },
+            { id: 'tags', label: 'Metadata' },
             { id: 'preview', label: 'Preview' },
           ]}
           visibility={columnVisibility}
@@ -354,10 +424,10 @@ export function TableView({
         />
       </div>
 
-      {/* Table with virtual scrolling */}
-      <div className="flex-1 overflow-auto" ref={tableContainerRef}>
-        <table className="w-full border-collapse table-fixed">
-          <thead className="bg-muted/50 backdrop-blur sticky top-0 z-10 border-t">
+      {/* Table */}
+      <div className="flex-1 overflow-auto relative">
+        <table className="w-full border-collapse">
+          <thead className="bg-muted/50 sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -365,22 +435,24 @@ export function TableView({
                     key={header.id}
                     data-testid={`column-header-${header.id}`}
                     className={clsx(
-                      'text-left p-2 relative border-b border-r first:border-l',
+                      'text-left p-1 text-xs relative border-b',
                       header.column.getCanSort() && 'cursor-pointer select-none'
                     )}
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                     onContextMenu={(e) => handleColumnContextMenu(e, header.id)}
                   >
-                    <>{flexRender(header.column.columnDef.header, header.getContext())}</>
-                    {header.column.getIsSorted() && (
-                      <span className="ml-1">
-                        {header.column.getIsSorted() === 'asc' ? '↑' : '↓'}
-                      </span>
-                    )}
+                    <div className="flex items-center">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getIsSorted() && (
+                        <span className="ml-1">
+                          {header.column.getIsSorted() === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
                     {header.column.getCanResize() && (
                       <div
-                        className="resize-handle absolute right-0 top-0 h-full w-1 bg-border cursor-col-resize hover:bg-primary"
+                        className="absolute right-0 top-0 h-full w-1 bg-border cursor-col-resize hover:bg-primary"
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
                       />
@@ -390,73 +462,34 @@ export function TableView({
               </tr>
             ))}
           </thead>
-          <tbody style={disableVirtualization ? {} : { height: `${totalSize}px`, position: 'relative' }}>
-            {disableVirtualization ? (
-              // Non-virtualized rendering for tests
-              rows.map((row, index) => (
-                <tr
-                  key={row.id}
-                  data-testid={`row-${row.id}`}
-                  className={clsx(
-                    'border-b hover:bg-muted/50 transition-colors',
-                    row.getIsSelected() && 'bg-muted/30'
-                  )}
-                  onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.tagName !== 'INPUT') {
-                      handleRowClick(index, e.shiftKey);
-                    }
-                  }}
-                  onContextMenu={handleRowContextMenu}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td 
-                      key={cell.id} 
-                      className="p-2 border-b border-r first:border-l overflow-hidden"
-                      style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize() }}
-                    >
-                      <>{flexRender(cell.column.columnDef.cell, cell.getContext())}</>
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : (
-              // Virtualized rendering for production
-              virtualItems.map((virtualItem) => {
-                const row = rows[virtualItem.index];
-                return (
-                  <tr
-                    key={row.id}
-                    data-testid={`row-${row.id}`}
-                    className={clsx(
-                      'border-b hover:bg-muted/50 transition-colors absolute w-full',
-                      row.getIsSelected() && 'bg-muted/30'
-                    )}
-                    style={{
-                      height: `${virtualItem.size}px`,
-                      transform: `translateY(${virtualItem.start}px)`,
-                    }}
-                    onClick={(e) => {
-                      const target = e.target as HTMLElement;
-                      if (target.tagName !== 'INPUT') {
-                        handleRowClick(virtualItem.index, e.shiftKey);
-                      }
-                    }}
-                    onContextMenu={handleRowContextMenu}
+          <tbody>
+            {rows.map((row, index) => (
+              <tr
+                key={row.id}
+                data-testid={`row-${row.id}`}
+                className={clsx(
+                  'border-b hover:bg-muted/50 transition-colors',
+                  row.getIsSelected() && 'bg-muted/30'
+                )}
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (target.tagName !== 'INPUT') {
+                    handleRowClick(index, e.shiftKey);
+                  }
+                }}
+                onContextMenu={handleRowContextMenu}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td 
+                    key={cell.id} 
+                    className="p-1 text-sm overflow-hidden"
+                    style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize() }}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td 
-                        key={cell.id} 
-                        className="p-2 border-b border-r first:border-l overflow-hidden"
-                        style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize() }}
-                      >
-                        <>{flexRender(cell.column.columnDef.cell, cell.getContext())}</>
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })
-            )}
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
