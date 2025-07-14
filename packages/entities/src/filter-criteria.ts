@@ -32,11 +32,21 @@ export const FilterCriteriaSchema = z.object({
   // Selected tags
   tags: z.array(z.string()).optional(),
   
+  // Selected metadata key:value pairs (from frontmatter)
+  // Format: ["domain:work", "status:draft"]
+  metadata: z.array(z.string()).optional(),
+  
   // Date filter
   date: DateFilterSchema.optional(),
   
+  // Natural language date expression (alternative to date)
+  dateExpression: z.string().optional(),
+  
   // File size filter
   size: SizeFilterSchema.optional(),
+  
+  // Natural language size expression (alternative to size)
+  sizeExpression: z.string().optional(),
 });
 
 export type FilterCriteria = z.infer<typeof FilterCriteriaSchema>;
@@ -66,6 +76,10 @@ export function filterCriteriaToSelection(criteria: FilterCriteria) {
   
   if (criteria.tags && criteria.tags.length > 0) {
     conditions.push({ field: 'tags', operator: 'in', value: criteria.tags });
+  }
+  
+  if (criteria.metadata && criteria.metadata.length > 0) {
+    conditions.push({ field: 'metadata', operator: 'has_keys', value: criteria.metadata });
   }
   
   if (criteria.date) {

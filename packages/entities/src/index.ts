@@ -59,3 +59,7 @@ export * from './api-schemas.js';
 
 // Export filter criteria schemas
 export * from './filter-criteria.js';
+
+// Export natural language parsers
+export * from './date-parser.js';
+export * from './size-parser.js';

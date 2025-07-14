@@ -34,6 +34,7 @@ export const DocumentsResponseSchema = z.object({
     }),
   })),
   total: z.number(),
+  vaultTotal: z.number(), // Total documents in vault (unfiltered)
   hasMore: z.boolean(),
 });
 
