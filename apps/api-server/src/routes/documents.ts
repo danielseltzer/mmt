@@ -60,6 +60,32 @@ function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: stri
     );
   }
   
+  if (filters.metadata && filters.metadata.length > 0) {
+    filtered = filtered.filter(doc => {
+      if (!doc.frontmatter) return false;
+      
+      // Check if all metadata filters match
+      return filters.metadata!.every((metadataFilter: string) => {
+        const [key, value] = metadataFilter.split(':');
+        if (!key) return false;
+        
+        const docValue = doc.frontmatter[key];
+        if (!docValue) return false;
+        
+        // If no value specified, just check if key exists
+        if (!value) return true;
+        
+        // Handle array values (like tags in frontmatter)
+        if (Array.isArray(docValue)) {
+          return docValue.some(v => String(v).toLowerCase() === value.toLowerCase());
+        }
+        
+        // Handle single values
+        return String(docValue).toLowerCase() === value.toLowerCase();
+      });
+    });
+  }
+  
   if (filters.date) {
     filtered = filtered.filter(doc => {
       if (!doc.mtime) return false;

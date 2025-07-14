@@ -3,6 +3,7 @@ import { useDocumentStore } from '../stores/document-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
+import { MetadataFilter } from './MetadataFilter';
 
 export function FilterBar() {
   const { documents, filteredDocuments, totalCount, vaultTotal, filters, setFilters } = useDocumentStore();
@@ -31,10 +32,6 @@ export function FilterBar() {
     })
   )].sort();
   
-  // Extract unique tags
-  const uniqueTags = [...new Set(
-    documents.flatMap(doc => doc.metadata.tags || [])
-  )].sort();
   
   // Format active filter summary
   const getFilterSummary = () => {
@@ -46,10 +43,10 @@ export function FilterBar() {
       parts.push(`Folders: ${localFilters.folders.length} folders`);
     }
     
-    if (localFilters.tags?.length === 1) {
-      parts.push(`Tags: ${localFilters.tags[0]}`);
-    } else if (localFilters.tags?.length > 1) {
-      parts.push(`Tags: ${localFilters.tags.length} tags`);
+    if (localFilters.metadata?.length === 1) {
+      parts.push(`Metadata: ${localFilters.metadata[0]}`);
+    } else if (localFilters.metadata?.length > 1) {
+      parts.push(`Metadata: ${localFilters.metadata.length} keys`);
     }
     
     if (localFilters.dateExpression) {
@@ -68,9 +65,6 @@ export function FilterBar() {
     return localFilters.folders?.join('\n') || '';
   };
   
-  const getTagTooltip = () => {
-    return localFilters.tags?.join('\n') || '';
-  };
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -100,12 +94,11 @@ export function FilterBar() {
         placeholder="Folders"
       />
       
-      {/* Tags dropdown */}
-      <MultiSelectDropdown
-        items={uniqueTags}
-        selectedItems={localFilters.tags || []}
-        onSelectionChange={(tags) => setLocalFilters({ ...localFilters, tags })}
-        placeholder="Tags"
+      {/* Metadata filter */}
+      <MetadataFilter
+        documents={documents}
+        selectedMetadata={localFilters.metadata || []}
+        onMetadataChange={(metadata) => setLocalFilters({ ...localFilters, metadata })}
       />
       
       {/* Date filter */}
