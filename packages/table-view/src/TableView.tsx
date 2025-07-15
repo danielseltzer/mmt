@@ -200,7 +200,7 @@ export function TableView({
             <span data-testid="modified-cell" className="text-sm">
               {date && !isNaN(date.getTime()) 
                 ? date.toLocaleDateString('en-US', {
-                    year: '2-digit',
+                    year: 'numeric',
                     month: 'numeric',
                     day: 'numeric'
                   })

@@ -5,6 +5,7 @@ import { VaultIndexer } from '@mmt/indexer';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import type { FileSystemAccess } from '@mmt/filesystem-access';
 import type { Document, AdvancedOperationPipeline } from '@mmt/entities';
+import type { PageMetadata } from '@mmt/indexer';
 import { mkdtemp, rm, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -64,7 +65,7 @@ describe('Advanced Scripting Features', () => {
         select: { 'metadata.frontmatter.status': 'draft' },
         operations: [{
           type: 'conditional',
-          condition: (doc: Document) => doc.metadata.frontmatter?.size > 1000,
+          condition: (doc: PageMetadata) => (doc.frontmatter?.size as number) > 1000,
           then: {
             type: 'updateFrontmatter',
             updates: { category: 'large-draft' },
@@ -78,7 +79,7 @@ describe('Advanced Scripting Features', () => {
         }],
       };
       
-      const documents = await indexer.search({ conditions: [{ field: 'metadata.frontmatter.status', operator: 'equals', value: 'draft' }] });
+      const documents = indexer.query({ conditions: [{ field: 'fm:status', operator: 'equals', value: 'draft' }] });
       const result = await runner.executeAdvancedPipeline(pipeline, documents);
       
       expect(result.succeeded).toHaveLength(2);
@@ -111,7 +112,7 @@ describe('Advanced Scripting Features', () => {
         }],
       };
       
-      const documents = await indexer.search({ conditions: [{ field: 'metadata.frontmatter.status', operator: 'equals', value: 'draft' }] });
+      const documents = indexer.query({ conditions: [{ field: 'fm:status', operator: 'equals', value: 'draft' }] });
       const result = await runner.executeAdvancedPipeline(pipeline, documents);
       
       // All operations should succeed (catch handled the error)
@@ -135,14 +136,14 @@ describe('Advanced Scripting Features', () => {
         select: {},
         operations: [{
           type: 'map',
-          transform: async (doc: Document) => {
+          transform: async (doc: PageMetadata) => {
             currentConcurrent++;
             maxConcurrent = Math.max(maxConcurrent, currentConcurrent);
             
             // Simulate async work
             await new Promise(resolve => setTimeout(resolve, 50));
             
-            processedDocs.push(doc.metadata.name);
+            processedDocs.push(doc.basename);
             currentConcurrent--;
             
             return { processed: true };
@@ -155,7 +156,7 @@ describe('Advanced Scripting Features', () => {
         },
       };
       
-      const documents = await indexer.getAllDocuments();
+      const documents = indexer.getAllDocuments();
       await runner.executeParallelOperations(
         pipeline.operations,
         documents,
@@ -173,15 +174,15 @@ describe('Advanced Scripting Features', () => {
         select: {},
         operations: [{
           type: 'map',
-          transform: (doc: Document) => {
-            const size = doc.metadata.frontmatter?.size || 0;
+          transform: (doc: PageMetadata) => {
+            const size = (doc.frontmatter?.size as number) || 0;
             return size > 1000 ? 'large' : 'small';
           },
           outputField: 'sizeCategory',
         }],
       };
       
-      const documents = await indexer.getAllDocuments();
+      const documents = indexer.getAllDocuments();
       const result = await runner.executeAdvancedPipeline(pipeline, documents);
       
       expect(result.succeeded).toHaveLength(4);
@@ -203,14 +204,14 @@ describe('Advanced Scripting Features', () => {
     it('should aggregate documents into a single value', async () => {
       const reducer = {
         type: 'reduce',
-        reducer: (acc: number, doc: Document) => {
-          return acc + (doc.metadata.frontmatter?.size || 0);
+        reducer: (acc: number, doc: PageMetadata) => {
+          return acc + ((doc.frontmatter?.size as number) || 0);
         },
         initialValue: 0,
         outputKey: 'totalSize',
       };
       
-      const documents = await indexer.getAllDocuments();
+      const documents = indexer.getAllDocuments();
       const result = await runner.executeReduce(reducer, documents);
       
       expect(result).toBe(4100); // 100 + 500 + 1500 + 2000
