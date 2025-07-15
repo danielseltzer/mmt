@@ -25,7 +25,9 @@ describe('ResultFormatter', () => {
     writeFileSync(file1, '# Document A\n\nContent for document A');
     writeFileSync(file2, '# Document B\n\nContent for document B');
     writeFileSync(file3, '# Skip Document\n\nThis will be skipped');
-    mkdirSync(archiveDir);
+    if (!existsSync(archiveDir)) {
+      mkdirSync(archiveDir);
+    }
     
     // Create a file that will cause skip
     writeFileSync(join(archiveDir, 'skip.md'), 'Already exists');
