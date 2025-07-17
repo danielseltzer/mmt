@@ -90,7 +90,6 @@ export const ExecuteOptionsSchema = z.object({
 export const ExecutionOptionsSchema = z.object({
   executeNow: z.boolean().default(false).describe('Execute operations (default is preview-only)'),
   failFast: z.boolean().default(false).describe('Stop on first error'),
-  parallel: z.boolean().default(false).describe('Execute operations in parallel'),
 }).describe('Execution options');
 
 /**

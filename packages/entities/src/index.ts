@@ -17,7 +17,6 @@ export * from './operation.schema.js';
 export * from './vault.schema.js';
 export * from './ui.schema.js';
 export * from './scripting.schema.js';
-export * from './scripting-advanced.schema.js';
 export * from './cli.schema.js';
 
 // Import schemas needed for cross-references

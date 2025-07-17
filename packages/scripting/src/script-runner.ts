@@ -126,7 +126,6 @@ export class ScriptRunner {
     const executionOptions: ExecutionOptions = {
       executeNow: (cliOptions.execute as boolean | undefined) ?? validatedPipeline.options?.executeNow ?? false,
       failFast: validatedPipeline.options?.failFast ?? false,
-      parallel: validatedPipeline.options?.parallel ?? false,
     };
 
     // Execute the pipeline
