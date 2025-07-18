@@ -80,6 +80,7 @@ export class ScriptCommand implements CommandHandler {
       config: context.config,
       fileSystem: new NodeFileSystem(),
       queryParser: new QueryParser(),
+      apiUrl: `http://localhost:${context.config.apiPort}`,
     });
 
     try {

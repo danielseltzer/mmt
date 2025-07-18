@@ -19,8 +19,8 @@ import type { FileSystemAccess } from '@mmt/filesystem-access';
 import { VaultIndexer } from '@mmt/indexer';
 import type { Query, PageMetadata } from '@mmt/indexer';
 import { QueryParser } from '@mmt/query-parser';
-import { OperationRegistry } from '@mmt/document-operations';
-import type { OperationContext, OperationResult } from '@mmt/document-operations';
+// import { OperationRegistry } from '@mmt/document-operations';
+// import type { OperationContext, OperationResult } from '@mmt/document-operations';
 import type { Script } from './script.interface.js';
 import { ResultFormatter } from './result-formatter.js';
 import { AnalysisRunner } from './analysis-runner.js';
@@ -58,6 +58,7 @@ export interface ScriptRunnerOptions {
   fileSystem: FileSystemAccess;
   queryParser: QueryParser;
   outputStream?: NodeJS.WritableStream;
+  apiUrl?: string;
 }
 
 /**
@@ -71,8 +72,9 @@ export class ScriptRunner {
   private readonly formatter: ResultFormatter;
   private readonly analysisRunner: AnalysisRunner;
   private readonly reportGenerator: MarkdownReportGenerator;
-  private readonly operationRegistry: OperationRegistry;
+  // private readonly operationRegistry: OperationRegistry;
   private indexer?: VaultIndexer;
+  private readonly apiUrl: string;
 
   constructor(options: ScriptRunnerOptions) {
     this.config = options.config;
@@ -82,7 +84,8 @@ export class ScriptRunner {
     this.formatter = new ResultFormatter();
     this.analysisRunner = new AnalysisRunner();
     this.reportGenerator = new MarkdownReportGenerator();
-    this.operationRegistry = new OperationRegistry();
+    // this.operationRegistry = new OperationRegistry();
+    this.apiUrl = options.apiUrl ?? 'http://localhost:3001';
   }
 
   /**
@@ -156,135 +159,130 @@ export class ScriptRunner {
     options: ExecutionOptions
   ): Promise<ScriptExecutionResult> {
     const startTime = new Date();
-    
-    // Select documents
-    const selectedDocs = await this.selectDocuments(pipeline.select);
-    
-    // Apply filter if provided
-    let documents = selectedDocs;
-    if (pipeline.filter !== undefined) {
-      documents = selectedDocs.filter((doc) => Boolean(pipeline.filter?.(doc)));
-    }
 
-    // Check if this is an analysis pipeline
+    // Check if this is an analysis pipeline (handled locally)
     const hasAnalysisOps = pipeline.operations.some(op => 
       op.type === 'analyze' || op.type === 'transform' || op.type === 'aggregate'
     );
     
     if (hasAnalysisOps) {
+      // Analysis operations need local document access, so handle them here
+      const selectedDocs = await this.selectDocuments(pipeline.select);
+      let documents = selectedDocs;
+      if (pipeline.filter !== undefined) {
+        documents = selectedDocs.filter((doc) => Boolean(pipeline.filter?.(doc)));
+      }
       return this.executeAnalysisPipeline(pipeline, documents, startTime);
     }
 
-    // Initialize result collectors
-    const attempted = documents;
-    const succeeded: SuccessResult[] = [];
-    const failed: FailureResult[] = [];
-    const skipped: SkippedResult[] = [];
+    // For non-analysis operations, call the API
+    try {
+      // Update pipeline options with execution settings
+      const pipelineWithOptions = {
+        ...pipeline,
+        options: {
+          ...pipeline.options,
+          executeNow: options.executeNow,
+          failFast: options.failFast,
+        }
+      };
 
-    // Execute operations
-    if (options.executeNow) {
-      // Real execution
-      for (const doc of documents) {
-        for (const operation of pipeline.operations) {
-          try {
-            const result = await this.executeOperation(doc, operation);
-            if (result.skipped) {
-              skipped.push({
-                item: doc,
-                operation,
-                reason: result.reason ?? 'Unknown reason',
-              });
-            } else {
-              succeeded.push({
-                item: doc,
-                operation,
-                details: result.details ?? {},
-              });
-            }
-          } catch (error) {
-            failed.push({
-              item: doc,
-              operation,
-              error: error instanceof Error ? error : new Error(String(error)),
-            });
-            if (options.failFast) {
-              break;
-            }
-          }
-        }
-        if (options.failFast && failed.length > 0) {
-          break;
+      // Call the API
+      const response = await fetch(`${this.apiUrl}/api/pipelines/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pipelineWithOptions),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`API error: ${response.status} - ${error}`);
+      }
+
+      const apiResult = await response.json() as {
+        success: boolean;
+        documentsProcessed: number;
+        operations: {
+          succeeded: number;
+          failed: number;
+          skipped: number;
+        };
+        errors?: Array<{
+          document: string;
+          operation: string;
+          error: string;
+        }>;
+      };
+
+      // Convert API result to ScriptExecutionResult format
+      const endTime = new Date();
+      const result: ScriptExecutionResult = {
+        attempted: [], // API doesn't return full document list
+        succeeded: Array(apiResult.operations.succeeded).fill({
+          item: {} as Document,
+          operation: {} as ScriptOperation,
+          details: {},
+        }),
+        failed: apiResult.errors?.map((e: any) => ({
+          item: {} as Document,
+          operation: { type: e.operation } as ScriptOperation,
+          error: new Error(e.error),
+        })) ?? [],
+        skipped: Array(apiResult.operations.skipped).fill({
+          item: {} as Document,
+          operation: {} as ScriptOperation,
+          reason: 'Preview mode',
+        }),
+        stats: {
+          duration: endTime.getTime() - startTime.getTime(),
+          startTime,
+          endTime,
+        },
+      };
+
+      // Format output based on pipeline configuration
+      let format = 'summary';
+      let fields: string[] | undefined;
+      
+      if (pipeline.output !== undefined) {
+        const consoleOutput = pipeline.output.find(o => o.destination === 'console');
+        if (consoleOutput !== undefined) {
+          ({ format, fields } = consoleOutput);
         }
       }
-    } else {
-      // Preview mode - generate previews for each operation
-      for (const doc of documents) {
-        for (const operation of pipeline.operations) {
-          try {
-            const preview = await this.previewOperation(doc, operation);
-            if (preview.skipped) {
-              skipped.push({
-                item: doc,
-                operation,
-                reason: preview.reason ?? 'Unknown reason',
-              });
-            } else {
-              succeeded.push({
-                item: doc,
-                operation,
-                details: preview.details ?? {},
-              });
-            }
-          } catch (error) {
-            failed.push({
-              item: doc,
-              operation,
-              error: error instanceof Error ? error : new Error(String(error)),
-            });
-            if (options.failFast) {
-              break;
-            }
-          }
-        }
-        if (options.failFast && failed.length > 0) {
-          break;
-        }
-      }
+      
+      const formatted = this.formatter.format(result, {
+        format: format as 'summary' | 'detailed' | 'csv' | 'json' | 'table',
+        fields,
+        isPreview: !options.executeNow,
+      });
+      
+      this.output.write(`${formatted}\n`);
+
+      return result;
+    } catch (error) {
+      const endTime = new Date();
+      const failedResult: ScriptExecutionResult = {
+        attempted: [],
+        succeeded: [],
+        failed: [{
+          item: {} as Document,
+          operation: pipeline.operations[0] ?? {} as ScriptOperation,
+          error: error instanceof Error ? error : new Error(String(error)),
+        }],
+        skipped: [],
+        stats: {
+          duration: endTime.getTime() - startTime.getTime(),
+          startTime,
+          endTime,
+        },
+      };
+
+      this.output.write(`Error executing pipeline: ${error instanceof Error ? error.message : String(error)}\n`);
+      return failedResult;
     }
-
-    const endTime = new Date();
-    const result: ScriptExecutionResult = {
-      attempted,
-      succeeded,
-      failed,
-      skipped,
-      stats: {
-        duration: endTime.getTime() - startTime.getTime(),
-        startTime,
-        endTime,
-      },
-    };
-
-    // Format and output results (for non-analysis pipelines, use console output)
-    let format = 'summary';
-    let fields: string[] | undefined;
-    
-    if (pipeline.output !== undefined) {
-      const consoleOutput = pipeline.output.find(o => o.destination === 'console');
-      if (consoleOutput !== undefined) {
-        ({ format, fields } = consoleOutput);
-      }
-    }
-    
-    const formatted = this.formatter.format(result, {
-      format: format as 'summary' | 'detailed' | 'csv' | 'json' | 'table',
-      fields,
-      isPreview: !options.executeNow,
-    });
-    
-    this.output.write(`${formatted}\n`);
-
-    return result;
   }
 
   /**
@@ -451,9 +449,8 @@ export class ScriptRunner {
     return documents;
   }
 
-  /**
-   * Execute a single operation on a document using the document-operations package.
-   */
+  // These methods are no longer used - operations are now executed via the API
+  /*
   private async executeOperation(
     doc: Document,
     operation: ScriptOperation
@@ -561,9 +558,6 @@ export class ScriptRunner {
     };
   }
 
-  /**
-   * Preview a single operation on a document without executing it.
-   */
   private async previewOperation(
     doc: Document,
     operation: ScriptOperation
@@ -668,6 +662,7 @@ export class ScriptRunner {
       }
     };
   }
+  */
 
   /**
    * Execute a pipeline with analysis operations.
