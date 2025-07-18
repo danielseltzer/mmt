@@ -45,7 +45,7 @@ export class PipelineExecutor {
       const documents = await this.selectDocuments(pipeline.select);
       
       // TRANSFORM phase - apply operations to documents
-      const isPreview = !pipeline.options?.executeNow;
+      const isPreview = !pipeline.options?.destructive;
       
       for (const doc of documents) {
         for (const operation of pipeline.operations) {
@@ -67,13 +67,13 @@ export class PipelineExecutor {
               error: error instanceof Error ? error.message : String(error)
             });
             
-            if (pipeline.options?.failFast) {
+            if (!pipeline.options?.continueOnError) {
               break;
             }
           }
         }
         
-        if (pipeline.options?.failFast && failed > 0) {
+        if (!pipeline.options?.continueOnError && failed > 0) {
           break;
         }
       }

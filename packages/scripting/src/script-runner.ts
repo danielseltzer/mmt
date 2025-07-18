@@ -6,7 +6,6 @@ import type {
   ScriptContext,
   OperationPipeline,
   ScriptExecutionResult,
-  ExecutionOptions,
   Document,
   SelectCriteria,
   ScriptOperation,
@@ -125,14 +124,18 @@ export class ScriptRunner {
     // Validate pipeline
     const validatedPipeline = OperationPipelineSchema.parse(pipeline);
     
-    // Merge execution options (CLI overrides script)
-    const executionOptions: ExecutionOptions = {
-      executeNow: (cliOptions.execute as boolean | undefined) ?? validatedPipeline.options?.executeNow ?? false,
-      failFast: validatedPipeline.options?.failFast ?? false,
-    };
+    // Update pipeline with CLI execution option
+    if (cliOptions.execute) {
+      validatedPipeline.options = {
+        destructive: true,
+        confirmCount: false,
+        continueOnError: false,
+        ...validatedPipeline.options,
+      };
+    }
 
     // Execute the pipeline
-    const result = await this.executePipeline(validatedPipeline, executionOptions);
+    const result = await this.executePipeline(validatedPipeline);
     
     // Generate report if requested
     if (cliOptions.reportPath !== undefined && cliOptions.reportPath !== null) {
@@ -144,7 +147,7 @@ export class ScriptRunner {
         pipeline: validatedPipeline,
         analysisTable: resultWithTable.analysisTable,
         reportPath: cliOptions.reportPath as string,
-        isPreview: !executionOptions.executeNow,
+        isPreview: !validatedPipeline.options?.destructive,
       });
     }
     
@@ -155,8 +158,7 @@ export class ScriptRunner {
    * Execute a validated operation pipeline.
    */
   async executePipeline(
-    pipeline: OperationPipeline,
-    options: ExecutionOptions
+    pipeline: OperationPipeline
   ): Promise<ScriptExecutionResult> {
     const startTime = new Date();
 
@@ -177,15 +179,8 @@ export class ScriptRunner {
 
     // For non-analysis operations, call the API
     try {
-      // Update pipeline options with execution settings
-      const pipelineWithOptions = {
-        ...pipeline,
-        options: {
-          ...pipeline.options,
-          executeNow: options.executeNow,
-          failFast: options.failFast,
-        }
-      };
+      // Pipeline already has the correct options
+      const pipelineWithOptions = pipeline;
 
       // Call the API
       const response = await fetch(`${this.apiUrl}/api/pipelines/execute`, {
@@ -256,7 +251,7 @@ export class ScriptRunner {
       const formatted = this.formatter.format(result, {
         format: format as 'summary' | 'detailed' | 'csv' | 'json' | 'table',
         fields,
-        isPreview: !options.executeNow,
+        isPreview: !pipeline.options?.destructive,
       });
       
       this.output.write(`${formatted}\n`);

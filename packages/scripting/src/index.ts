@@ -19,7 +19,6 @@ export type {
   OperationPipeline,
   ScriptContext,
   ScriptExecutionResult as ExecutionResult,
-  ExecutionOptions,
   ExecuteOptions,
   SelectCriteria,
   ScriptOperation as Operation,

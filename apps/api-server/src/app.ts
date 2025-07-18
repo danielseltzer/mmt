@@ -5,7 +5,7 @@ import { NodeFileSystem } from '@mmt/filesystem-access';
 import { Config } from '@mmt/entities';
 import { documentsRouter } from './routes/documents.js';
 import { configRouter } from './routes/config.js';
-import { operationsRouter } from './routes/operations.js';
+import { pipelinesRouter } from './routes/pipelines.js';
 import type { Context } from './context.js';
 
 export async function createApp(config: Config): Promise<Express> {
@@ -51,7 +51,7 @@ export async function createApp(config: Config): Promise<Express> {
   // Mount API routes
   app.use('/api/config', configRouter(context));
   app.use('/api/documents', documentsRouter(context));
-  app.use('/api/operations', operationsRouter(context));
+  app.use('/api/pipelines', pipelinesRouter(context));
   
   return app;
 }
