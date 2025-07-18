@@ -84,13 +84,6 @@ export const ExecuteOptionsSchema = z.object({
   continueOnError: z.boolean().default(false).describe('Continue processing after errors'),
 }).describe('Execution options for mutations');
 
-/**
- * Legacy execution options (deprecated)
- */
-export const ExecutionOptionsSchema = z.object({
-  executeNow: z.boolean().default(false).describe('Execute operations (default is preview-only)'),
-  failFast: z.boolean().default(false).describe('Stop on first error'),
-}).describe('Execution options');
 
 /**
  * Agent analysis configuration for AI-powered insights
@@ -111,7 +104,7 @@ export const OperationPipelineSchema = z.object({
     .describe('Optional filter function to further refine selection'),
   operations: z.array(ScriptOperationSchema).min(1).describe('Operations to perform'),
   output: OutputConfigSchema.optional(),
-  options: ExecutionOptionsSchema.optional(),
+  options: ExecuteOptionsSchema.optional(),
   agentAnalysis: AgentAnalysisSchema.optional().describe('Optional AI analysis configuration'),
 }).describe('Complete operation pipeline definition');
 
@@ -181,7 +174,6 @@ export type OutputFormat = z.infer<typeof OutputFormatSchema>;
 export type OutputSpec = z.infer<typeof OutputSpecSchema>;
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 export type ExecuteOptions = z.infer<typeof ExecuteOptionsSchema>;
-export type ExecutionOptions = z.infer<typeof ExecutionOptionsSchema>;
 export type AgentAnalysis = z.infer<typeof AgentAnalysisSchema>;
 export type OperationPipeline = z.infer<typeof OperationPipelineSchema>;
 export type ScriptContext = z.infer<typeof ScriptContextSchema>;

@@ -1,88 +1,70 @@
 # MMT Development Handoff
 
-## Current State (January 14, 2025)
+## Current State (January 15, 2025)
 
-### Recently Completed Features (PR #120 - Merged)
+### Just Completed
 
-1. **Natural Language Date Filtering**
-   - Multiple syntax options: `< 7 days`, `last 30 days`, `> 2024-01-01`, `since 2024`
-   - Shorthand support: `< 7d`, `> 2w`, `< 3m`, `> 1y`
-   - Operator support: `<`, `>`, `<=`, `>=` with dates
-   - Fixed operator logic: `<` means recent files, `>` means older files
+1. **Advanced Scripting Removal (PR #129 - Merged)**
+   - Removed all advanced scripting features (conditionals, loops, try-catch, etc.)
+   - Scripts are now simple SELECT → TRANSFORM → OUTPUT pipelines
+   - Deleted 2,171 lines of complexity
+   - Core scripting functionality preserved
 
-2. **Natural Language Size Filtering**
-   - Natural language: `over 1mb`, `under 500k`, `at least 100k`
-   - Operator syntax: `> 10mb`, `<= 500k`, `>= 1.5gb`
-   - Multiple unit support: k/K, m/M, g/G, bytes
+2. **Issue Cleanup**
+   - Closed: #110, #109, #106, #108, #47, #91, #90, #89, #31
+   - Created: #121 (advanced scripting review), #122 (table-view tests), #124 (remove advanced scripting), #125 (UXR), #126 (API refactoring), #127 (GUI panels), #128 (operation feedback)
+   - Created GUI Alpha milestone with UXR as P0
 
-3. **Two-Stage Metadata Filtering**
-   - Replaced "Tags" with "Metadata" in UI
-   - Autocomplete search for metadata keys
-   - After selecting key, shows available values
-   - Visual badges for selected key:value pairs
-   - Support for array values in frontmatter
+### Next Priority: API Refactoring (#126)
 
-4. **UI Fixes**
-   - Fixed inability to type spaces in filter inputs
-   - Fixed document count to show filtered/total (e.g., "234/5968 docs")
-   - Added shadcn/ui Badge component
+**Goal**: Replace ad-hoc operation endpoints with unified pipeline execution using `OperationPipelineSchema`.
 
-### Technical Implementation Details
+**Implementation Plan**:
 
-- **Date Parser**: `/packages/entities/src/date-parser.ts` - Handles all date parsing logic
-- **Size Parser**: `/packages/entities/src/size-parser.ts` - Handles size expressions
-- **API Filtering**: `/apps/api-server/src/routes/documents.ts` - Server-side filtering
-- **Metadata Filter**: `/apps/web/src/components/MetadataFilter.jsx` - Two-stage UI component
-- **Filter Bar**: `/apps/web/src/components/FilterBar.jsx` - Main filter interface
+1. **Add ScriptRunner to API Context**
+   - Update `/apps/api-server/src/context.ts` to include ScriptRunner
+   - Initialize in `createContext()` with indexer
 
-### Current Architecture Status
+2. **Create Pipeline Router**
+   - New file: `/apps/api-server/src/routes/pipelines.ts`
+   - Single endpoint: `POST /api/pipelines/execute`
+   - Parse body as `OperationPipelineSchema`, execute with ScriptRunner
 
-- Monorepo with 15 packages using pnpm + Turborepo
-- Electron app with React frontend
-- Express API server for document operations
-- Indexer successfully handles 5968 markdown files in ~1.25s
-- File watching supported via `--watch` flag
+3. **Remove Old Endpoints**
+   - Delete `/apps/api-server/src/routes/operations.ts`
+   - No backward compatibility needed (single user)
 
-### What's Working
+4. **Update API Schemas**
+   - Clean up `/packages/entities/src/api-schemas.ts`
+   - Add pipeline request/response schemas
 
-1. **Core Functionality**
-   - Document indexing and caching
-   - Table view with real-time filtering
-   - Multi-criteria filtering (name, content, folders, metadata, date, size)
-   - Fast performance (5968 files indexed in 1.25s)
+5. **Update GUI**
+   - Modify operation calls to use new pipeline endpoint
+   - Build proper pipeline objects (select → operations → output)
 
-2. **UI Components**
-   - Responsive table with TanStack Table
-   - Multi-select dropdowns for folders
-   - Filter bar with all filter types
-   - Dark mode support via shadcn/ui
+**Key Decision**: File watcher already handles index updates correctly (delete+create for moves, modify for content changes). No need for manual index updates.
 
-### Known Issues
+### Architecture Clarifications
 
-- API server sometimes has port conflicts requiring restart
-- Some shadcn/ui components need proper configuration
+- **No Adapters**: Direct implementation, no legacy support
+- **No Advanced Features**: Just simple pipelines after #124
+- **Unified Model**: Same `OperationPipelineSchema` everywhere
+- **File Watcher Works**: Tested - handles all index updates via FS events
 
-### Next Priority Features
+### Upcoming Work Queue
 
-1. **File Operations** (from PRD)
-   - Move, rename, delete with undo support
-   - Bulk operations on selected files
-   - Integration with file-relocator package
+1. **#126** - API refactoring (ready to implement)
+2. **#127** - GUI panels (SELECT/TRANSFORM/OUTPUT)
+3. **#128** - Operation feedback UI
+4. **#125** - UXR work (P0 for GUI Alpha)
 
-2. **Export Functionality**
-   - CSV export with column selection
-   - JSON export for data processing
-   - Already has API endpoint, needs UI
+### Key Principles Maintained
 
-3. **Bulk Frontmatter Editing**
-   - Edit metadata across multiple files
-   - Add/remove/modify frontmatter fields
-   - Preview changes before applying
-
-4. **Advanced Scripting**
-   - Custom JavaScript transformations
-   - Batch processing capabilities
-   - Integration with scripting package
+- No mocks in tests
+- No backward compatibility
+- Scripts are simple pipelines, not programming languages
+- Single source of truth (OperationPipelineSchema)
+- Let file watcher handle index updates
 
 ### Development Commands
 
@@ -90,53 +72,25 @@
 # Start development
 pnpm dev
 
-# Build all packages
-pnpm build
-
 # Run with config
 pnpm dev -- --config test-config.yaml
 
-# Clean build artifacts
-pnpm clean
-
-# Run tests
-pnpm test
+# Build and test
+pnpm build
+pnpm lint  # Has some unrelated web app issues
+pnpm test  # Table-view tests failing (tracked in #122)
 ```
 
-### Important Notes
+### Current Issues to Review
 
-- Follow NO MOCKS testing policy - use real files in temp directories
-- All file operations must go through filesystem-access package
-- Maintain performance target: 5000 files < 5 seconds
-- Use Zod schemas for all data contracts
-- No backward compatibility needed (single user)
+- **#86** - File watcher test (important for operations)
+- **#56** - Review test scripts (low priority)
+- **#55** - Multiple output formats (important)
+- **#19** - E2E testing (needs update for web)
+- **#18** - Reports/Export (has API, needs UI)
+- **#14** - View persistence
+- **#12** - Document previews (tooltip idea)
 
-### Configuration
+## Ready to Continue
 
-The app requires a config file specified with `--config` flag:
-
-```yaml
-vaultPath: /path/to/markdown/vault
-indexPath: .mmt-index
-fileWatching: true
-includePatterns:
-  - "**/*.md"
-excludePatterns:
-  - "**/.git/**"
-  - "**/node_modules/**"
-```
-
-### Recent UI Framework Integration
-
-- Successfully integrated shadcn/ui (New York style)
-- Components available: Button, Input, Card, Table, Badge, Dialog, etc.
-- Dark theme support configured
-- Tailwind CSS with slate color scheme
-
-## Getting Started for Next Session
-
-1. Pull latest changes from main branch
-2. Run `pnpm install` to ensure dependencies are up to date
-3. Start with `pnpm dev` using test config
-4. Check GitHub Issues for next priorities
-5. Reference `/docs/planning/` for detailed architecture docs
+Start with implementing #126 using the simplified plan - no manual index updates needed, just let the file watcher do its job.

@@ -38,62 +38,8 @@ export const DocumentsResponseSchema = z.object({
   hasMore: z.boolean(),
 });
 
-// Operations API - REST-specific schemas
-export const MoveOperationRequestSchema = z.object({
-  type: z.literal('move'),
-  files: z.array(z.string()),
-  destination: z.string(),
-  updateLinks: z.boolean().default(true),
-});
-
-export const UpdateFrontmatterRequestSchema = z.object({
-  type: z.literal('updateFrontmatter'),
-  files: z.array(z.string()),
-  updates: z.record(z.unknown()),
-  mode: z.enum(['merge', 'replace']).default('merge'),
-});
-
-export const BulkRenameRequestSchema = z.object({
-  type: z.literal('bulkRename'),
-  files: z.array(z.string()),
-  pattern: z.string(),
-  replacement: z.string(),
-});
-
-export const OperationRequestSchema = z.discriminatedUnion('type', [
-  MoveOperationRequestSchema,
-  UpdateFrontmatterRequestSchema,
-  BulkRenameRequestSchema,
-]);
-
-export const OperationResponseSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  changes: z.array(z.object({
-    type: z.string(),
-    path: z.string(),
-    details: z.record(z.unknown()),
-  })),
-  errors: z.array(z.object({
-    path: z.string(),
-    error: z.string(),
-  })).optional(),
-});
-
-// Batch operations
-export const BatchOperationRequestSchema = z.object({
-  operations: z.array(OperationRequestSchema),
-  stopOnError: z.boolean().default(false),
-});
-
-export const BatchOperationResponseSchema = z.object({
-  results: z.array(OperationResponseSchema),
-  summary: z.object({
-    total: z.number(),
-    successful: z.number(),
-    failed: z.number(),
-  }),
-});
+// Operations API schemas removed - use OperationPipelineSchema from scripting.schema.ts instead
+// The unified pipeline execution endpoint accepts OperationPipelineSchema for all operations
 
 // Views API
 export const SaveViewRequestSchema = z.object({

@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { configRouter } from './routes/config.js';
 import { documentsRouter } from './routes/documents.js';
-import { operationsRouter } from './routes/operations.js';
+import { pipelinesRouter } from './routes/pipelines.js';
 import { createContext } from './context.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
@@ -29,7 +29,7 @@ async function main() {
   // API routes
   app.use('/api/config', configRouter(context));
   app.use('/api/documents', documentsRouter(context));
-  app.use('/api/operations', operationsRouter(context));
+  app.use('/api/pipelines', pipelinesRouter(context));
   
   // Error handling
   app.use(errorHandler);
