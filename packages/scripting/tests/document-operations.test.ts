@@ -7,12 +7,16 @@ import type { Script, OperationPipeline, ScriptContext } from '../src/index.js';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { QueryParser } from '@mmt/query-parser';
 import { VaultIndexer } from '@mmt/indexer';
+import { createTestApiServer } from './test-api-server.js';
+import type { Server } from 'http';
 
 describe('Document Operations Integration', () => {
   let tempDir: string;
   let scriptRunner: ScriptRunner;
   let output: string[];
   let outputStream: any;
+  let apiServer: { server: Server; close: () => Promise<void> };
+  const TEST_API_PORT = 3002;
 
   beforeEach(async () => {
     // Create temp directory structure
@@ -37,6 +41,7 @@ describe('Document Operations Integration', () => {
       config: {
         vaultPath: tempDir,
         indexPath: join(tempDir, '.mmt-index'),
+        apiPort: TEST_API_PORT,
       },
       fileSystem: fs,
       queryParser: new QueryParser(),
@@ -58,7 +63,21 @@ describe('Document Operations Integration', () => {
     scriptRunner.indexer = indexer;
   });
 
-  afterEach(() => {
+  // Helper to start API server after files are created
+  async function startApiServer(): Promise<void> {
+    apiServer = await createTestApiServer({
+      port: TEST_API_PORT,
+      vaultPath: tempDir,
+      indexPath: join(tempDir, '.mmt-index'),
+    });
+  }
+
+  afterEach(async () => {
+    // Close the API server
+    if (apiServer) {
+      await apiServer.close();
+    }
+    
     rmSync(tempDir, { recursive: true, force: true });
   });
 
@@ -85,15 +104,18 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // THEN: Should show preview of move operation
-      expect(result.succeeded).toHaveLength(1);
+      expect(result.skipped).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
       expect(result.failed).toHaveLength(0);
-      expect(result.succeeded[0].details.preview).toBe(true);
-      expect(result.succeeded[0].details.type).toBe('move');
-      expect(result.succeeded[0].details.source).toContain('archive-me.md');
-      expect(result.succeeded[0].details.target).toContain('archived');
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[0].operation.type).toBe('move');
+      expect(result.skipped[0].item.path).toContain('archive-me.md');
     });
 
     it('should execute move operation when executeNow is true', async () => {
@@ -105,6 +127,7 @@ describe('Document Operations Integration', () => {
           return {
             select: { files: [join(tempDir, 'notes', 'archive-me.md')] },
             operations: [{ type: 'move', destination: join(tempDir, 'archived') }],
+            options: { destructive: true },
           };
         }
       }
@@ -118,7 +141,10 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: true });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // THEN: Should actually move the file
       expect(result.succeeded).toHaveLength(1);
@@ -152,13 +178,17 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // THEN: Should show preview of rename
-      expect(result.succeeded).toHaveLength(1);
-      expect(result.succeeded[0].details.preview).toBe(true);
-      expect(result.succeeded[0].details.type).toBe('rename');
-      expect(result.succeeded[0].details.target).toContain('renamed-test.md');
+      expect(result.skipped).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(0);
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[0].operation.type).toBe('rename');
     });
   });
 
@@ -188,13 +218,17 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // THEN: Should show preview of frontmatter changes
-      expect(result.succeeded).toHaveLength(1);
-      expect(result.succeeded[0].details.preview).toBe(true);
-      expect(result.succeeded[0].details.type).toBe('updateFrontmatter');
-      expect(result.succeeded[0].details.changes).toBeDefined();
+      expect(result.skipped).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(0);
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[0].operation.type).toBe('updateFrontmatter');
     });
   });
 
@@ -221,13 +255,17 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // THEN: Should show preview of deletion (move to trash)
-      expect(result.succeeded).toHaveLength(1);
-      expect(result.succeeded[0].details.preview).toBe(true);
-      expect(result.succeeded[0].details.type).toBe('delete');
-      expect(result.succeeded[0].details.target).toContain('.trash');
+      expect(result.skipped).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(0);
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[0].operation.type).toBe('delete');
     });
 
     it('should preview permanent deletion when specified', async () => {
@@ -252,13 +290,17 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // THEN: Should show preview of permanent deletion
-      expect(result.succeeded).toHaveLength(1);
-      expect(result.succeeded[0].details.preview).toBe(true);
-      expect(result.succeeded[0].details.type).toBe('delete');
-      expect(result.succeeded[0].details.target).toBeUndefined(); // No trash for permanent delete
+      expect(result.skipped).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(0);
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[0].operation.type).toBe('delete');
     });
   });
 
@@ -288,12 +330,19 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // THEN: Should preview both operations
-      expect(result.succeeded).toHaveLength(2);
-      expect(result.succeeded[0].operation.type).toBe('updateFrontmatter');
-      expect(result.succeeded[1].operation.type).toBe('move');
+      expect(result.skipped).toHaveLength(2);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(0);
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[1].reason).toBe('Preview mode');
+      expect(result.skipped[0].operation.type).toBe('updateFrontmatter');
+      expect(result.skipped[1].operation.type).toBe('move');
     });
   });
 
@@ -309,6 +358,7 @@ describe('Document Operations Integration', () => {
             operations: [
               { type: 'move', destination: '' }, // Invalid: empty destination
             ],
+            options: { destructive: true }, // Try to execute to trigger validation
           };
         }
       }
@@ -322,11 +372,15 @@ describe('Document Operations Integration', () => {
         cliOptions: {},
       });
 
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      // Start API server after files are created
+      await startApiServer();
+      
+      const result = await scriptRunner.executePipeline(pipeline);
 
-      // THEN: Should skip the invalid operation
-      expect(result.skipped).toHaveLength(1);
-      expect(result.skipped[0].reason).toContain('destination');
+      // THEN: Should fail the invalid operation
+      expect(result.failed).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.skipped).toHaveLength(0);
     });
   });
 });

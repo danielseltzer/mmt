@@ -7,12 +7,16 @@ import type { Script, ScriptContext, OperationPipeline } from '../src/index.js';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { QueryParser } from '@mmt/query-parser';
 import { VaultIndexer } from '@mmt/indexer';
+import { createTestApiServer } from './test-api-server.js';
+import type { Server } from 'http';
 
 describe('ScriptRunner', () => {
   let tempDir: string;
   let scriptRunner: ScriptRunner;
   let output: string[];
   let realFs: NodeFileSystem;
+  let apiServer: { server: Server; close: () => Promise<void> };
+  const TEST_API_PORT = 3002;
 
   // Helper to capture output
   class TestOutputStream {
@@ -35,6 +39,15 @@ describe('ScriptRunner', () => {
     // @ts-ignore - accessing private property for testing
     runner.indexer = indexer;
   }
+  
+  // Helper to start API server after files are created
+  async function startApiServer(): Promise<void> {
+    apiServer = await createTestApiServer({
+      port: TEST_API_PORT,
+      vaultPath: tempDir,
+      indexPath: join(tempDir, '.mmt-index'),
+    });
+  }
 
   beforeEach(async () => {
     tempDir = mkdtempSync(join(tmpdir(), 'mmt-test-'));
@@ -48,6 +61,7 @@ describe('ScriptRunner', () => {
       config: {
         vaultPath: tempDir,
         indexPath: join(tempDir, '.mmt-index'),
+        apiPort: TEST_API_PORT,
       },
       fileSystem: realFs,
       queryParser: new QueryParser(),
@@ -55,7 +69,12 @@ describe('ScriptRunner', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Close the API server
+    if (apiServer) {
+      await apiServer.close();
+    }
+    
     if (tempDir && existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -70,6 +89,9 @@ describe('ScriptRunner', () => {
       // Create test file
       const testFile = join(tempDir, 'test.md');
       writeFileSync(testFile, '# Test File\n\nContent to delete');
+      
+      // Start API server after creating files
+      await startApiServer();
       
       class TestScript implements Script {
         define(context: ScriptContext): OperationPipeline {
@@ -89,13 +111,14 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // Verify preview mode behavior
-      expect(result.succeeded).toHaveLength(1);
+      expect(result.skipped).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
       expect(result.failed).toHaveLength(0);
-      expect(result.succeeded[0].details.preview).toBe(true);
-      expect(result.succeeded[0].details.type).toBe('delete');
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[0].operation.type).toBe('delete');
       
       // File should still exist (preview only)
       expect(existsSync(testFile)).toBe(true);
@@ -118,12 +141,15 @@ describe('ScriptRunner', () => {
       writeFileSync(sourceFile, '# Test\n\nContent to move');
       mkdirSync(archiveDir, { recursive: true });
 
+      // Start API server after creating files
+      await startApiServer();
+
       class TestScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
             select: { files: [sourceFile] },
             operations: [{ type: 'move', destination: archiveDir }],
-            options: { executeNow: true },
+            options: { destructive: true },
           };
         }
       }
@@ -137,7 +163,7 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: true });
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // Operations should succeed
       expect(result.succeeded).toHaveLength(1);
@@ -164,6 +190,9 @@ describe('ScriptRunner', () => {
       writeFileSync(oldFile, '# Old Document');
       writeFileSync(newFile, '# New Document');
       
+      // Start API server after creating files
+      await startApiServer();
+      
       class FilterScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
@@ -183,12 +212,15 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // Only one file should pass the filter
       expect(result.attempted).toHaveLength(1);
-      expect(result.succeeded).toHaveLength(1);
-      expect(result.succeeded[0].item.path).toContain('old.md');
+      expect(result.skipped).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.failed).toHaveLength(0);
+      expect(result.skipped[0].reason).toBe('Preview mode');
+      expect(result.skipped[0].item.path).toContain('old.md');
     });
 
     it('should format output based on preferences', async () => {
@@ -203,6 +235,9 @@ describe('ScriptRunner', () => {
       writeFileSync(fileA, '# Document A');
       writeFileSync(fileB, '# Document B');
       mkdirSync(processedDir, { recursive: true });
+      
+      // Start API server after creating files
+      await startApiServer();
       
       class DetailedScript implements Script {
         define(context: ScriptContext): OperationPipeline {
@@ -223,12 +258,12 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      await scriptRunner.executePipeline(pipeline);
 
       const outputText = output.join('');
       expect(outputText).toContain('Selected 2 files matching criteria');
-      expect(outputText).toContain('Would move to');
-      expect(outputText).toContain('✓');
+      expect(outputText).toContain('Skipped:');
+      expect(outputText).toContain('Preview mode');
       expect(outputText).toContain('/a.md');
       expect(outputText).toContain('/b.md');
     });
@@ -246,11 +281,15 @@ describe('ScriptRunner', () => {
       writeFileSync(file2, '# Test 2');
       mkdirSync(trashDir, { recursive: true });
 
+      // Start API server after creating files
+      await startApiServer();
+
       class DeleteScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
             select: { files: [file1, file2] },
             operations: [{ type: 'delete' }],
+            options: { destructive: true },
           };
         }
       }
@@ -264,7 +303,7 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: true });
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // All operations should succeed
       expect(result.succeeded).toHaveLength(2);
@@ -291,12 +330,15 @@ describe('ScriptRunner', () => {
       writeFileSync(file3, '# Three');
       mkdirSync(readOnlyDir, { recursive: true });
 
+      // Start API server after creating files
+      await startApiServer();
+
       class FailFastScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
             select: { files: [file1, file2, file3] },
             operations: [{ type: 'move', destination: readOnlyDir }],
-            options: { failFast: true },
+            options: { destructive: true, failFast: true },
           };
         }
       }
@@ -310,7 +352,7 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      const result = await scriptRunner.executePipeline(pipeline, { executeNow: true, failFast: true });
+      const result = await scriptRunner.executePipeline(pipeline);
 
       // With proper permissions, all should succeed
       // This test demonstrates the failFast flag is respected
@@ -320,15 +362,19 @@ describe('ScriptRunner', () => {
   });
 
   describe('selection validation', () => {
-    it('should throw error when indexer not initialized for query-based selection', async () => {
+    it('should fail operations when indexer not initialized for query-based selection', async () => {
       // GIVEN: A script using query-based selection (not simple file list)
       // WHEN: Indexer is not initialized
-      // THEN: Throws clear error that indexer is required for queries
+      // THEN: Operations fail gracefully instead of throwing
+      
+      // Start API server
+      await startApiServer();
       
       class QueryScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
             select: { 'fs:path': 'posts/**/*.md' },
+            filter: (doc) => doc.metadata.size > 100, // This forces local selection
             operations: [{ type: 'delete' }],
           };
         }
@@ -347,15 +393,20 @@ describe('ScriptRunner', () => {
         config: {
           vaultPath: tempDir,
           indexPath: join(tempDir, '.mmt-index'),
+          apiPort: TEST_API_PORT,
         },
         fileSystem: realFs,
         queryParser: new QueryParser(),
         outputStream: { write: () => true } as any,
       });
 
-      await expect(
-        runnerWithoutIndexer.executePipeline(pipeline, { executeNow: false })
-      ).rejects.toThrow('Indexer not initialized');
+      const result = await runnerWithoutIndexer.executePipeline(pipeline);
+      
+      // When indexer is not initialized for query-based selection,
+      // the operation should fail rather than throw
+      expect(result.failed).toHaveLength(1);
+      expect(result.succeeded).toHaveLength(0);
+      expect(result.attempted).toHaveLength(0);
     });
   });
 
@@ -367,6 +418,9 @@ describe('ScriptRunner', () => {
       
       const testFile = join(tempDir, 'test.md');
       writeFileSync(testFile, '# Test Document');
+      
+      // Start API server after creating files
+      await startApiServer();
       
       class JsonScript implements Script {
         define(context: ScriptContext): OperationPipeline {
@@ -387,15 +441,17 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      await scriptRunner.executePipeline(pipeline);
 
       const jsonOutput = output.join('');
       const parsed = JSON.parse(jsonOutput);
       
       expect(parsed).toHaveProperty('attempted');
       expect(parsed).toHaveProperty('succeeded');
+      expect(parsed).toHaveProperty('skipped');
       expect(parsed).toHaveProperty('stats');
-      expect(parsed.succeeded).toHaveLength(1);
+      expect(parsed.succeeded).toHaveLength(0);
+      expect(parsed.skipped).toHaveLength(1);
     });
 
     it('should output CSV format', async () => {
@@ -411,12 +467,16 @@ describe('ScriptRunner', () => {
       writeFileSync(fileB, '# Document B');
       mkdirSync(archiveDir, { recursive: true });
       
+      // Start API server after creating files
+      await startApiServer();
+      
       class CsvScript implements Script {
         define(context: ScriptContext): OperationPipeline {
           return {
             select: { files: [fileA, fileB] },
             operations: [{ type: 'move', destination: archiveDir }],
             output: [{ format: 'csv', destination: 'console' }],
+            options: { destructive: true },
           };
         }
       }
@@ -430,7 +490,7 @@ describe('ScriptRunner', () => {
       });
 
       await initializeIndexer(scriptRunner);
-      await scriptRunner.executePipeline(pipeline, { executeNow: false });
+      await scriptRunner.executePipeline(pipeline);
 
       const csvOutput = output.join('');
       const lines = csvOutput.trim().split('\n');
