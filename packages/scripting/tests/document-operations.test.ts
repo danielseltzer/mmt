@@ -8,14 +8,14 @@ import { NodeFileSystem } from '@mmt/filesystem-access';
 import { QueryParser } from '@mmt/query-parser';
 import { VaultIndexer } from '@mmt/indexer';
 import { createTestApiServer } from './test-api-server.js';
-import type { Server } from 'http';
+import type { ChildProcess } from 'child_process';
 
 describe('Document Operations Integration', () => {
   let tempDir: string;
   let scriptRunner: ScriptRunner;
   let output: string[];
   let outputStream: any;
-  let apiServer: { server: Server; close: () => Promise<void> };
+  let apiServer: { process: ChildProcess; close: () => Promise<void> };
   const TEST_API_PORT = 3002;
 
   beforeEach(async () => {

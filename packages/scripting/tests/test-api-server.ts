@@ -1,12 +1,11 @@
-import express from 'express';
-import cors from 'cors';
-import type { Server } from 'http';
-import { VaultIndexer } from '@mmt/indexer';
-import { FileRelocator } from '@mmt/file-relocator';
-import { OperationRegistry } from '@mmt/document-operations';
-import { NodeFileSystem } from '@mmt/filesystem-access';
-import { pipelinesRouter } from '../../../apps/api-server/src/routes/pipelines.js';
-import type { Context } from '../../../apps/api-server/src/context.js';
+import { spawn, type ChildProcess } from 'child_process';
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export interface TestApiServerOptions {
   port: number;
@@ -15,81 +14,99 @@ export interface TestApiServerOptions {
 }
 
 /**
- * Creates a test API server with real implementations for integration testing.
- * No mocks - uses real file system operations in temp directories.
+ * Starts the ACTUAL api-server application for integration testing.
+ * No test doubles - runs the real production server with test configuration.
  */
 export async function createTestApiServer(options: TestApiServerOptions): Promise<{
-  server: Server;
-  context: Context;
+  process: ChildProcess;
   close: () => Promise<void>;
 }> {
-  // Create context with test configuration
-  const fs = new NodeFileSystem();
-  
-  const indexer = new VaultIndexer({
+  // Create config file for the API server
+  const configPath = join(options.vaultPath, '.mmt-config.yaml');
+  const config = {
     vaultPath: options.vaultPath,
-    fileSystem: fs,
-    cacheDir: options.indexPath,
-    useCache: false, // Don't use cache in tests for predictability
-    useWorkers: false, // Single-threaded for tests
-    fileWatching: {
-      enabled: true,
-      debounceMs: 10, // Short debounce for tests
-    }
-  });
-  await indexer.initialize();
-  
-  const fileRelocator = new FileRelocator(fs, {
-    updateMovedFile: true,
-    extensions: ['.md'],
-  });
-  
-  const operationRegistry = new OperationRegistry();
-  
-  const context: Context = {
-    config: {
-      vaultPath: options.vaultPath,
-      indexPath: options.indexPath,
-      apiPort: options.port,
-      webPort: 3000, // Not used in tests but required by schema
-    },
-    indexer,
-    fileRelocator,
-    operationRegistry,
-    fs,
+    indexPath: options.indexPath,
+    apiPort: options.port,
+    webPort: 3000, // Not used but required by schema
   };
   
-  // Create Express app
-  const app = express();
+  // Ensure directories exist
+  mkdirSync(options.vaultPath, { recursive: true });
+  mkdirSync(options.indexPath, { recursive: true });
   
-  // Middleware
-  app.use(cors());
-  app.use(express.json());
-  
-  // Health check
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', version: 'test' });
+  // Write config file
+  writeFileSync(configPath, `vaultPath: ${options.vaultPath}
+indexPath: ${options.indexPath}
+apiPort: ${options.port}
+webPort: 3000
+`);
+
+  // Start the actual API server
+  const apiProcess = spawn('pnpm', [
+    '--filter', '@mmt/api-server',
+    'dev',
+    '--',
+    '--config', configPath
+  ], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      PORT: options.port.toString(),
+    },
+    cwd: join(__dirname, '..', '..', '..'), // Go to monorepo root
   });
-  
-  // Only the pipelines route is needed for ScriptRunner tests
-  app.use('/api/pipelines', pipelinesRouter(context));
-  
-  // Error handling
-  app.use((err: any, req: any, res: any, next: any) => {
-    console.error('Test API Error:', err);
-    res.status(500).json({ error: err.message });
-  });
-  
-  // Start server
-  return new Promise((resolve) => {
-    const server = app.listen(options.port, () => {
-      resolve({
-        server,
-        context,
-        close: () => new Promise<void>((closeResolve) => {
-          server.close(() => closeResolve());
-        }),
-      });
+
+  // Wait for server to be ready
+  await new Promise<void>((resolve, reject) => {
+    let output = '';
+    const timeout = setTimeout(() => {
+      apiProcess.kill();
+      reject(new Error('API server failed to start within 10 seconds'));
+    }, 10000);
+
+    const checkReady = (data: Buffer) => {
+      const chunk = data.toString();
+      output += chunk;
+      
+      // Log output for debugging (remove in production)
+      if (process.env.DEBUG_API_SERVER) {
+        console.log('[API Server]:', chunk.trim());
+      }
+      
+      if (output.includes('MMT API Server running on')) {
+        clearTimeout(timeout);
+        // Give it a tiny bit more time to fully initialize
+        setTimeout(resolve, 100);
+      }
+    };
+
+    apiProcess.stdout?.on('data', checkReady);
+    apiProcess.stderr?.on('data', checkReady);
+    
+    apiProcess.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+    
+    apiProcess.on('exit', (code) => {
+      if (code !== null && code !== 0) {
+        clearTimeout(timeout);
+        reject(new Error(`API server exited with code ${code}\n${output}`));
+      }
     });
   });
+
+  return {
+    process: apiProcess,
+    close: () => new Promise<void>((resolve) => {
+      apiProcess.once('exit', () => resolve());
+      apiProcess.kill('SIGTERM');
+      // Force kill after 5 seconds if graceful shutdown fails
+      setTimeout(() => {
+        if (!apiProcess.killed) {
+          apiProcess.kill('SIGKILL');
+        }
+      }, 5000);
+    }),
+  };
 }

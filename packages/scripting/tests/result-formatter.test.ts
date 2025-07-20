@@ -10,13 +10,13 @@ import { NodeFileSystem } from '@mmt/filesystem-access';
 import { QueryParser } from '@mmt/query-parser';
 import { VaultIndexer } from '@mmt/indexer';
 import { createTestApiServer } from './test-api-server.js';
-import type { Server } from 'http';
+import type { ChildProcess } from 'child_process';
 
 describe('ResultFormatter', () => {
   let tempDir: string;
   let formatter: ResultFormatter;
   let realResult: ScriptExecutionResult;
-  let apiServer: { server: Server; close: () => Promise<void> };
+  let apiServer: { process: ChildProcess; close: () => Promise<void> };
   const TEST_API_PORT = 3002;
 
   // Helper to create real execution results
@@ -105,6 +105,7 @@ describe('ResultFormatter', () => {
     // Close the API server
     if (apiServer) {
       await apiServer.close();
+      apiServer = undefined as any; // Reset for next test
     }
     
     if (tempDir && existsSync(tempDir)) {
