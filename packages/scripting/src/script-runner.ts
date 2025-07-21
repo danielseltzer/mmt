@@ -53,11 +53,11 @@ export interface ScriptRunnerOptions {
       debounceMs?: number;
       ignorePatterns?: string[];
     };
+    apiPort: number;
   };
   fileSystem: FileSystemAccess;
   queryParser: QueryParser;
   outputStream?: NodeJS.WritableStream;
-  apiUrl?: string;
 }
 
 /**
@@ -84,7 +84,7 @@ export class ScriptRunner {
     this.analysisRunner = new AnalysisRunner();
     this.reportGenerator = new MarkdownReportGenerator();
     // this.operationRegistry = new OperationRegistry();
-    this.apiUrl = options.apiUrl ?? 'http://localhost:3001';
+    this.apiUrl = `http://localhost:${options.config.apiPort}`;
   }
 
   /**
@@ -179,8 +179,20 @@ export class ScriptRunner {
 
     // For non-analysis operations, call the API
     try {
-      // Pipeline already has the correct options
-      const pipelineWithOptions = pipeline;
+      // If there's a filter function, we need to apply it locally first
+      let pipelineToSend = pipeline;
+      if (pipeline.filter !== undefined) {
+        // Select documents locally to apply the filter
+        const selectedDocs = await this.selectDocuments(pipeline.select);
+        const filteredDocs = selectedDocs.filter((doc) => Boolean(pipeline.filter?.(doc)));
+        
+        // Create a new pipeline with explicit file list instead of criteria
+        pipelineToSend = {
+          ...pipeline,
+          select: { files: filteredDocs.map(d => d.path) },
+          filter: undefined // Remove the filter since we already applied it
+        };
+      }
 
       // Call the API
       const response = await fetch(`${this.apiUrl}/api/pipelines/execute`, {
@@ -188,7 +200,7 @@ export class ScriptRunner {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(pipelineWithOptions),
+        body: JSON.stringify(pipelineToSend),
       });
 
       if (!response.ok) {
@@ -204,6 +216,23 @@ export class ScriptRunner {
           failed: number;
           skipped: number;
         };
+        results?: {
+          succeeded: Array<{
+            document: Document;
+            operation: ScriptOperation;
+            details: any;
+          }>;
+          failed: Array<{
+            document: Document;
+            operation: ScriptOperation;
+            error: string;
+          }>;
+          skipped: Array<{
+            document: Document;
+            operation: ScriptOperation;
+            reason: string;
+          }>;
+        };
         errors?: Array<{
           document: string;
           operation: string;
@@ -213,23 +242,36 @@ export class ScriptRunner {
 
       // Convert API result to ScriptExecutionResult format
       const endTime = new Date();
+      
+      // Collect all documents that were attempted
+      const attempted: Document[] = [];
+      if (apiResult.results) {
+        // Add documents from each result category
+        apiResult.results.succeeded.forEach(r => attempted.push(r.document));
+        apiResult.results.failed.forEach(r => attempted.push(r.document));
+        apiResult.results.skipped.forEach(r => attempted.push(r.document));
+      }
+      
       const result: ScriptExecutionResult = {
-        attempted: [], // API doesn't return full document list
-        succeeded: Array(apiResult.operations.succeeded).fill({
-          item: {} as Document,
-          operation: {} as ScriptOperation,
-          details: {},
-        }),
-        failed: apiResult.errors?.map((e: any) => ({
-          item: {} as Document,
-          operation: { type: e.operation } as ScriptOperation,
-          error: new Error(e.error),
+        attempted,
+        succeeded: apiResult.results?.succeeded.map(r => ({
+          item: r.document,
+          operation: r.operation,
+          details: {
+            ...r.details,
+            preview: !pipeline.options?.destructive
+          },
         })) ?? [],
-        skipped: Array(apiResult.operations.skipped).fill({
-          item: {} as Document,
-          operation: {} as ScriptOperation,
-          reason: 'Preview mode',
-        }),
+        failed: apiResult.results?.failed.map(r => ({
+          item: r.document,
+          operation: r.operation,
+          error: new Error(r.error),
+        })) ?? [],
+        skipped: apiResult.results?.skipped.map(r => ({
+          item: r.document,
+          operation: r.operation,
+          reason: r.reason,
+        })) ?? [],
         stats: {
           duration: endTime.getTime() - startTime.getTime(),
           startTime,
