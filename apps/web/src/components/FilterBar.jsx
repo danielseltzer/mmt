@@ -8,6 +8,15 @@ import { MetadataFilter } from './MetadataFilter';
 export function FilterBar() {
   const { documents, filteredDocuments, vaultTotal, filters, setFilters } = useDocumentStore();
   const [localFilters, setLocalFilters] = useState(filters || {});
+  const [vaultPath, setVaultPath] = useState('');
+  
+  // Fetch config on mount
+  useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => setVaultPath(data.vaultPath))
+      .catch(err => console.error('Failed to fetch config:', err));
+  }, []);
   
   // Apply filters when they change
   useEffect(() => {
@@ -23,10 +32,9 @@ export function FilterBar() {
   }, [localFilters, setFilters]);
   
   // Extract unique folders from current documents
-  const vaultPath = '/Users/danielseltzer/Notes/Personal-sync-250710';
   const uniqueFolders = [...new Set(
     documents.map(doc => {
-      const path = doc.path.replace(vaultPath, '');
+      const path = vaultPath ? doc.path.replace(vaultPath, '') : doc.path;
       const lastSlash = path.lastIndexOf('/');
       return lastSlash > 0 ? path.substring(0, lastSlash) : '/';
     })

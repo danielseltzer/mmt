@@ -20,7 +20,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URLs for our services */
-    baseURL: 'http://localhost:5173',  // Web app
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',  // Web app
     
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
