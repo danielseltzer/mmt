@@ -6,7 +6,7 @@ import { MultiSelectDropdown } from './MultiSelectDropdown';
 import { MetadataFilter } from './MetadataFilter';
 
 export function FilterBar() {
-  const { documents, filteredDocuments, totalCount, vaultTotal, filters, setFilters } = useDocumentStore();
+  const { documents, filteredDocuments, vaultTotal, filters, setFilters } = useDocumentStore();
   const [localFilters, setLocalFilters] = useState(filters || {});
   
   // Apply filters when they change
@@ -60,10 +60,6 @@ export function FilterBar() {
     return parts.length > 0 ? ' | ' + parts.join(' | ') : '';
   };
   
-  // Get tooltip for folder/tag counts
-  const getFolderTooltip = () => {
-    return localFilters.folders?.join('\n') || '';
-  };
   
 
   return (

@@ -7,7 +7,7 @@ describe('CSS Loading', () => {
 
   beforeAll(() => {
     // Read the globals.css file
-    const cssPath = path.join(process.cwd(), 'src', 'globals.css');
+    const cssPath = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'src', 'globals.css');
     cssContent = fs.readFileSync(cssPath, 'utf-8');
   });
 
