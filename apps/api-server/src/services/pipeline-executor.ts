@@ -17,6 +17,23 @@ export interface PipelineExecutionResult {
     failed: number;
     skipped: number;
   };
+  results?: {
+    succeeded: Array<{
+      document: Document;
+      operation: ScriptOperation;
+      details: any;
+    }>;
+    failed: Array<{
+      document: Document;
+      operation: ScriptOperation;
+      error: string;
+    }>;
+    skipped: Array<{
+      document: Document;
+      operation: ScriptOperation;
+      reason: string;
+    }>;
+  };
   errors?: Array<{
     document: string;
     operation: string;
@@ -36,6 +53,11 @@ export class PipelineExecutor {
 
   async execute(pipeline: OperationPipeline): Promise<PipelineExecutionResult> {
     const errors: PipelineExecutionResult['errors'] = [];
+    const results: NonNullable<PipelineExecutionResult['results']> = {
+      succeeded: [],
+      failed: [],
+      skipped: []
+    };
     let succeeded = 0;
     let failed = 0;
     let skipped = 0;
@@ -54,17 +76,37 @@ export class PipelineExecutor {
               // Preview mode - just validate operations
               await this.validateOperation(doc, operation);
               skipped++;
+              results.skipped.push({
+                document: doc,
+                operation,
+                reason: 'Preview mode'
+              });
             } else {
               // Execute mode - actually perform operations
               await this.executeOperation(doc, operation);
               succeeded++;
+              results.succeeded.push({
+                document: doc,
+                operation,
+                details: {
+                  type: operation.type,
+                  source: doc.path,
+                  target: this.getOperationTarget(doc, operation)
+                }
+              });
             }
           } catch (error) {
             failed++;
+            const errorMsg = error instanceof Error ? error.message : String(error);
             errors.push({
               document: doc.path,
               operation: operation.type,
-              error: error instanceof Error ? error.message : String(error)
+              error: errorMsg
+            });
+            results.failed.push({
+              document: doc,
+              operation,
+              error: errorMsg
             });
             
             if (!pipeline.options?.continueOnError) {
@@ -89,6 +131,7 @@ export class PipelineExecutor {
           failed,
           skipped
         },
+        results,
         errors: errors.length > 0 ? errors : undefined,
         output
       };
@@ -113,7 +156,10 @@ export class PipelineExecutor {
       for (const filePath of criteria.files) {
         if (typeof filePath !== 'string') continue;
         
-        const fullPath = join(this.context.config.vaultPath, filePath);
+        // Check if filePath is already absolute
+        const fullPath = filePath.startsWith('/') || (process.platform === 'win32' && /^[A-Za-z]:[\\/]/u.test(filePath)) 
+          ? filePath 
+          : join(this.context.config.vaultPath, filePath);
         const exists = await this.context.fs.exists(fullPath);
         
         if (exists) {
@@ -263,6 +309,21 @@ export class PipelineExecutor {
 
       default:
         throw new Error(`Unknown operation type: ${operation.type}`);
+    }
+  }
+
+  private getOperationTarget(doc: Document, operation: ScriptOperation): string | undefined {
+    switch (operation.type) {
+      case 'move':
+        return operation.destination ? join(operation.destination as string, basename(doc.path)) : undefined;
+      case 'rename':
+        return operation.newName as string;
+      case 'updateFrontmatter':
+        return doc.path; // Same file
+      case 'delete':
+        return operation.permanent ? 'permanent deletion' : '.trash';
+      default:
+        return undefined;
     }
   }
 

@@ -4,7 +4,7 @@ This document outlines the technologies, libraries, and architecture decisions f
 
 ## Core Technologies
 
-- **Runtime**: Electron 31.x with Node.js 20.x
+- **Runtime**: Node.js 20.x
 - **Language**: TypeScript 5.5 with strict mode
 - **Package Manager**: pnpm 9.x
 - **UI Framework**: React 18
@@ -13,17 +13,17 @@ This document outlines the technologies, libraries, and architecture decisions f
 
 - **Monorepo Management**: pnpm workspaces + Turborepo
 - **Build Tools**:
-  - electron-vite for Electron apps
-  - Vite for React development
+  - Vite for web application
   - TypeScript compiler for packages
+  - tsx for development servers
   - Vitest for testing
   - ESLint for code quality
 
-## Desktop Application Stack
+## Web Application Stack
 
-- **Framework**: Electron with electron-vite
-- **IPC Layer**: electron-trpc for type-safe communication
-- **Security**: Context isolation, no node integration in renderer
+- **Framework**: React 18 with Vite
+- **API Communication**: HTTP/REST with fetch
+- **Server**: Express with CORS support
 
 ## UI Libraries
 
@@ -84,8 +84,9 @@ The MMT project is organized as a monorepo with the following structure:
 13. **reports**: Export functionality (CSV, etc.)
 
 ### Applications (`/apps/*`)
-- **electron**: Main process application
-- **renderer**: React UI application
+- **web**: React web application
+- **api-server**: Express API server
+- **cli**: Command-line interface
 
 ### Documentation (`/docs/*`)
 - **planning/**: Architecture and design documents
