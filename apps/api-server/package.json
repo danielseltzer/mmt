@@ -8,7 +8,9 @@
     "clean": "rm -rf dist",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/src/server.js",
-    "test": "vitest",
+    "test": "pnpm test:unit && pnpm test:integration",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
