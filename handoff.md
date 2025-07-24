@@ -1,128 +1,189 @@
 # MMT Handoff Document
 
-## Current Status (2024-01-07)
+## Current Status (2025-01-24)
 
-### What Was Just Completed
-1. **Declarative Filter System** (PR #142)
-   - Replaced JavaScript function-based filters with declarative Zod schemas
-   - API now has full control over pipeline execution
-   - All MVP filter types implemented: text, folder, tag, metadata, date, size
-   - Filter evaluation logic implemented in both API and script runner
-   - Examples and tests updated to use new format
+### Recently Completed Work
+
+1. **#144 - Updated FilterBar Component** ✅
+   - FilterBar now generates declarative FilterCollection format
+   - Proper parsing of date and size expressions
+   - Integration with document store using new format
+
+2. **#126 - Refactored API to use OperationPipelineSchema** ✅
+   - Created `/api/pipelines/execute` endpoint
+   - Pipeline executor supports SELECT → FILTER → TRANSFORM → OUTPUT model
+   - Full integration tests passing
+
+3. **Fixed File Watcher Integration** ✅
+   - Files created after server startup are now properly indexed
+   - Pipeline operations can immediately access new files with full metadata
+   - Added timing documentation for file watcher behavior
 
 ### Current State of the Codebase
-- Main branch includes the declarative filter implementation
-- All tests pass except for unrelated issues
-- API successfully handles declarative filters
-- Script runner replicates filter logic for analysis operations
-- FilterBar component still uses old format (needs update)
+- All integration tests passing
+- File watching properly detects and indexes new documents
+- API pipeline endpoint fully functional with declarative filters
+- FilterBar generates correct declarative filter format
+- No known blocking bugs
 
-## Immediate Next Steps
+## Priority Work Queue
 
-### 1. Update FilterBar Component (Priority: HIGH)
-The FilterBar in `apps/web/src/components/FilterBar.jsx` currently generates filters in this format:
-```javascript
+### 1. GUI Pipeline Builder (#127) - **HIGHEST PRIORITY** 🔥
+Build the visual pipeline interface with four panels:
+
+**SELECT Panel:**
+- File picker (browse vault files)
+- Query builder (search by content/name)
+- Recent files selector
+- "All files" option
+
+**FILTER Panel:**
+- Visual filter builder using declarative format
+- Add/remove filter conditions
+- AND/OR logic selector
+- Filter presets (e.g., "Modified this week", "Large files")
+
+**TRANSFORM Panel:**
+- Operation type selector (rename, move, update frontmatter, delete)
+- Operation-specific configuration forms
+- Preview mode toggle
+- Batch operation settings
+
+**OUTPUT Panel:**
+- Results display format
+- Export options (CSV, JSON)
+- Summary statistics
+
+**Implementation approach:**
+- Start with basic SELECT panel
+- Add one operation type (rename) to test end-to-end
+- Incrementally add features
+- Use existing DocumentList component where possible
+
+### 2. Fix Integration Test Failures (#141) - **HIGH PRIORITY**
+- Investigate failures after shared API server implementation
+- Update tests to work with new architecture
+- Ensure all packages have passing tests
+
+### 3. Remove Hardcoded URLs/Ports (#132) - **HIGH PRIORITY**
+- Create configuration service for frontend
+- Load API URL from environment/config
+- Remove hardcoded localhost:3001 references
+- Support deployment to different environments
+
+### 4. Add Execution Feedback (#128) - **MEDIUM PRIORITY**
+- Progress indicator during pipeline execution
+- Real-time status updates
+- Results display after completion
+- Error handling and display
+- Operation history/log
+
+### 5. End-to-End Testing (#19) - **MEDIUM PRIORITY**
+- Set up Playwright or similar
+- Test complete user workflows
+- Cover main use cases:
+  - Search and filter documents
+  - Execute rename operation
+  - Bulk metadata updates
+  - Export results
+
+### 6. Fix Table-View Tests (#138, #122) - **MEDIUM PRIORITY**
+- Update tests to match current implementation
+- Remove references to non-existent UI features
+- Ensure consistent test coverage
+
+## Lower Priority Items
+
+### Documentation & Cleanup
+- #143 - Update CLAUDE.md to reflect current architecture
+- #72 - Create scripting documentation with examples
+- #66 - Create ADR for package documentation standards
+
+### Feature Enhancements
+- #18 - Create Reports Package (p1)
+- #14 - Build View Persistence Package (p1)
+- #12 - Create Document Previews Package (p2)
+- #22 - Add Similarity Features (p2)
+
+### Technical Debt
+- #135 - Remove redundant operation schemas
+- #86 - Fix flaky file watcher test (may be fixed already)
+- #56 - Review and prune test scripts collection
+
+## Technical Context
+
+### API Endpoints
+- `GET /api/config` - Returns vault configuration
+- `GET /api/documents` - List/search documents with filters
+- `POST /api/pipelines/execute` - Execute operation pipeline
+- `GET /api/documents/by-path/*` - Get single document metadata
+
+### Key Data Structures
+
+**OperationPipeline:**
+```typescript
 {
-  name: "search term",
-  content: "content search", 
-  folders: ["/path1", "/path2"],
-  metadata: ["key1", "key2"],
-  dateExpression: "< 7 days",
-  sizeExpression: "over 1mb"
+  select: SelectCriteria,      // What documents to operate on
+  filter?: FilterCollection,   // Additional filtering
+  operations: Operation[],     // What to do with them
+  output?: OutputConfig[],     // How to format results
+  options?: ExecutionOptions   // Preview mode, error handling
 }
 ```
 
-It needs to generate the new declarative format:
-```javascript
+**FilterCollection:**
+```typescript
 {
-  conditions: [
-    { field: 'name', operator: 'contains', value: 'search term' },
-    { field: 'content', operator: 'contains', value: 'content search' },
-    { field: 'folders', operator: 'in', value: ['/path1', '/path2'] },
-    { field: 'metadata', operator: 'equals', key: 'key1', value: true },
-    // etc.
-  ],
-  logic: 'AND'
+  conditions: FilterCondition[],  // Array of filters
+  logic: 'AND' | 'OR'            // How to combine them
 }
 ```
 
-**Key tasks:**
-- Parse date expressions (e.g., "< 7 days") into proper date filters
-- Parse size expressions (e.g., "over 1mb") into proper size filters
-- Convert folder array into proper folder filter
-- Convert metadata array into multiple metadata conditions
-- Update document-store.ts to use FilterCollection type
+### Testing Strategy
+- NO MOCKS - use real file operations
+- Integration tests use temp directories
+- Test config uses different ports (3002, 8002)
+- File watcher needs 200-300ms delay in tests
 
-### 2. Fix Remaining Technical Debt (Priority: HIGH)
-Several packages have accumulated lint and type errors:
-- **scripting package**: Multiple TypeScript errors need fixing
-- **indexer package**: Lint errors with case declarations
-- **web tests**: Unused imports need cleanup
-
-Run `pnpm lint` and `pnpm type-check` to see all issues.
-
-### 3. Implement GUI Pipeline Builder (#127) (Priority: HIGH)
-Now that the API uses OperationPipelineSchema throughout, we can build the visual pipeline builder:
-- SELECT panel: Visual query builder
-- FILTER panel: Visual filter builder using new declarative format
-- TRANSFORM panel: Operation selection and configuration
-- OUTPUT panel: Format and destination selection
-
-### 4. Add Execution Feedback (#128) (Priority: MEDIUM)
-- Real-time progress updates during execution
-- Show results in the GUI after pipeline execution
-- Display errors clearly
-
-### 5. Future Enhancements (Priority: LOW)
-- Document Preview (#12)
-- View Persistence (#14)
-- Export UI (#18)
-
-## Important Technical Context
-
-### Filter System Architecture
-1. **FilterCollection** is the top-level container with conditions[] and logic
-2. **FilterCondition** is a discriminated union based on the `field` property
-3. Each filter type has specific operators and value types
-4. The same evaluation logic is implemented in both:
-   - `apps/api-server/src/services/pipeline-executor.ts`
-   - `packages/scripting/src/script-runner.ts`
-
-### API Integration Points
-- `/api/documents` endpoint accepts filters in query param (JSON stringified)
-- `/api/pipelines/execute` accepts full OperationPipeline with filters
-- Document content is loaded during selection for content-based filtering
-
-### Testing Approach
-- Integration tests use real API server (no mocks)
-- Test config uses different ports (3002, 8002) to avoid conflicts
-- All file operations use temp directories
-
-## Known Issues
-1. Created date filtering not supported (document schema lacks creation date)
-2. Some TypeScript errors in scripting package need resolution
-3. FilterBar hardcodes vault path (should use fetched config)
-
-## Development Commands
+### Development Commands
 ```bash
-# Full rebuild and test
-pnpm clean
-pnpm install
-pnpm build
-pnpm lint
-pnpm test
+# Start development servers
+pnpm dev                    # Start all services
+pnpm --filter @mmt/web dev  # Frontend only
+pnpm --filter @mmt/api-server dev  # API only
 
-# Run specific package commands
-pnpm --filter @mmt/web dev
-pnpm --filter @mmt/api-server dev
+# Testing
+pnpm test                   # All tests
+pnpm test:integration       # Integration tests only
+pnpm --filter @mmt/web test # Package-specific tests
 
-# Run integration tests only
-pnpm --filter @mmt/web test:integration
+# Code quality
+pnpm lint                   # ESLint
+pnpm type-check            # TypeScript checking
+pnpm clean && pnpm install && pnpm build  # Full rebuild
 ```
 
-## Architecture Reminders
-- NO MOCKS policy - test with real files
-- NO DEFAULTS - explicit configuration required
-- Fail fast with clear error messages
-- All file operations go through filesystem-access package
-- Zod schemas define all contracts between packages
+## Known Issues & Gotchas
+
+1. **File Watcher Timing**: New files need ~200-300ms to be indexed due to debouncing
+2. **Created Date**: Not supported in filters (documents don't store creation date)
+3. **Hardcoded Vault Path**: FilterBar still hardcodes path (should use config)
+4. **API URL**: Frontend hardcodes localhost:3001 (needs config service)
+
+## Architecture Decisions
+
+1. **Declarative Filters**: All filtering uses Zod-validated schemas, no executable code
+2. **Schema-First**: Every API endpoint has request/response Zod schemas
+3. **No Defaults**: Explicit configuration required for everything
+4. **Real Testing**: No mocks, test with actual file operations
+5. **Fail Fast**: Clear error messages, no silent failures
+
+## Next Session Starting Point
+
+Begin with issue #127 - implement the GUI pipeline builder:
+1. Create the four-panel layout
+2. Start with basic SELECT panel using existing DocumentList
+3. Add simple rename operation to test end-to-end flow
+4. Incrementally add features
+
+The API is ready, the filters work, and all the pieces are in place. The GUI is the missing piece that will make this system usable by end users.

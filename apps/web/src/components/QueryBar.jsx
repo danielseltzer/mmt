@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDocumentStore } from '../stores/document-store';
-import { FilterBar } from './FilterBar';
+import { PipelinePanels } from './PipelinePanels';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
@@ -32,7 +32,7 @@ export function QueryBar() {
           />
         </div>
       </div>
-      <FilterBar />
+      <PipelinePanels />
     </div>
   );
 }
