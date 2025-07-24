@@ -12,21 +12,44 @@ A desktop application for managing large markdown vaults with bulk operations, s
 - Don't invest functionality that isn't needed. Keep it simple and clear. 
 - Always run the complete clean/install/build/lint/test cycle after completing an issue and report any lint or test failures.
 
-## Configuration
+## Running MMT
+
+### Quick Start
+
+```bash
+# Start MMT
+./bin/mmt start --config your-config.yaml
+
+# Stop MMT
+# Press Ctrl+C in the terminal where it's running
+```
+
+### Commands
+
+- `./bin/mmt start --config <file>` - Start both API and web servers
+- `./bin/mmt stop` - Stop all running servers (not yet implemented - use Ctrl+C)
+- `./bin/mmt status` - Show status of servers (not yet implemented)
+
+### Configuration
 
 MMT requires explicit configuration with no defaults. Create a YAML config file:
 
 ```yaml
-# mmt-config.yaml
+# your-config.yaml
 vaultPath: /absolute/path/to/your/vault
 indexPath: /absolute/path/to/store/index
+apiPort: 3001
+webPort: 5173
 
 # Optional: Enable file watching for automatic index updates
 fileWatching:
   enabled: true
+  debounceMs: 200
 ```
 
-See [example-config.yaml](example-config.yaml) for a complete example.
+Example configurations:
+- [dev-config.yaml](dev-config.yaml) - For development with test vault
+- [personal-vault-config.yaml](personal-vault-config.yaml) - Example with real vault
 
 ## Documentation
 

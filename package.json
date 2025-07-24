@@ -4,10 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx tools/control-manager/src/cli.ts start",
-    "dev:web": "tsx tools/control-manager/src/cli.ts start --web-only",
-    "dev:api": "tsx tools/control-manager/src/cli.ts start --api-only",
-    "dev:frontend": "pnpm --filter @mmt/web dev",
+    "dev": "echo '\\n⚠️  Use ./bin/mmt start --config <config.yaml> instead\\n\\nExample:\\n  ./bin/mmt start --config personal-vault-config.yaml\\n' && exit 1",
     "prebuild": "sh -c 'count=$(find . -path \"*/src/*.d.ts\" -o -path \"*/src/*.d.ts.map\" | grep -v node_modules | wc -l | tr -d \" \"); if [ \"$count\" != \"0\" ]; then echo \"ERROR: Found $count compiled TypeScript files (.d.ts) in src directories. These should only be in dist/. Run pnpm clean first.\"; exit 1; fi'",
     "build": "turbo build",
     "test": "pnpm test:all",
