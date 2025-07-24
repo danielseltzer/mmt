@@ -32,7 +32,7 @@ export function PipelinePanels({ searchBar }) {
   // Generate filter summary from the active filters
   const getFilterSummary = () => {
     if (!filters || !filters.conditions || filters.conditions.length === 0) {
-      return 'No filters applied';
+      return 'All';
     }
     
     const summaryParts = [];
@@ -52,41 +52,39 @@ export function PipelinePanels({ searchBar }) {
         const folderCount = conditions[0].value.length;
         summaryParts.push(`${folderCount} folder${folderCount > 1 ? 's' : ''}`);
       } else if (field === 'metadata') {
-        summaryParts.push(`${conditions.length} metadata filter${conditions.length > 1 ? 's' : ''}`);
+        summaryParts.push(`${conditions.length} metadata`);
       } else if (field === 'modified') {
-        summaryParts.push('date filter');
+        summaryParts.push('date');
       } else if (field === 'size') {
-        summaryParts.push('size filter');
+        summaryParts.push('size');
       } else if (field === 'name' || field === 'content') {
         summaryParts.push(field);
       }
     });
     
-    return summaryParts.length > 0 
-      ? `Filters: ${summaryParts.join(', ')}`
-      : 'No filters applied';
+    return summaryParts.join(', ');
   };
 
   const panels = [
     {
       id: 'select',
       icon: Filter,
-      title: 'SELECT',
+      title: 'Select:',
       summary: getFilterSummary(),
       content: <FilterBar />
     },
     {
       id: 'transform',
       icon: Wand2,
-      title: 'TRANSFORM',
-      summary: 'No operations configured',
+      title: 'Transform:',
+      summary: 'None',
       content: <p className="text-sm text-muted-foreground">Transform operations will be implemented here</p>
     },
     {
       id: 'output',
       icon: FileOutput,
-      title: 'OUTPUT',
-      summary: 'Output: Table view',
+      title: 'Output:',
+      summary: 'Table view',
       content: <p className="text-sm text-muted-foreground">Output configuration will be implemented here</p>
     }
   ];
