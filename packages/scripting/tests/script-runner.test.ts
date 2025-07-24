@@ -197,7 +197,14 @@ describe('ScriptRunner', () => {
         define(context: ScriptContext): OperationPipeline {
           return {
             select: { files: [oldFile, newFile] },
-            filter: (doc) => doc.path.endsWith('old.md'),
+            filter: {
+              conditions: [{
+                field: 'name',
+                operator: 'equals',
+                value: 'old'
+              }],
+              logic: 'AND'
+            },
             operations: [{ type: 'delete' }],
           };
         }
@@ -374,7 +381,14 @@ describe('ScriptRunner', () => {
         define(context: ScriptContext): OperationPipeline {
           return {
             select: { 'fs:path': 'posts/**/*.md' },
-            filter: (doc) => doc.metadata.size > 100, // This forces local selection
+            filter: {
+              conditions: [{
+                field: 'size',
+                operator: 'gt',
+                value: 100
+              }],
+              logic: 'AND'
+            },
             operations: [{ type: 'delete' }],
           };
         }

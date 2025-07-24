@@ -117,7 +117,7 @@ export class QueryExecutor {
         return this.matchesTag(doc, operator, value);
       case 'title':
         return this.compareValues(doc.title, operator, value);
-      case 'content':
+      case 'content': {
         // Since we don't store content in metadata, search across
         // multiple text fields that users would expect to match
         const searchValue = String(value).toLowerCase();
@@ -148,6 +148,7 @@ export class QueryExecutor {
         }
         
         return false;
+      }
       default:
         return false;
     }

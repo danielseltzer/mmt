@@ -23,7 +23,14 @@ export default class ArchiveOldPosts implements Script {
       select: { 'fs:path': 'posts/**/*.md' },
       
       // Filter to only files modified more than a week ago
-      filter: doc => doc.metadata.modified < oneWeekAgo,
+      filter: {
+        conditions: [{
+          field: 'modified',
+          operator: 'lt',
+          value: oneWeekAgo.toISOString()
+        }],
+        logic: 'AND'
+      },
       
       // Move matching files to archive
       operations: [

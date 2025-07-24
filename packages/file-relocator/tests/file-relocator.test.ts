@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import { FileRelocator } from '../src/file-relocator';
 import { NodeFileSystem } from '@mmt/filesystem-access';
+// Link type is internal to file-relocator
 
 describe('File Relocator E2E', () => {
   let tempDir: string;
@@ -92,6 +93,7 @@ This [[task1]] should not be updated - it's in a code block
     expect(references).toHaveLength(2); // project1.md and daily note
     expect(references).toContainEqual({
       filePath: path.join(tempDir, 'Projects/project1.md'),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       links: expect.arrayContaining([
         { type: 'wikilink', raw: '[[Tasks/task1]]', target: 'Tasks/task1', line: 2 },
         { type: 'wikilink', raw: '[[task1]]', target: 'task1', line: 6 }
@@ -99,6 +101,7 @@ This [[task1]] should not be updated - it's in a code block
     });
     expect(references).toContainEqual({
       filePath: path.join(tempDir, 'Daily/2024-06-25.md'),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       links: expect.arrayContaining([
         { type: 'wikilink', raw: '[[task1]]', target: 'task1', line: 3 }
       ])
@@ -194,14 +197,14 @@ This [[task1]] should not be updated - it's in a code block
     // Create 50 files with 4 links each = 200 links total
     const filePromises = [];
     for (let i = 0; i < 50; i++) {
-      const content = `# File ${i}
+      const content = `# File ${String(i)}
 Link 1: [[target]]
 Link 2: See [target file](../target.md)
 Link 3: [[target#section1]]
 Link 4: Check [this target](../target.md#section2)
 `;
       filePromises.push(
-        fs.writeFile(path.join(manyFilesDir, `file${i}.md`), content)
+        fs.writeFile(path.join(manyFilesDir, `file${String(i)}.md`), content)
       );
     }
     await Promise.all(filePromises);
@@ -240,10 +243,10 @@ Link 4: Check [this target](../target.md#section2)
     );
     
     // Links in code blocks should remain unchanged
-    expect(content).toMatch(/```markdown\nThis \[\[task1\]\]/);
+    expect(content).toMatch(/```markdown\nThis \[\[task1\]\]/u);
     
     // Links in comments should remain unchanged
-    expect(content).toMatch(/<!-- This \[\[task1\]\]/);
+    expect(content).toMatch(/<!-- This \[\[task1\]\]/u);
     
     // But the regular link should be updated
     expect(content).toContain('- Work on [[../Archive/2024/task1]]');

@@ -76,13 +76,13 @@ export const ConfigSchema = z.object({
   
   /**
    * Port number for the API server.
-   * Must be explicitly configured - no defaults.
+   * Required when running the API server or web UI.
    */
   apiPort: z.number().int().min(1).max(65535).describe('Port for the API server'),
   
   /**
    * Port number for the web development server.
-   * Must be explicitly configured - no defaults.
+   * Required when running the web UI in development mode.
    */
   webPort: z.number().int().min(1).max(65535).describe('Port for the web server'),
 }).strict();

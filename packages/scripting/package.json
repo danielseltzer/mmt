@@ -20,6 +20,8 @@
     "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run --poolOptions.threads.singleThread",
+    "test:unit": "echo 'No unit tests - all tests are integration tests'",
+    "test:integration": "vitest run --poolOptions.threads.singleThread",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

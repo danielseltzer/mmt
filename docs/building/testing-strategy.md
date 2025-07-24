@@ -25,52 +25,63 @@ Since MMT operates on real files and integrates multiple packages, we test with 
 
 ## Testing Approach
 
-### 1. End-to-End Tests for Core Workflows
+### Core Philosophy: Integration Over Unit Tests
 
-These tests verify complete user workflows from start to finish:
+**MMT is fundamentally a system of components talking to each other.** Most of our code integrates third-party libraries (React, TanStack Table, Electron, etc.) rather than implementing complex algorithms. Therefore:
+
+1. **Integration tests are primary** - Test components working together
+2. **Unit tests are rare** - Only for packages with actual business logic
+3. **UI is always integration tested** - No value in unit testing React components
+4. **Backend logic gets unit tests** - Parsing, indexing, and file operations have real algorithms
+
+### 1. Integration Tests (Primary Testing Strategy)
+
+Integration tests verify components working together with real implementations:
+
+**Always Integration Test:**
+- **All UI components** - Test with real stores, real DOM, real event handling
+- **API endpoints** - Test with running server and real database/indexer
+- **File operations** - Test with real files in temp directories
+- **End-to-end workflows** - Test complete user journeys
 
 **Test Scenarios:**
-- Search a vault of test markdown files and verify correct results
-- Move multiple files and verify all links are updated
-- Update frontmatter properties across multiple files
-- Save and restore table view configurations
-- Export filtered results to CSV
+- Web app with running API server
+- CLI commands with real file operations
+- Electron main/renderer communication
+- Complete workflows (search → filter → export)
 
-**Benefits:**
-- Verifies the system works as a whole
-- Tests real-world user scenarios
-- Catches integration issues between packages
+### 2. Unit Tests (Only for Business Logic)
 
-### 2. Integration Tests for Key Components
+Unit tests are LIMITED to packages with actual algorithms and business logic:
 
-These tests focus on critical integration points with real dependencies:
+**Packages with Unit Tests:**
+- **@mmt/entities** - Schema validation, date/size parsing utilities
+- **@mmt/query-parser** - Query language parsing (fs:*.md, fm:status:draft)
+- **@mmt/indexer** - Document indexing, backlink graph, performance requirements
+- **@mmt/vault** - Query execution, set operations (union/intersect/difference)
+- **@mmt/document-operations** - File operations with link preservation
+- **@mmt/config** - Configuration validation and loading
+- **@mmt/cli** - Command parsing and execution logic
+- **@mmt/scripting** - Pipeline execution engine
 
-**Test Scenarios:**
-- Test indexer with a vault of 100+ real markdown files
-- Test file-relocator with complex link structures
-- Test document-operations with snapshot/restore cycles
-- Test query-parser with various GitHub-style queries
-- Test IPC communication between main and renderer
+**Packages WITHOUT Unit Tests:**
+- **@mmt/filesystem-access** - Just wraps Node's fs module
+- **@mmt/web** - React components tested via integration
+- **@mmt/table-view** - Component behavior tested via integration
+- **@mmt/api-server** - Endpoints tested via integration
 
-**Benefits:**
-- Verifies package integrations work correctly
-- Tests with real files and operations
-- Identifies issues at package boundaries
+### 3. Test Organization
 
-### 3. Limited Unit Tests for Complex Logic
-
-We use unit tests (with ZERO mocking) only for areas with complex business logic:
-
-**Areas:**
-- Query parsing logic for GitHub-style syntax
-- Link resolution algorithms in file-relocator
-- Zod schema validation edge cases
-- Path manipulation and validation
-
-**Benefits:**
-- Focuses unit testing where it adds the most value
-- Tests complex logic in isolation
-- Provides faster feedback for core algorithms
+```
+packages/
+  indexer/
+    src/
+      index.test.ts        # Unit tests for indexing logic
+  web/
+    tests/
+      unit/               # Minimal unit tests (date parsing only)
+      integration/        # All component and API tests
+```
 
 ## Implementation Plan
 
@@ -142,17 +153,34 @@ Rather than focusing solely on coverage metrics, we measure success by:
 
 ### Running Tests
 ```bash
-# Run all tests
+# Run all tests (unit + integration)
 pnpm test
+
+# Run only unit tests (fast, no external dependencies)
+pnpm test:unit
+
+# Run only integration tests (requires API server, slower)
+pnpm test:integration
 
 # Run tests for specific package
 pnpm --filter @mmt/indexer test
 
 # Run tests in watch mode
 pnpm test --watch
+```
 
-# Run performance tests
-pnpm test:perf
+### Test Commands by Package Type
+
+**For packages with business logic:**
+```bash
+pnpm --filter @mmt/indexer test:unit     # Fast unit tests
+pnpm --filter @mmt/vault test:unit        # Query execution tests
+```
+
+**For UI packages:**
+```bash
+pnpm --filter @mmt/web test:integration   # Requires API server
+pnpm --filter @mmt/table-view test        # Component behavior tests
 ```
 
 ### Writing New Tests
