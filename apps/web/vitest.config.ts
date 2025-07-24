@@ -15,7 +15,8 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     include: [
       'tests/date-parsing.test.js',
-      'tests/table-rendering.test.jsx'
+      'tests/table-rendering.test.jsx',
+      'tests/filter-conversion.test.js'
     ],
     exclude: [
       '**/node_modules/**',

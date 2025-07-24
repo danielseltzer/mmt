@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { Context } from '../context.js';
-import { Document } from '@mmt/entities';
+import { Document, FilterCollection, FilterCondition } from '@mmt/entities';
 import { validate } from '../middleware/validate.js';
 import { 
   DocumentsQuerySchema, 
@@ -149,6 +149,265 @@ function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: stri
   return filtered;
 }
 
+// Convert legacy FilterCriteria to new FilterCollection format
+function convertLegacyFilters(filters: FilterCriteria): FilterCollection {
+  const conditions: FilterCondition[] = [];
+  
+  if (filters.name) {
+    conditions.push({
+      field: 'name',
+      operator: 'contains',
+      value: filters.name,
+      caseSensitive: false
+    });
+  }
+  
+  if (filters.content) {
+    conditions.push({
+      field: 'content',
+      operator: 'contains',
+      value: filters.content,
+      caseSensitive: false
+    });
+  }
+  
+  if (filters.folders && filters.folders.length > 0) {
+    conditions.push({
+      field: 'folders',
+      operator: 'in',
+      value: filters.folders
+    });
+  }
+  
+  if (filters.metadata && filters.metadata.length > 0) {
+    filters.metadata.forEach(metaFilter => {
+      const [key, value] = metaFilter.split(':');
+      if (key) {
+        conditions.push({
+          field: 'metadata',
+          key,
+          operator: 'equals',
+          value: value === undefined ? true : value
+        });
+      }
+    });
+  }
+  
+  if (filters.dateExpression) {
+    try {
+      const parsed = parseDateExpression(filters.dateExpression);
+      if (parsed) {
+        conditions.push({
+          field: 'modified',
+          operator: parsed.operator as any,
+          value: parsed.value
+        });
+      }
+    } catch (e) {
+      // Ignore invalid expressions
+    }
+  }
+  
+  if (filters.sizeExpression) {
+    try {
+      const parsed = parseSizeExpression(filters.sizeExpression);
+      if (parsed) {
+        conditions.push({
+          field: 'size',
+          operator: parsed.operator as any,
+          value: parseInt(parsed.value) // Convert string to number
+        });
+      }
+    } catch (e) {
+      // Ignore invalid expressions
+    }
+  }
+  
+  return {
+    conditions,
+    logic: 'AND'
+  };
+}
+
+// Apply declarative filters to documents
+function applyDeclarativeFilters(documents: any[], filterCollection: FilterCollection, vaultPath: string): any[] {
+  return documents.filter(doc => {
+    const results = filterCollection.conditions.map(condition => 
+      evaluateFilter(doc, condition, vaultPath)
+    );
+    
+    // Apply logic (AND/OR)
+    if (filterCollection.logic === 'OR') {
+      return results.some(r => r);
+    } else {
+      // Default to AND
+      return results.every(r => r);
+    }
+  });
+}
+
+// Evaluate a single filter condition
+function evaluateFilter(doc: any, filter: FilterCondition, vaultPath: string): boolean {
+  switch (filter.field) {
+    case 'name': {
+      const textFilter = filter as any;
+      const searchIn = doc.basename || '';
+      return evaluateTextOperator(searchIn, textFilter.operator, textFilter.value, textFilter.caseSensitive);
+    }
+    
+    case 'content': {
+      const textFilter = filter as any;
+      // For now, search in multiple fields since we don't have full content
+      const searchableText = [
+        doc.title,
+        doc.basename,
+        doc.path,
+        ...(doc.aliases || []),
+        ...(doc.tags || [])
+      ].filter(Boolean).join(' ');
+      return evaluateTextOperator(searchableText, textFilter.operator, textFilter.value, textFilter.caseSensitive);
+    }
+    
+    case 'folders': {
+      const folderFilter = filter as any;
+      const relativePath = doc.path.replace(vaultPath, '');
+      const docFolder = relativePath.substring(0, relativePath.lastIndexOf('/')) || '/';
+      
+      if (folderFilter.operator === 'in') {
+        return folderFilter.value.some((folder: string) => {
+          if (folder === '/') {
+            return !relativePath.substring(1).includes('/');
+          }
+          return docFolder === folder || docFolder.startsWith(folder + '/');
+        });
+      } else {
+        // not_in
+        return !folderFilter.value.some((folder: string) => {
+          if (folder === '/') {
+            return !relativePath.substring(1).includes('/');
+          }
+          return docFolder === folder || docFolder.startsWith(folder + '/');
+        });
+      }
+    }
+    
+    case 'tags': {
+      const tagFilter = filter as any;
+      const docTags = doc.tags || [];
+      return evaluateArrayOperator(docTags, tagFilter.operator, tagFilter.value);
+    }
+    
+    case 'metadata': {
+      const metaFilter = filter as any;
+      if (!doc.frontmatter) return false;
+      const metaValue = doc.frontmatter[metaFilter.key];
+      // MVP: only equals operator for metadata
+      return metaValue === metaFilter.value;
+    }
+    
+    case 'modified': {
+      const dateFilter = filter as any;
+      if (!doc.mtime) return false;
+      const docDate = new Date(doc.mtime);
+      return evaluateDateOperator(docDate, dateFilter.operator, dateFilter.value);
+    }
+    
+    case 'size': {
+      const sizeFilter = filter as any;
+      return evaluateSizeOperator(doc.size || 0, sizeFilter.operator, sizeFilter.value);
+    }
+    
+    default:
+      return true;
+  }
+}
+
+// Helper functions for operators
+function evaluateTextOperator(text: string, operator: string, value: string, caseSensitive?: boolean): boolean {
+  const searchText = caseSensitive ? text : text.toLowerCase();
+  const searchValue = caseSensitive ? value : value.toLowerCase();
+  
+  switch (operator) {
+    case 'contains': return searchText.includes(searchValue);
+    case 'not_contains': return !searchText.includes(searchValue);
+    case 'equals': return searchText === searchValue;
+    case 'not_equals': return searchText !== searchValue;
+    case 'matches': {
+      try {
+        const regex = new RegExp(value, caseSensitive ? '' : 'i');
+        return regex.test(text);
+      } catch {
+        return false;
+      }
+    }
+    default: return true;
+  }
+}
+
+function evaluateArrayOperator(arr: string[], operator: string, values: string[]): boolean {
+  switch (operator) {
+    case 'contains': return values.some(v => arr.includes(v));
+    case 'not_contains': return !values.some(v => arr.includes(v));
+    case 'contains_all': return values.every(v => arr.includes(v));
+    case 'contains_any': return values.some(v => arr.includes(v));
+    default: return true;
+  }
+}
+
+function evaluateDateOperator(date: Date, operator: string, value: string | number | { from: string; to: string }): boolean {
+  let targetDate: Date;
+  
+  if (typeof value === 'string') {
+    // Handle relative dates like "-30d"
+    if (value.match(/^-?\d+[dD]$/)) {
+      const days = parseInt(value);
+      targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + days);
+    } else {
+      targetDate = new Date(value);
+    }
+  } else if (typeof value === 'number') {
+    targetDate = new Date(value);
+  } else {
+    // Handle between operator
+    const fromDate = new Date(value.from);
+    const toDate = new Date(value.to);
+    
+    switch (operator) {
+      case 'between': return date >= fromDate && date <= toDate;
+      case 'not_between': return date < fromDate || date > toDate;
+      default: return true;
+    }
+  }
+  
+  switch (operator) {
+    case 'gt': return date > targetDate;
+    case 'gte': return date >= targetDate;
+    case 'lt': return date < targetDate;
+    case 'lte': return date <= targetDate;
+    default: return true;
+  }
+}
+
+function evaluateSizeOperator(size: number, operator: string, value: number | { from: number; to: number }): boolean {
+  if (typeof value === 'object') {
+    // Handle between operator
+    switch (operator) {
+      case 'between': return size >= value.from && size <= value.to;
+      default: return true;
+    }
+  }
+  
+  const targetSize = value as number;
+  switch (operator) {
+    case 'gt': return size > targetSize;
+    case 'gte': return size >= targetSize;
+    case 'lt': return size < targetSize;
+    case 'lte': return size <= targetSize;
+    default: return true;
+  }
+}
+
 export function documentsRouter(context: Context): Router {
   const router = Router();
   
@@ -208,13 +467,20 @@ export function documentsRouter(context: Context): Router {
         const q = req.query.q as string | undefined;
         const sortBy = req.query.sortBy as string | undefined;
         const sortOrder = (req.query.sortOrder as string) || 'asc';
-        let filters: FilterCriteria = {};
+        let filterCollection: FilterCollection | null = null;
         
         if (req.query.filters && typeof req.query.filters === 'string') {
           try {
-            filters = JSON.parse(req.query.filters);
+            const parsed = JSON.parse(req.query.filters);
+            // Check if it's the new FilterCollection format
+            if (parsed.conditions && Array.isArray(parsed.conditions)) {
+              filterCollection = parsed as FilterCollection;
+            } else {
+              // Legacy FilterCriteria format - convert it
+              filterCollection = convertLegacyFilters(parsed);
+            }
           } catch {
-            filters = {};
+            filterCollection = null;
           }
         }
         
@@ -234,27 +500,8 @@ export function documentsRouter(context: Context): Router {
         }
         
         // Apply filters if provided
-        if (filters && Object.keys(filters).length > 0) {
-          // Parse natural language expressions if present
-          const processedFilters = { ...(filters as FilterCriteria) };
-          
-          if (processedFilters.dateExpression) {
-            const parsed = parseDateExpression(processedFilters.dateExpression);
-            if (parsed) {
-              processedFilters.date = parsed;
-            }
-            delete processedFilters.dateExpression;
-          }
-          
-          if (processedFilters.sizeExpression) {
-            const parsed = parseSizeExpression(processedFilters.sizeExpression);
-            if (parsed) {
-              processedFilters.size = parsed;
-            }
-            delete processedFilters.sizeExpression;
-          }
-          
-          results = applyFilters(results, processedFilters, context.config.vaultPath);
+        if (filterCollection && filterCollection.conditions.length > 0) {
+          results = applyDeclarativeFilters(results, filterCollection, context.config.vaultPath);
         }
         
         // Apply pagination

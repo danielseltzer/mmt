@@ -1,5 +1,31 @@
 import { create } from 'zustand';
-import { Document, FilterCriteria } from '@mmt/entities';
+
+// Local type definitions to avoid importing from @mmt/entities
+interface Document {
+  path: string;
+  metadata: {
+    name: string;
+    modified: string;
+    size: number;
+    frontmatter?: Record<string, any>;
+    tags?: string[];
+    links?: string[];
+    backlinks?: string[];
+  };
+}
+
+interface FilterCondition {
+  field: string;
+  operator: string;
+  value: any;
+  key?: string;
+  caseSensitive?: boolean;
+}
+
+interface FilterCollection {
+  conditions: FilterCondition[];
+  logic: 'AND' | 'OR';
+}
 
 /**
  * Document Store - Manages document fetching with server-side filtering
@@ -22,9 +48,12 @@ import { Document, FilterCriteria } from '@mmt/entities';
  * 
  * Example Usage:
  * setFilters({
- *   dateExpression: 'last 30 days',
- *   sizeExpression: 'under 100k',
- *   tags: ['important']
+ *   conditions: [
+ *     { field: 'modified', operator: 'gt', value: '2024-01-01' },
+ *     { field: 'size', operator: 'lt', value: 100000 },
+ *     { field: 'tags', operator: 'contains', value: ['important'] }
+ *   ],
+ *   logic: 'AND'
  * });
  * fetchDocuments();
  */
@@ -37,11 +66,11 @@ interface DocumentStoreState {
   loading: boolean;
   error: string | null;
   searchQuery: string;
-  filters: FilterCriteria;
+  filters: FilterCollection;
   
   // Actions
   setSearchQuery: (query: string) => void;
-  setFilters: (filters: FilterCriteria) => void;
+  setFilters: (filters: FilterCollection) => void;
   fetchDocuments: () => Promise<void>;
   clearError: () => void;
   reset: () => void;
@@ -58,12 +87,12 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   loading: false,
   error: null,
   searchQuery: '',
-  filters: {},
+  filters: { conditions: [], logic: 'AND' },
   
   // Actions
   setSearchQuery: (query: string) => set({ searchQuery: query }),
   
-  setFilters: (filters: FilterCriteria) => {
+  setFilters: (filters: FilterCollection) => {
     set({ filters });
     // Trigger a new fetch with the updated filters
     get().fetchDocuments();
@@ -85,7 +114,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       params.append('offset', '0');
       
       // Add filters as JSON if present
-      if (filters && Object.keys(filters).length > 0) {
+      if (filters && filters.conditions.length > 0) {
         params.append('filters', JSON.stringify(filters));
       }
       
@@ -121,6 +150,6 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     loading: false,
     error: null,
     searchQuery: '',
-    filters: {}
+    filters: { conditions: [], logic: 'AND' }
   })
 }));
