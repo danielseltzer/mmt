@@ -24,9 +24,10 @@ program
 program
   .command('start')
   .description('Start MMT services')
-  .requiredOption('-c, --config <path>', 'Config file path (required)')
+  .requiredOption('-c, --config <path>', 'Path to config YAML file (required - no defaults)')
   .option('--api-only', 'Start only the API server')
   .option('--web-only', 'Start only the web server')
+  .addHelpText('after', '\nExample:\n  pnpm dev --config dev-config.yaml\n  pnpm dev --config personal-vault-config.yaml')
   .action(async (options: StartOptions) => {
     const manager = new MMTControlManager({
       configPath: options.config
@@ -89,5 +90,23 @@ program
   .action(async (options: StopOptions) => {
     console.log('Stop command not implemented yet - use Ctrl+C for now');
   });
+
+// Custom error handling
+program.configureOutput({
+  outputError: (str, write) => {
+    if (str.includes('required option') && str.includes('--config')) {
+      console.error('\n❌ Error: Config file is required (no defaults)\n');
+      console.error('Usage: pnpm dev --config <path-to-config.yaml>\n');
+      console.error('Examples:');
+      console.error('  pnpm dev --config dev-config.yaml');
+      console.error('  pnpm dev --config personal-vault-config.yaml\n');
+      console.error('Create a config file with:');
+      console.error('  vaultPath: /absolute/path/to/vault');
+      console.error('  indexPath: /absolute/path/to/index\n');
+    } else {
+      write(str);
+    }
+  }
+});
 
 program.parse();
