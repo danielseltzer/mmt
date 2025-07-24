@@ -44,6 +44,7 @@ interface DocumentStoreState {
   setFilters: (filters: FilterCriteria) => void;
   fetchDocuments: () => Promise<void>;
   clearError: () => void;
+  reset: () => void;
 }
 
 // No longer needed - filtering happens on the server
@@ -88,7 +89,8 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         params.append('filters', JSON.stringify(filters));
       }
       
-      const url = `/api/documents?${params.toString()}`;
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const url = `${apiUrl}/api/documents?${params.toString()}`;
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -109,5 +111,16 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     }
   },
   
-  clearError: () => set({ error: null })
+  clearError: () => set({ error: null }),
+  
+  reset: () => set({
+    documents: [],
+    filteredDocuments: [],
+    totalCount: 0,
+    vaultTotal: 0,
+    loading: false,
+    error: null,
+    searchQuery: '',
+    filters: {}
+  })
 }));

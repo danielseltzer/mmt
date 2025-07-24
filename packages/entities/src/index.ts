@@ -62,3 +62,6 @@ export * from './filter-criteria.js';
 // Export natural language parsers
 export * from './date-parser.js';
 export * from './size-parser.js';
+
+// Export declarative filter schemas
+export * from './filter.schema.js';

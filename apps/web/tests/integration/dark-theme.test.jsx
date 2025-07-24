@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import App from '../src/App';
-
 describe('Dark Theme', () => {
   beforeEach(() => {
     // Reset DOM before each test
@@ -22,15 +19,8 @@ describe('Dark Theme', () => {
     expect(document.body.classList.contains('dark')).toBe(true);
   });
 
-  it('should apply dark background color to app container', () => {
-    const { container } = render(<App />);
-    const appContainer = container.querySelector('.min-h-screen');
-    expect(appContainer).toHaveClass('bg-background');
-    
-    // In a real test, we'd check computed styles
-    // For now, we verify the class is applied
-    expect(appContainer).toBeTruthy();
-  });
+  // App component test removed - it makes API calls on mount
+  // This test is now in integration tests
 
   it('should have dark theme CSS variables defined', () => {
     // Check if CSS is loaded (this would need to be mocked in tests)

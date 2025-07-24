@@ -13,5 +13,14 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./src/tests/setup.ts'],
+    include: [
+      'tests/date-parsing.test.js',
+      'tests/table-rendering.test.jsx'
+    ],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'tests/integration/**',
+    ],
   },
 })

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DocumentSchema } from './document.schema.js';
+import { FilterCollectionSchema } from './filter.schema.js';
 
 /**
  * Selection criteria for finding documents
@@ -100,8 +101,8 @@ export const AgentAnalysisSchema = z.object({
  */
 export const OperationPipelineSchema = z.object({
   select: SelectCriteriaSchema,
-  filter: z.function().optional()
-    .describe('Optional filter function to further refine selection'),
+  filter: FilterCollectionSchema.optional()
+    .describe('Optional declarative filters to further refine selection'),
   operations: z.array(ScriptOperationSchema).min(1).describe('Operations to perform'),
   output: OutputConfigSchema.optional(),
   options: ExecuteOptionsSchema.optional(),

@@ -1,5 +1,4 @@
 import { pathToFileURL } from 'url';
-import { join, basename } from 'path';
 import type { ColumnTable } from 'arquero';
 type Table = ColumnTable;
 import type {
@@ -9,9 +8,8 @@ import type {
   Document,
   SelectCriteria,
   ScriptOperation,
-  SuccessResult,
-  FailureResult,
-  SkippedResult,
+  FilterCollection,
+  FilterCondition,
 } from '@mmt/entities';
 import { OperationPipelineSchema } from '@mmt/entities';
 import type { FileSystemAccess } from '@mmt/filesystem-access';
@@ -171,28 +169,17 @@ export class ScriptRunner {
       // Analysis operations need local document access, so handle them here
       const selectedDocs = await this.selectDocuments(pipeline.select);
       let documents = selectedDocs;
-      if (pipeline.filter !== undefined) {
-        documents = selectedDocs.filter((doc) => Boolean(pipeline.filter?.(doc)));
+      if (pipeline.filter) {
+        // Apply declarative filters locally for analysis operations
+        documents = this.applyFilters(selectedDocs, pipeline.filter);
       }
       return this.executeAnalysisPipeline(pipeline, documents, startTime);
     }
 
     // For non-analysis operations, call the API
     try {
-      // If there's a filter function, we need to apply it locally first
-      let pipelineToSend = pipeline;
-      if (pipeline.filter !== undefined) {
-        // Select documents locally to apply the filter
-        const selectedDocs = await this.selectDocuments(pipeline.select);
-        const filteredDocs = selectedDocs.filter((doc) => Boolean(pipeline.filter?.(doc)));
-        
-        // Create a new pipeline with explicit file list instead of criteria
-        pipelineToSend = {
-          ...pipeline,
-          select: { files: filteredDocs.map(d => d.path) },
-          filter: undefined // Remove the filter since we already applied it
-        };
-      }
+      // API now handles declarative filters directly
+      const pipelineToSend = pipeline;
 
       // Call the API
       const response = await fetch(`${this.apiUrl}/api/pipelines/execute`, {
@@ -741,5 +728,191 @@ export class ScriptRunner {
       },
       analysisTable: analysisResult.table,
     };
+  }
+
+  /**
+   * Apply declarative filters to documents.
+   * This replicates the same filtering logic as the API for consistency.
+   */
+  private applyFilters(documents: Document[], filterCollection: FilterCollection): Document[] {
+    return documents.filter(doc => {
+      const results = filterCollection.conditions.map(condition => 
+        this.evaluateFilter(doc, condition)
+      );
+      
+      // Apply logic (AND/OR)
+      if (filterCollection.logic === 'OR') {
+        return results.some(r => r);
+      } else {
+        // Default to AND
+        return results.every(r => r);
+      }
+    });
+  }
+
+  private evaluateFilter(doc: Document, filter: FilterCondition): boolean {
+    switch (filter.field) {
+      case 'name':
+      case 'content':
+      case 'search': {
+        const searchIn = this.getSearchableText(doc, filter.field);
+        return this.evaluateTextOperator(searchIn, filter.operator, filter.value, filter.caseSensitive);
+      }
+      
+      case 'folders': {
+        const docFolder = doc.path.substring(0, doc.path.lastIndexOf('/'));
+        if (filter.operator === 'in') {
+          return filter.value.some((folder: string) => docFolder.startsWith(folder));
+        } else {
+          // not_in
+          return !filter.value.some((folder: string) => docFolder.startsWith(folder));
+        }
+      }
+      
+      case 'tags': {
+        const docTags = doc.metadata.tags || [];
+        return this.evaluateArrayOperator(docTags, filter.operator, filter.value);
+      }
+      
+      case 'metadata': {
+        const metaValue = doc.metadata.frontmatter?.[filter.key];
+        // MVP: only equals operator for metadata
+        return metaValue === filter.value;
+      }
+      
+      case 'modified':
+      case 'created': {
+        // Note: created date is not available in the current document schema
+        // For now, treat created filters as always false
+        if (filter.field === 'created') {
+          console.warn('Created date filtering is not supported - document metadata does not include creation date');
+          return false;
+        }
+        const docDate = doc.metadata.modified;
+        if (!docDate) return false;
+        return this.evaluateDateOperator(docDate, filter.operator, filter.value);
+      }
+      
+      case 'size': {
+        return this.evaluateNumberOperator(doc.metadata.size, filter.operator, filter.value);
+      }
+      
+      default:
+        return false;
+    }
+  }
+
+  private getSearchableText(doc: Document, field: 'name' | 'content' | 'search'): string {
+    switch (field) {
+      case 'name':
+        return doc.metadata.name;
+      case 'content':
+        return doc.content;
+      case 'search':
+        // Search across multiple fields
+        return [
+          doc.metadata.name,
+          doc.content,
+          doc.metadata.tags?.join(' ') || '',
+          Object.entries(doc.metadata.frontmatter || {}).map(([k, v]) => `${k}:${String(v)}`).join(' ')
+        ].join(' ');
+      default:
+        return '';
+    }
+  }
+
+  private evaluateTextOperator(text: string, operator: string, value: string, caseSensitive = false): boolean {
+    const searchText = caseSensitive ? text : text.toLowerCase();
+    const searchValue = caseSensitive ? value : value.toLowerCase();
+    
+    switch (operator) {
+      case 'contains':
+        return searchText.includes(searchValue);
+      case 'not_contains':
+        return !searchText.includes(searchValue);
+      case 'equals':
+        return searchText === searchValue;
+      case 'not_equals':
+        return searchText !== searchValue;
+      case 'starts_with':
+        return searchText.startsWith(searchValue);
+      case 'ends_with':
+        return searchText.endsWith(searchValue);
+      case 'matches':
+        try {
+          const regex = new RegExp(value, caseSensitive ? '' : 'i');
+          return regex.test(text);
+        } catch {
+          return false;
+        }
+      default:
+        return false;
+    }
+  }
+
+  private evaluateArrayOperator(array: string[], operator: string, values: string[]): boolean {
+    switch (operator) {
+      case 'contains':
+        return values.some(v => array.includes(v));
+      case 'not_contains':
+        return !values.some(v => array.includes(v));
+      case 'contains_all':
+        return values.every(v => array.includes(v));
+      case 'contains_any':
+        return values.some(v => array.includes(v));
+      default:
+        return false;
+    }
+  }
+
+  private evaluateDateOperator(date: Date, operator: string, value: string | number | { from: string; to: string }): boolean {
+    const dateMs = date.getTime();
+    
+    if (typeof value === 'object' && 'from' in value) {
+      // Handle between operator
+      const fromMs = new Date(value.from).getTime();
+      const toMs = new Date(value.to).getTime();
+      if (operator === 'between') {
+        return dateMs >= fromMs && dateMs <= toMs;
+      } else {
+        // not_between
+        return dateMs < fromMs || dateMs > toMs;
+      }
+    }
+    
+    const compareMs = typeof value === 'number' ? value : new Date(value).getTime();
+    
+    switch (operator) {
+      case 'gt':
+        return dateMs > compareMs;
+      case 'gte':
+        return dateMs >= compareMs;
+      case 'lt':
+        return dateMs < compareMs;
+      case 'lte':
+        return dateMs <= compareMs;
+      default:
+        return false;
+    }
+  }
+
+  private evaluateNumberOperator(num: number, operator: string, value: number | { from: number; to: number }): boolean {
+    if (typeof value === 'object' && 'from' in value) {
+      // Handle between operator
+      return num >= value.from && num <= value.to;
+    }
+    
+    switch (operator) {
+      case 'gt':
+        return num > value;
+      case 'gte':
+        return num >= value;
+      case 'lt':
+        return num < value;
+      case 'lte':
+        return num <= value;
+      default:
+        return false;
+    }
   }
 }

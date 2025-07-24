@@ -13,7 +13,9 @@
     "test:ui": "vitest --ui",
     "lint": "eslint src",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test:unit": "vitest run",
+    "test:integration": "echo 'No integration tests'"
   },
   "dependencies": {
     "@mmt/entities": "workspace:*"

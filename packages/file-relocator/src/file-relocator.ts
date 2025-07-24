@@ -66,7 +66,7 @@ export class FileRelocator {
   private async getAllMarkdownFiles(vaultPath: string): Promise<string[]> {
     const files: string[] = [];
     
-    const processDirectory = async (dirPath: string) => {
+    const processDirectory = async (dirPath: string): Promise<void> => {
       const entries = await this.fileSystem.readdir(dirPath);
       
       for (const entryName of entries) {
@@ -154,11 +154,11 @@ export class FileRelocator {
     targetRelative: string
   ): Omit<Link, 'line'>[] {
     const links: Omit<Link, 'line'>[] = [];
-    const wikilinkRegex = /\[\[([^\]]+)\]\]/g;
+    const wikilinkRegex = /\[\[([^\]]+)\]\]/gu;
     
     let match;
     while ((match = wikilinkRegex.exec(line)) !== null) {
-      const linkTarget = match[1];
+      const [, linkTarget] = match;
       const [targetPath, anchor] = linkTarget.split('#');
       
       // Check if this link points to our target
@@ -186,12 +186,11 @@ export class FileRelocator {
     vaultPath: string
   ): Omit<Link, 'line'>[] {
     const links: Omit<Link, 'line'>[] = [];
-    const mdLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
+    const mdLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/gu;
     
     let match;
     while ((match = mdLinkRegex.exec(line)) !== null) {
-      const linkText = match[1];
-      const linkPath = match[2];
+      const [, linkText, linkPath] = match;
       const [targetPath, anchor] = linkPath.split('#');
       
       // Check if this link points to our target
@@ -218,14 +217,14 @@ export class FileRelocator {
     targetRelative: string
   ): boolean {
     // Remove extension from relative path for comparison
-    const targetRelativeNoExt = targetRelative.replace(/\.[^.]+$/, '');
+    const targetRelativeNoExt = targetRelative.replace(/\.[^.]+$/u, '');
     
     // Normalize paths for comparison (forward slashes)
-    const normalizedTarget = targetRelativeNoExt.replace(/\\/g, '/');
-    const normalizedLink = linkTarget.replace(/\\/g, '/');
+    const normalizedTarget = targetRelativeNoExt.replace(/\\/gu, '/');
+    const normalizedLink = linkTarget.replace(/\\/gu, '/');
     
     // Exact match with relative path (with or without extension)
-    if (normalizedLink === targetRelative.replace(/\\/g, '/') || 
+    if (normalizedLink === targetRelative.replace(/\\/gu, '/') || 
         normalizedLink === normalizedTarget) {
       return true;
     }
@@ -263,12 +262,12 @@ export class FileRelocator {
     const targetAbsolute = path.resolve(vaultPath, targetRelative);
     
     // Normalize for comparison
-    const normalizedResolved = resolvedPath.replace(/\\/g, '/');
-    const normalizedTarget = targetAbsolute.replace(/\\/g, '/');
+    const normalizedResolved = resolvedPath.replace(/\\/gu, '/');
+    const normalizedTarget = targetAbsolute.replace(/\\/gu, '/');
     
     // Check with and without extension
     return normalizedResolved === normalizedTarget || 
-           normalizedResolved === normalizedTarget.replace(/\.[^.]+$/, '');
+           normalizedResolved === normalizedTarget.replace(/\.[^.]+$/u, '');
   }
 
   /**
@@ -289,9 +288,9 @@ export class FileRelocator {
     // Calculate the new paths
     const fileDir = path.dirname(filePath);
     const newRelativePath = path.relative(fileDir, newPath);
-    const newRelativePathNoExt = newRelativePath.replace(/\.[^.]+$/, '');
+    const newRelativePathNoExt = newRelativePath.replace(/\.[^.]+$/u, '');
     const newVaultRelative = path.relative(vaultPath, newPath);
-    const newVaultRelativeNoExt = newVaultRelative.replace(/\.[^.]+$/, '');
+    const newVaultRelativeNoExt = newVaultRelative.replace(/\.[^.]+$/u, '');
     
     // Process each link
     for (const link of sortedLinks) {
@@ -316,7 +315,7 @@ export class FileRelocator {
     newRelativePathNoExt: string,
     newRelativePath: string,
     newVaultRelativeNoExt: string,
-    newVaultRelative: string
+    _newVaultRelative: string
   ): string {
     if (link.type === 'wikilink') {
       // Determine which path to use based on the original link format
@@ -330,14 +329,14 @@ export class FileRelocator {
         newTarget = newVaultRelativeNoExt;
       }
       
-      newTarget = newTarget.replace(/\\/g, '/');
+      newTarget = newTarget.replace(/\\/gu, '/');
       const anchor = link.anchor ? `#${link.anchor}` : '';
       return `[[${newTarget}${anchor}]]`;
     } 
       // For markdown links, preserve relative path structure
-      const newTarget = newRelativePath.replace(/\\/g, '/');
+      const newTarget = newRelativePath.replace(/\\/gu, '/');
       const anchor = link.anchor ? `#${link.anchor}` : '';
-      return `[${link.text || ''}](${newTarget}${anchor})`;
+      return `[${link.text ?? ''}](${newTarget}${anchor})`;
     
   }
 

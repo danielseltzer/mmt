@@ -3,7 +3,9 @@ import type {
   OperationPipeline,
   Document,
   SelectCriteria,
-  ScriptOperation
+  ScriptOperation,
+  FilterCollection,
+  FilterCondition
 } from '@mmt/entities';
 import { OperationRegistry } from '@mmt/document-operations';
 import type { OperationContext } from '@mmt/document-operations';
@@ -42,6 +44,21 @@ export interface PipelineExecutionResult {
   output?: any;
 }
 
+/**
+ * PipelineExecutor handles execution of operation pipelines.
+ * 
+ * Currently supports mutation operations:
+ * - move: Move documents to a new location
+ * - rename: Rename documents
+ * - updateFrontmatter: Update document frontmatter
+ * - delete: Delete documents (with optional permanent flag)
+ * 
+ * Note: Filter functions are handled client-side by the script-runner.
+ * The API receives pre-filtered file lists instead of filter functions,
+ * as JavaScript functions cannot be serialized over HTTP.
+ * 
+ * Future: Analysis operations (analyze, transform, aggregate) - see issue #22
+ */
 export class PipelineExecutor {
   private readonly context: Context;
   private readonly operationRegistry: OperationRegistry;
@@ -64,7 +81,12 @@ export class PipelineExecutor {
 
     try {
       // SELECT phase - get documents based on criteria
-      const documents = await this.selectDocuments(pipeline.select);
+      let documents = await this.selectDocuments(pipeline.select);
+      
+      // FILTER phase - apply declarative filters if present
+      if (pipeline.filter) {
+        documents = this.applyFilters(documents, pipeline.filter);
+      }
       
       // TRANSFORM phase - apply operations to documents
       const isPreview = !pipeline.options?.destructive;
@@ -191,13 +213,13 @@ export class PipelineExecutor {
     if (Object.keys(query).length === 0) {
       // No criteria - return all documents
       const allDocs = this.context.indexer.getAllDocuments();
-      return this.convertMetadataToDocuments(allDocs);
+      return await this.convertMetadataToDocuments(allDocs);
     }
 
     // Build and execute query
     const indexerQuery = this.buildIndexerQuery(query);
     const results = this.context.indexer.query(indexerQuery);
-    return this.convertMetadataToDocuments(results);
+    return await this.convertMetadataToDocuments(results);
   }
 
   private buildIndexerQuery(criteria: Record<string, unknown>): any {
@@ -215,16 +237,19 @@ export class PipelineExecutor {
     return { conditions };
   }
 
-  private convertMetadataToDocuments(metadata: any[]): Document[] {
+  private async convertMetadataToDocuments(metadata: any[]): Promise<Document[]> {
     const documents: Document[] = [];
     
     for (const meta of metadata) {
       const outgoingLinks = this.context.indexer.getOutgoingLinks(meta.relativePath);
       const incomingLinks = this.context.indexer.getBacklinks(meta.relativePath);
       
+      // Load content for filtering
+      const content = await this.context.fs.readFile(meta.path, 'utf-8');
+      
       documents.push({
         path: meta.path,
-        content: '',
+        content,
         metadata: {
           name: meta.basename,
           modified: new Date(meta.mtime),
@@ -307,6 +332,13 @@ export class PipelineExecutor {
           permanent: operation.permanent ?? false
         });
 
+      // Analysis operations - not yet implemented
+      // TODO: Implement analysis operations (see issue #22)
+      case 'analyze':
+      case 'transform':
+      case 'aggregate':
+        throw new Error(`Analysis operation '${operation.type}' not yet implemented. These operations will be added in a future release.`);
+
       default:
         throw new Error(`Unknown operation type: ${operation.type}`);
     }
@@ -337,5 +369,191 @@ export class PipelineExecutor {
     return {
       documents: documents.map(d => d.path)
     };
+  }
+
+  private applyFilters(documents: Document[], filterCollection: FilterCollection): Document[] {
+    return documents.filter(doc => {
+      const results = filterCollection.conditions.map(condition => 
+        this.evaluateFilter(doc, condition)
+      );
+      
+      // Apply logic (AND/OR)
+      if (filterCollection.logic === 'OR') {
+        return results.some(r => r);
+      } else {
+        // Default to AND
+        return results.every(r => r);
+      }
+    });
+  }
+
+  private evaluateFilter(doc: Document, filter: FilterCondition): boolean {
+    switch (filter.field) {
+      case 'name':
+      case 'content':
+      case 'search': {
+        const textFilter = filter as any; // TypeScript discriminated union limitation
+        const searchIn = this.getSearchableText(doc, textFilter.field);
+        return this.evaluateTextOperator(searchIn, textFilter.operator, textFilter.value, textFilter.caseSensitive);
+      }
+      
+      case 'folders': {
+        const folderFilter = filter as any;
+        const docFolder = doc.path.substring(0, doc.path.lastIndexOf('/'));
+        if (folderFilter.operator === 'in') {
+          return folderFilter.value.some((folder: string) => docFolder.startsWith(folder));
+        } else {
+          // not_in
+          return !folderFilter.value.some((folder: string) => docFolder.startsWith(folder));
+        }
+      }
+      
+      case 'tags': {
+        const tagFilter = filter as any;
+        const docTags = doc.metadata.tags || [];
+        return this.evaluateArrayOperator(docTags, tagFilter.operator, tagFilter.value);
+      }
+      
+      case 'metadata': {
+        const metaFilter = filter as any;
+        const metaValue = doc.metadata.frontmatter?.[metaFilter.key];
+        // MVP: only equals operator for metadata
+        return metaValue === metaFilter.value;
+      }
+      
+      case 'modified':
+      case 'created': {
+        const dateFilter = filter as any;
+        // Note: created date is not available in the current document schema
+        // For now, treat created filters as always false
+        if (dateFilter.field === 'created') {
+          console.warn('Created date filtering is not supported - document metadata does not include creation date');
+          return false;
+        }
+        const docDate = doc.metadata.modified;
+        if (!docDate) return false;
+        return this.evaluateDateOperator(docDate, dateFilter.operator, dateFilter.value);
+      }
+      
+      case 'size': {
+        const sizeFilter = filter as any;
+        return this.evaluateNumberOperator(doc.metadata.size, sizeFilter.operator, sizeFilter.value);
+      }
+      
+      default:
+        return false;
+    }
+  }
+
+  private getSearchableText(doc: Document, field: 'name' | 'content' | 'search'): string {
+    switch (field) {
+      case 'name':
+        return doc.metadata.name;
+      case 'content':
+        return doc.content;
+      case 'search':
+        // Search across multiple fields
+        return [
+          doc.metadata.name,
+          doc.content,
+          doc.metadata.tags?.join(' ') || '',
+          Object.entries(doc.metadata.frontmatter || {}).map(([k, v]) => `${k}:${v}`).join(' ')
+        ].join(' ');
+    }
+  }
+
+  private evaluateTextOperator(text: string, operator: string, value: string, caseSensitive = false): boolean {
+    const searchText = caseSensitive ? text : text.toLowerCase();
+    const searchValue = caseSensitive ? value : value.toLowerCase();
+    
+    switch (operator) {
+      case 'contains':
+        return searchText.includes(searchValue);
+      case 'not_contains':
+        return !searchText.includes(searchValue);
+      case 'equals':
+        return searchText === searchValue;
+      case 'not_equals':
+        return searchText !== searchValue;
+      case 'starts_with':
+        return searchText.startsWith(searchValue);
+      case 'ends_with':
+        return searchText.endsWith(searchValue);
+      case 'matches':
+        try {
+          const regex = new RegExp(value, caseSensitive ? '' : 'i');
+          return regex.test(text);
+        } catch {
+          return false;
+        }
+      default:
+        return false;
+    }
+  }
+
+  private evaluateArrayOperator(array: string[], operator: string, values: string[]): boolean {
+    switch (operator) {
+      case 'contains':
+        return values.some(v => array.includes(v));
+      case 'not_contains':
+        return !values.some(v => array.includes(v));
+      case 'contains_all':
+        return values.every(v => array.includes(v));
+      case 'contains_any':
+        return values.some(v => array.includes(v));
+      default:
+        return false;
+    }
+  }
+
+  private evaluateDateOperator(date: Date, operator: string, value: string | number | { from: string; to: string }): boolean {
+    const dateMs = date.getTime();
+    
+    if (typeof value === 'object' && 'from' in value) {
+      // Handle between operator
+      const fromMs = new Date(value.from).getTime();
+      const toMs = new Date(value.to).getTime();
+      if (operator === 'between') {
+        return dateMs >= fromMs && dateMs <= toMs;
+      } else {
+        // not_between
+        return dateMs < fromMs || dateMs > toMs;
+      }
+    }
+    
+    const compareMs = typeof value === 'number' ? value : new Date(value).getTime();
+    
+    switch (operator) {
+      case 'gt':
+        return dateMs > compareMs;
+      case 'gte':
+        return dateMs >= compareMs;
+      case 'lt':
+        return dateMs < compareMs;
+      case 'lte':
+        return dateMs <= compareMs;
+      default:
+        return false;
+    }
+  }
+
+  private evaluateNumberOperator(num: number, operator: string, value: number | { from: number; to: number }): boolean {
+    if (typeof value === 'object' && 'from' in value) {
+      // Handle between operator
+      return num >= value.from && num <= value.to;
+    }
+    
+    switch (operator) {
+      case 'gt':
+        return num > value;
+      case 'gte':
+        return num >= value;
+      case 'lt':
+        return num < value;
+      case 'lte':
+        return num <= value;
+      default:
+        return false;
+    }
   }
 }

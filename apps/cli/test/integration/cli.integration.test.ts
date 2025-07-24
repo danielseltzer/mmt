@@ -73,7 +73,7 @@ describe('CLI Integration Tests', () => {
       
       const configPath = join(tempDir, 'config.yaml');
       const indexPath = join(tempDir, 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3002\nwebPort: 8002`);
       
       // Create test script and markdown files
       const scriptPath = join(tempDir, 'test.mjs');
@@ -108,7 +108,7 @@ export default {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\napiPort: 3002\nwebPort: 8002`);
       
       const result = await runCli(['--config=' + configPath, 'unknown']);
       
@@ -123,7 +123,7 @@ export default {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\napiPort: 3002\nwebPort: 8002`);
       
       // Create test script and markdown files
       const scriptPath = join(tempDir, 'hello.mjs');
@@ -157,7 +157,7 @@ export default {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\napiPort: 3002\nwebPort: 8002`);
       
       // Create test script and markdown files
       const scriptPath = join(tempDir, 'hello.mjs');
@@ -196,7 +196,7 @@ export default {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\napiPort: 3002\nwebPort: 8002`);
       
       const result = await runCli(['--config=' + configPath, 'script']);
       
@@ -209,7 +209,7 @@ export default {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}`);
+      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\napiPort: 3002\nwebPort: 8002`);
       
       const result = await runCli([
         '--config=' + configPath,

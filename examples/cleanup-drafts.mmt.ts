@@ -23,7 +23,14 @@ export default class CleanupDrafts implements Script {
       select: { 'fm:status': 'draft' },
       
       // Filter to only drafts older than 30 days
-      filter: doc => doc.metadata.modified < thirtyDaysAgo,
+      filter: {
+        conditions: [{
+          field: 'modified',
+          operator: 'lt',
+          value: thirtyDaysAgo.toISOString()
+        }],
+        logic: 'AND'
+      },
       
       // Delete matching files
       operations: [
