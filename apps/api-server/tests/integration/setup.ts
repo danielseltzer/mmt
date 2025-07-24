@@ -18,6 +18,7 @@ beforeAll(async () => {
     vaultPath: testVaultPath,
     indexPath: join(tmpdir(), `mmt-api-test-index-${Date.now()}`),
     apiPort: 3001,
+    webPort: 3002,  // Required by config schema
     fileWatching: {
       enabled: true,
       debounceMs: 50
@@ -26,6 +27,9 @@ beforeAll(async () => {
   
   testConfigPath = join(tmpdir(), `mmt-api-test-config-${Date.now()}.json`);
   await fs.writeFile(testConfigPath, JSON.stringify(testConfig, null, 2));
+  
+  // Export vault path for tests to use
+  process.env.TEST_VAULT_PATH = testVaultPath;
   
   // Start API server
   console.log('Starting API server for integration tests...');
@@ -45,10 +49,14 @@ beforeAll(async () => {
       reject(new Error('API server failed to start within 10 seconds'));
     }, 10000);
     
+    let serverReady = false;
     apiServer.stdout?.on('data', (data) => {
       const output = data.toString();
-      console.log('API Server:', output);
+      if (!serverReady) {
+        console.log('API Server:', output);
+      }
       if (output.includes('MMT API Server running')) {
+        serverReady = true;
         clearTimeout(timeout);
         resolve();
       }
@@ -56,6 +64,10 @@ beforeAll(async () => {
     
     apiServer.stderr?.on('data', (data) => {
       console.error('API Server Error:', data.toString());
+    });
+    
+    apiServer.stdout?.on('data', (data) => {
+      console.log('API Server Output:', data.toString());
     });
     
     apiServer.on('error', (error) => {

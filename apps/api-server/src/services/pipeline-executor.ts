@@ -82,7 +82,6 @@ export class PipelineExecutor {
     try {
       // SELECT phase - get documents based on criteria
       let documents = await this.selectDocuments(pipeline.select);
-      
       // FILTER phase - apply declarative filters if present
       if (pipeline.filter) {
         documents = this.applyFilters(documents, pipeline.filter);
@@ -185,6 +184,20 @@ export class PipelineExecutor {
         const exists = await this.context.fs.exists(fullPath);
         
         if (exists) {
+          // Try to get the document from the indexer first (which has frontmatter)
+          const allDocs = this.context.indexer.getAllDocuments();
+          const indexedDoc = allDocs.find(d => d.path === fullPath);
+          
+          if (indexedDoc) {
+            // Convert indexed document to Document format
+            const convertedDocs = await this.convertMetadataToDocuments([indexedDoc]);
+            if (convertedDocs.length > 0) {
+              docs.push(convertedDocs[0]);
+              continue;
+            }
+          }
+          
+          // Fallback to manual creation if not in index
           const stats = await this.context.fs.stat(fullPath);
           const fileName = filePath.replace(/\.md$/u, '').split('/').pop() ?? filePath;
           
