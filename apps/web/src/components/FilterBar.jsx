@@ -4,10 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
 import { MetadataFilter } from './MetadataFilter';
+import { parseDateExpression, parseSizeExpression } from '../utils/filter-utils';
 
 export function FilterBar() {
-  const { documents, filteredDocuments, vaultTotal, filters, setFilters } = useDocumentStore();
-  const [localFilters, setLocalFilters] = useState(filters || {});
+  const { documents, filteredDocuments, vaultTotal, setFilters } = useDocumentStore();
+  // Store individual filter values for the UI
+  const [filterValues, setFilterValues] = useState({
+    name: '',
+    content: '',
+    folders: [],
+    metadata: [],
+    dateExpression: '',
+    sizeExpression: ''
+  });
   const [vaultPath, setVaultPath] = useState('');
   
   // Fetch config on mount
@@ -19,18 +28,94 @@ export function FilterBar() {
       .catch(err => console.error('Failed to fetch config:', err));
   }, []);
   
-  // Apply filters when they change
+  // Convert filter values to FilterCollection format when they change
   useEffect(() => {
-    // Clean up filters - remove empty strings
-    const cleanFilters = Object.entries(localFilters).reduce((acc, [key, value]) => {
-      if (value !== '' && value !== undefined && value !== null) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {});
+    const conditions = [];
     
-    setFilters(cleanFilters);
-  }, [localFilters, setFilters]);
+    // Name filter
+    if (filterValues.name) {
+      conditions.push({
+        field: 'name',
+        operator: 'contains',
+        value: filterValues.name,
+        caseSensitive: false
+      });
+    }
+    
+    // Content filter
+    if (filterValues.content) {
+      conditions.push({
+        field: 'content',
+        operator: 'contains',
+        value: filterValues.content,
+        caseSensitive: false
+      });
+    }
+    
+    // Folders filter
+    if (filterValues.folders && filterValues.folders.length > 0) {
+      conditions.push({
+        field: 'folders',
+        operator: 'in',
+        value: filterValues.folders
+      });
+    }
+    
+    // Metadata filters - each becomes a separate condition
+    if (filterValues.metadata && filterValues.metadata.length > 0) {
+      filterValues.metadata.forEach(metaFilter => {
+        const [key, value] = metaFilter.split(':');
+        if (key) {
+          conditions.push({
+            field: 'metadata',
+            key,
+            operator: 'equals',
+            value: value === undefined ? true : value
+          });
+        }
+      });
+    }
+    
+    // Date filter - parse natural language
+    if (filterValues.dateExpression) {
+      try {
+        const parsed = parseDateExpression(filterValues.dateExpression);
+        if (parsed) {
+          conditions.push({
+            field: 'modified',
+            operator: parsed.operator,
+            value: parsed.value
+          });
+        }
+      } catch {
+        console.warn('Invalid date expression:', filterValues.dateExpression);
+      }
+    }
+    
+    // Size filter - parse natural language
+    if (filterValues.sizeExpression) {
+      try {
+        const parsed = parseSizeExpression(filterValues.sizeExpression);
+        if (parsed) {
+          conditions.push({
+            field: 'size',
+            operator: parsed.operator,
+            value: parseInt(parsed.value) // Convert string to number
+          });
+        }
+      } catch {
+        console.warn('Invalid size expression:', filterValues.sizeExpression);
+      }
+    }
+    
+    // Set the FilterCollection
+    const filterCollection = {
+      conditions,
+      logic: 'AND'
+    };
+    
+    setFilters(filterCollection);
+  }, [filterValues, setFilters]);
   
   // Extract unique folders from current documents
   const uniqueFolders = [...new Set(
@@ -46,24 +131,24 @@ export function FilterBar() {
   const getFilterSummary = () => {
     const parts = [];
     
-    if (localFilters.folders?.length === 1) {
-      parts.push(`Folders: ${localFilters.folders[0]}`);
-    } else if (localFilters.folders?.length > 1) {
-      parts.push(`Folders: ${localFilters.folders.length} folders`);
+    if (filterValues.folders?.length === 1) {
+      parts.push(`Folders: ${filterValues.folders[0]}`);
+    } else if (filterValues.folders?.length > 1) {
+      parts.push(`Folders: ${filterValues.folders.length} folders`);
     }
     
-    if (localFilters.metadata?.length === 1) {
-      parts.push(`Metadata: ${localFilters.metadata[0]}`);
-    } else if (localFilters.metadata?.length > 1) {
-      parts.push(`Metadata: ${localFilters.metadata.length} keys`);
+    if (filterValues.metadata?.length === 1) {
+      parts.push(`Metadata: ${filterValues.metadata[0]}`);
+    } else if (filterValues.metadata?.length > 1) {
+      parts.push(`Metadata: ${filterValues.metadata.length} keys`);
     }
     
-    if (localFilters.dateExpression) {
-      parts.push(`Date: ${localFilters.dateExpression}`);
+    if (filterValues.dateExpression) {
+      parts.push(`Date: ${filterValues.dateExpression}`);
     }
     
-    if (localFilters.sizeExpression) {
-      parts.push(`Size: ${localFilters.sizeExpression}`);
+    if (filterValues.sizeExpression) {
+      parts.push(`Size: ${filterValues.sizeExpression}`);
     }
     
     return parts.length > 0 ? ' | ' + parts.join(' | ') : '';
@@ -77,8 +162,8 @@ export function FilterBar() {
       <Input
         type="text"
         placeholder="Name..."
-        value={localFilters.name || ''}
-        onChange={(e) => setLocalFilters({ ...localFilters, name: e.target.value })}
+        value={filterValues.name}
+        onChange={(e) => setFilterValues({ ...filterValues, name: e.target.value })}
         className="h-8 w-32 text-sm"
       />
       
@@ -86,38 +171,32 @@ export function FilterBar() {
       <Input
         type="text"
         placeholder="Content..."
-        value={localFilters.content || ''}
-        onChange={(e) => setLocalFilters({ ...localFilters, content: e.target.value })}
+        value={filterValues.content}
+        onChange={(e) => setFilterValues({ ...filterValues, content: e.target.value })}
         className="h-8 w-32 text-sm"
       />
       
       {/* Folders dropdown */}
       <MultiSelectDropdown
         items={uniqueFolders}
-        selectedItems={localFilters.folders || []}
-        onSelectionChange={(folders) => setLocalFilters({ ...localFilters, folders })}
+        selectedItems={filterValues.folders}
+        onSelectionChange={(folders) => setFilterValues({ ...filterValues, folders })}
         placeholder="Folders"
       />
       
       {/* Metadata filter */}
       <MetadataFilter
         documents={documents}
-        selectedMetadata={localFilters.metadata || []}
-        onMetadataChange={(metadata) => setLocalFilters({ ...localFilters, metadata })}
+        selectedMetadata={filterValues.metadata}
+        onMetadataChange={(metadata) => setFilterValues({ ...filterValues, metadata })}
       />
       
       {/* Date filter */}
       <Input
         type="text"
         placeholder="< 7 days"
-        value={localFilters.dateExpression || ''}
-        onChange={(e) => {
-          const value = e.target.value;
-          setLocalFilters({ 
-            ...localFilters, 
-            dateExpression: value || undefined
-          });
-        }}
+        value={filterValues.dateExpression}
+        onChange={(e) => setFilterValues({ ...filterValues, dateExpression: e.target.value })}
         className="h-8 w-32 text-sm"
         title="Examples: < 7 days, last 30 days, > 2024-01-01, since 2024"
       />
@@ -126,14 +205,8 @@ export function FilterBar() {
       <Input
         type="text"
         placeholder="over 1mb"
-        value={localFilters.sizeExpression || ''}
-        onChange={(e) => {
-          const value = e.target.value;
-          setLocalFilters({ 
-            ...localFilters, 
-            sizeExpression: value || undefined
-          });
-        }}
+        value={filterValues.sizeExpression}
+        onChange={(e) => setFilterValues({ ...filterValues, sizeExpression: e.target.value })}
         className="h-8 w-24 text-sm"
         title="Examples: under 10k, > 1mb, <= 500k, at least 100k"
       />

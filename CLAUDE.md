@@ -35,14 +35,12 @@ pnpm dev -- --config test-config.yaml
 
 ### Monorepo Structure
 - **13 single-responsibility packages** under `/packages/*`
-- **2 applications** under `/apps/*` (electron main & renderer)
+- **2 applications** under `/apps/*` 
 - Built with pnpm workspaces + Turborepo
 - All packages communicate through Zod schemas in `@mmt/entities`
 
 ### Core Technology Stack
-- **Electron 31.x** with electron-vite
 - **React 18** with TypeScript for UI
-- **electron-trpc** for type-safe IPC
 - **Zod** schemas as contracts between packages
 - **TanStack Table** for data display
 - **Tailwind CSS** for styling
@@ -80,7 +78,6 @@ The project is documented but not yet implemented. Follow these steps:
 - **File Operations**: All file access MUST go through `@mmt/filesystem-access`
 - **Testing**: Use real files in OS temp directories - never mock filesystem
 - **Config**: Require explicit --config flag, fail fast on invalid config
-- **IPC**: Use electron-trpc for all main-renderer communication
 - **Errors**: Fail fast with clear messages, no silent failures
 - **Performance**: Keep indexing under 5 seconds for 5000 files
 - **NO BACKWARD COMPATIBILITY**: I am the only user. Never add backward compatibility, aliases, or legacy support. Keep the codebase clean and simple.
