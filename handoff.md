@@ -1,189 +1,117 @@
 # MMT Handoff Document
 
-## Current Status (2025-01-24)
+## Current Status (2025-07-25)
 
 ### Recently Completed Work
 
-1. **#144 - Updated FilterBar Component** ✅
-   - FilterBar now generates declarative FilterCollection format
-   - Proper parsing of date and size expressions
-   - Integration with document store using new format
+1. **GUI Pipeline Builder Foundation (#127)** ✅
+   - Created horizontal collapsible panels (Select/Transform/Output)
+   - Panels expand/collapse with smooth transitions
+   - Only one panel open at a time
+   - Integrated search bar on same horizontal line
+   - Filter summaries display when panels are collapsed
 
-2. **#126 - Refactored API to use OperationPipelineSchema** ✅
-   - Created `/api/pipelines/execute` endpoint
-   - Pipeline executor supports SELECT → FILTER → TRANSFORM → OUTPUT model
-   - Full integration tests passing
+2. **Simplified Control System** ✅
+   - Created `./bin/mmt` as single executable entry point
+   - Removed unnecessary api-only/web-only options
+   - Fixed timeout issues (increased to 60s, simplified checks)
+   - Updated README with clear running instructions
+   - `pnpm dev` now shows helpful error directing to real command
 
-3. **Fixed File Watcher Integration** ✅
-   - Files created after server startup are now properly indexed
-   - Pipeline operations can immediately access new files with full metadata
-   - Added timing documentation for file watcher behavior
+3. **Config Management Improvements** ✅
+   - Moved yaml and zod to root-level dependencies
+   - Removed duplicate dependencies from individual packages
+   - Created config store with Zod validation for web app
+   - Web app loads config at startup before rendering
 
-### Current State of the Codebase
-- All integration tests passing
-- File watching properly detects and indexes new documents
-- API pipeline endpoint fully functional with declarative filters
-- FilterBar generates correct declarative filter format
-- No known blocking bugs
+### Current Issue Being Worked On
+
+**Hardcoded URLs (#132)** - IN PROGRESS 🔧
+- Problem: Web app can't connect to API due to hardcoded URL mismatch
+- Attempted solution: 
+  - Created `/config` endpoint in Vite to serve API URL
+  - Using environment variable `MMT_CONFIG_PATH` to pass config location
+  - Web app fetches config on startup
+- Current status: `/config` endpoint returns 500 error, needs debugging
+
+### Working Branch
+`feat/127-gui-pipeline-builder` - Contains all recent work
 
 ## Priority Work Queue
 
-### 1. GUI Pipeline Builder (#127) - **HIGHEST PRIORITY** 🔥
-Build the visual pipeline interface with four panels:
+### 1. **Fix Config Loading Issue** - IMMEDIATE 🔥
+The web app shows "Configuration Error" because the `/config` endpoint isn't working properly. Need to:
+- Debug why Vite middleware isn't serving config correctly
+- Ensure `MMT_CONFIG_PATH` environment variable is properly passed
+- Test that web app can fetch from `/config` and connect to API
 
-**SELECT Panel:**
-- File picker (browse vault files)
-- Query builder (search by content/name)
-- Recent files selector
-- "All files" option
+### 2. **Complete GUI Pipeline Builder (#127)** - HIGH PRIORITY
+Once config is working:
+- Implement TRANSFORM panel with operation builder UI
+- Implement OUTPUT panel with format configuration
+- Add Execute button that sends pipeline to API
+- Add loading states and error handling
 
-**FILTER Panel:**
-- Visual filter builder using declarative format
-- Add/remove filter conditions
-- AND/OR logic selector
-- Filter presets (e.g., "Modified this week", "Large files")
+### 3. **Create New Issue for Config Standardization** - HIGH PRIORITY
+The current approach of passing config paths is inconsistent:
+- API server reads config directly
+- Web server needs config passed via environment variable
+- Consider creating a shared config service or better pattern
 
-**TRANSFORM Panel:**
-- Operation type selector (rename, move, update frontmatter, delete)
-- Operation-specific configuration forms
-- Preview mode toggle
-- Batch operation settings
+### 4. **Fix Integration Test Failures (#141)** - HIGH PRIORITY
+- Tests likely failing due to port/URL changes
+- Update tests to work with new config system
 
-**OUTPUT Panel:**
-- Results display format
-- Export options (CSV, JSON)
-- Summary statistics
-
-**Implementation approach:**
-- Start with basic SELECT panel
-- Add one operation type (rename) to test end-to-end
-- Incrementally add features
-- Use existing DocumentList component where possible
-
-### 2. Fix Integration Test Failures (#141) - **HIGH PRIORITY**
-- Investigate failures after shared API server implementation
-- Update tests to work with new architecture
-- Ensure all packages have passing tests
-
-### 3. Remove Hardcoded URLs/Ports (#132) - **HIGH PRIORITY**
-- Create configuration service for frontend
-- Load API URL from environment/config
-- Remove hardcoded localhost:3001 references
-- Support deployment to different environments
-
-### 4. Add Execution Feedback (#128) - **MEDIUM PRIORITY**
-- Progress indicator during pipeline execution
-- Real-time status updates
-- Results display after completion
-- Error handling and display
-- Operation history/log
-
-### 5. End-to-End Testing (#19) - **MEDIUM PRIORITY**
-- Set up Playwright or similar
-- Test complete user workflows
-- Cover main use cases:
-  - Search and filter documents
-  - Execute rename operation
-  - Bulk metadata updates
-  - Export results
-
-### 6. Fix Table-View Tests (#138, #122) - **MEDIUM PRIORITY**
-- Update tests to match current implementation
-- Remove references to non-existent UI features
-- Ensure consistent test coverage
-
-## Lower Priority Items
-
-### Documentation & Cleanup
-- #143 - Update CLAUDE.md to reflect current architecture
-- #72 - Create scripting documentation with examples
-- #66 - Create ADR for package documentation standards
-
-### Feature Enhancements
-- #18 - Create Reports Package (p1)
-- #14 - Build View Persistence Package (p1)
-- #12 - Create Document Previews Package (p2)
-- #22 - Add Similarity Features (p2)
-
-### Technical Debt
-- #135 - Remove redundant operation schemas
-- #86 - Fix flaky file watcher test (may be fixed already)
-- #56 - Review and prune test scripts collection
+### 5. **Implement Stop and Status Commands (#147)** - MEDIUM PRIORITY
+- Add PID file tracking
+- Implement graceful shutdown
+- Show server status information
 
 ## Technical Context
 
-### API Endpoints
-- `GET /api/config` - Returns vault configuration
-- `GET /api/documents` - List/search documents with filters
-- `POST /api/pipelines/execute` - Execute operation pipeline
-- `GET /api/documents/by-path/*` - Get single document metadata
-
-### Key Data Structures
-
-**OperationPipeline:**
-```typescript
-{
-  select: SelectCriteria,      // What documents to operate on
-  filter?: FilterCollection,   // Additional filtering
-  operations: Operation[],     // What to do with them
-  output?: OutputConfig[],     // How to format results
-  options?: ExecutionOptions   // Preview mode, error handling
-}
+### Current Architecture
+```
+MMT Control Manager (./bin/mmt)
+├── Reads config file (YAML)
+├── Starts API server
+│   └── Reads config directly
+└── Starts Web server (Vite)
+    └── Needs config via env var MMT_CONFIG_PATH
+        └── Serves /config endpoint for web app
 ```
 
-**FilterCollection:**
-```typescript
-{
-  conditions: FilterCondition[],  // Array of filters
-  logic: 'AND' | 'OR'            // How to combine them
-}
-```
+### Key Files Changed
+- `/tools/control-manager/src/control-manager.ts` - Pass MMT_CONFIG_PATH env var
+- `/apps/web/vite.config.ts` - Serve /config endpoint
+- `/apps/web/src/main.jsx` - Load config before rendering
+- `/apps/web/src/config/` - Config store and schema
+- `/apps/web/src/stores/document-store.ts` - Use config store for API URL
 
-### Testing Strategy
-- NO MOCKS - use real file operations
-- Integration tests use temp directories
-- Test config uses different ports (3002, 8002)
-- File watcher needs 200-300ms delay in tests
-
-### Development Commands
+### Commands
 ```bash
-# Start development servers
-pnpm dev                    # Start all services
-pnpm --filter @mmt/web dev  # Frontend only
-pnpm --filter @mmt/api-server dev  # API only
+# Start MMT
+./bin/mmt start --config personal-vault-config.yaml
 
-# Testing
-pnpm test                   # All tests
-pnpm test:integration       # Integration tests only
-pnpm --filter @mmt/web test # Package-specific tests
-
-# Code quality
-pnpm lint                   # ESLint
-pnpm type-check            # TypeScript checking
-pnpm clean && pnpm install && pnpm build  # Full rebuild
+# Old way (shows error)
+pnpm dev
 ```
 
-## Known Issues & Gotchas
+## Known Issues
 
-1. **File Watcher Timing**: New files need ~200-300ms to be indexed due to debouncing
-2. **Created Date**: Not supported in filters (documents don't store creation date)
-3. **Hardcoded Vault Path**: FilterBar still hardcodes path (should use config)
-4. **API URL**: Frontend hardcodes localhost:3001 (needs config service)
-
-## Architecture Decisions
-
-1. **Declarative Filters**: All filtering uses Zod-validated schemas, no executable code
-2. **Schema-First**: Every API endpoint has request/response Zod schemas
-3. **No Defaults**: Explicit configuration required for everything
-4. **Real Testing**: No mocks, test with actual file operations
-5. **Fail Fast**: Clear error messages, no silent failures
+1. **Config Loading**: `/config` endpoint returns 500 error
+2. **Hardcoded Ports**: Still some hardcoded localhost references
+3. **Vitest Version Mismatch**: Peer dependency warnings throughout
 
 ## Next Session Starting Point
 
-Begin with issue #127 - implement the GUI pipeline builder:
-1. Create the four-panel layout
-2. Start with basic SELECT panel using existing DocumentList
-3. Add simple rename operation to test end-to-end flow
-4. Incrementally add features
+1. Debug the `/config` endpoint:
+   - Add console.log to see if MMT_CONFIG_PATH is set
+   - Check if file path is absolute vs relative
+   - Verify YAML parsing works
 
-The API is ready, the filters work, and all the pieces are in place. The GUI is the missing piece that will make this system usable by end users.
+2. Once working, verify:
+   - Web app loads config
+   - Web app connects to API
+   - Documents display correctly
+
+3. Then continue with TRANSFORM panel implementation

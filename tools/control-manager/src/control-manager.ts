@@ -88,10 +88,9 @@ export class MMTControlManager {
     }
     const port = this.config.apiPort;
     
-    // Check if already running
+    // Check if already running - fail fast
     if (await this.isPortInUse(port)) {
-      this.log(`API server already running on port ${port}`);
-      return;
+      throw new Error(`Port ${port} is already in use. Cannot start API server.`);
     }
     
     this.log(`Starting API server on port ${port}...`);
@@ -173,17 +172,19 @@ export class MMTControlManager {
     }
     const port = this.config.webPort;
     
-    // Check if already running
+    // Check if already running - fail fast
     if (await this.isPortInUse(port)) {
-      this.log(`Web server already running on port ${port}`);
-      return;
+      throw new Error(`Port ${port} is already in use. Cannot start web server.`);
     }
     
     this.log(`Starting web server on port ${port}...`);
     
     const webProcess = spawn('pnpm', ['--filter', '@mmt/web', 'dev', '--', '--port', String(port)], {
       cwd: rootDir,
-      env: process.env,
+      env: {
+        ...process.env,
+        MMT_API_PORT: String(this.config.apiPort)
+      },
       stdio: 'inherit', // Always show output for debugging
       shell: true
     });

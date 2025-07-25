@@ -32,8 +32,7 @@
     "@mmt/indexer": "workspace:*",
     "@mmt/query-parser": "workspace:*",
     "arquero": "^8.0.3",
-    "p-limit": "^6.2.0",
-    "zod": "^3.22.4"
+    "p-limit": "^6.2.0"
   },
   "devDependencies": {
     "@jrwats/arquero-types": "^5.4.1",
