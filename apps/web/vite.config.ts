@@ -11,10 +11,17 @@ export default defineConfig({
     },
   },
   server: {
+    strictPort: true, // Fail if port is already in use - no defaults allowed
     proxy: {
       '/api': {
-        target: 'http://localhost:3456',
-        changeOrigin: true
+        target: (() => {
+          const apiPort = process.env.MMT_API_PORT;
+          if (!apiPort) {
+            throw new Error('MMT_API_PORT environment variable is required but not set');
+          }
+          return `http://localhost:${apiPort}`;
+        })(),
+        changeOrigin: true,
       }
     }
   }

@@ -1,0 +1,12 @@
+# Configuration for personal vault snapshot
+vaultPath: /Users/danielseltzer/Notes/Personal-sync-250710
+indexPath: /Users/danielseltzer/code/mmt/.index-personal
+
+# Enable file watching for automatic updates
+fileWatching:
+  enabled: true
+  debounceMs: 200
+
+# Required port settings
+apiPort: 3001
+webPort: 5173

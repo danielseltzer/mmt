@@ -19,13 +19,12 @@ export function FilterBar() {
   });
   const [vaultPath, setVaultPath] = useState('');
   
-  // Fetch config on mount
+  // Fetch vault path from API on mount
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    fetch(`${apiUrl}/api/config`)
+    fetch('/api/config')
       .then(res => res.json())
       .then(data => setVaultPath(data.vaultPath))
-      .catch(err => console.error('Failed to fetch config:', err));
+      .catch(err => console.error('Failed to fetch vault config:', err));
   }, []);
   
   // Convert filter values to FilterCollection format when they change

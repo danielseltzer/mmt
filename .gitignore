@@ -79,6 +79,13 @@ reports/
 .mmt-index/
 .mmt/
 
+# Index files
+.index/
+.index-*
+
+# Personal configs
+personal-vault-config.yaml
+
 # Debug
 *.pid
 *.seed

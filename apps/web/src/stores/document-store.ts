@@ -118,8 +118,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         params.append('filters', JSON.stringify(filters));
       }
       
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const url = `${apiUrl}/api/documents?${params.toString()}`;
+      const url = `/api/documents?${params.toString()}`;
       const response = await fetch(url);
       
       if (!response.ok) {

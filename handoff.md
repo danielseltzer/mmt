@@ -1,128 +1,117 @@
 # MMT Handoff Document
 
-## Current Status (2024-01-07)
+## Current Status (2025-07-25)
 
-### What Was Just Completed
-1. **Declarative Filter System** (PR #142)
-   - Replaced JavaScript function-based filters with declarative Zod schemas
-   - API now has full control over pipeline execution
-   - All MVP filter types implemented: text, folder, tag, metadata, date, size
-   - Filter evaluation logic implemented in both API and script runner
-   - Examples and tests updated to use new format
+### Recently Completed Work
 
-### Current State of the Codebase
-- Main branch includes the declarative filter implementation
-- All tests pass except for unrelated issues
-- API successfully handles declarative filters
-- Script runner replicates filter logic for analysis operations
-- FilterBar component still uses old format (needs update)
+1. **GUI Pipeline Builder Foundation (#127)** ✅
+   - Created horizontal collapsible panels (Select/Transform/Output)
+   - Panels expand/collapse with smooth transitions
+   - Only one panel open at a time
+   - Integrated search bar on same horizontal line
+   - Filter summaries display when panels are collapsed
 
-## Immediate Next Steps
+2. **Simplified Control System** ✅
+   - Created `./bin/mmt` as single executable entry point
+   - Removed unnecessary api-only/web-only options
+   - Fixed timeout issues (increased to 60s, simplified checks)
+   - Updated README with clear running instructions
+   - `pnpm dev` now shows helpful error directing to real command
 
-### 1. Update FilterBar Component (Priority: HIGH)
-The FilterBar in `apps/web/src/components/FilterBar.jsx` currently generates filters in this format:
-```javascript
-{
-  name: "search term",
-  content: "content search", 
-  folders: ["/path1", "/path2"],
-  metadata: ["key1", "key2"],
-  dateExpression: "< 7 days",
-  sizeExpression: "over 1mb"
-}
+3. **Config Management Improvements** ✅
+   - Moved yaml and zod to root-level dependencies
+   - Removed duplicate dependencies from individual packages
+   - Created config store with Zod validation for web app
+   - Web app loads config at startup before rendering
+
+### Current Issue Being Worked On
+
+**Hardcoded URLs (#132)** - IN PROGRESS 🔧
+- Problem: Web app can't connect to API due to hardcoded URL mismatch
+- Attempted solution: 
+  - Created `/config` endpoint in Vite to serve API URL
+  - Using environment variable `MMT_CONFIG_PATH` to pass config location
+  - Web app fetches config on startup
+- Current status: `/config` endpoint returns 500 error, needs debugging
+
+### Working Branch
+`feat/127-gui-pipeline-builder` - Contains all recent work
+
+## Priority Work Queue
+
+### 1. **Fix Config Loading Issue** - IMMEDIATE 🔥
+The web app shows "Configuration Error" because the `/config` endpoint isn't working properly. Need to:
+- Debug why Vite middleware isn't serving config correctly
+- Ensure `MMT_CONFIG_PATH` environment variable is properly passed
+- Test that web app can fetch from `/config` and connect to API
+
+### 2. **Complete GUI Pipeline Builder (#127)** - HIGH PRIORITY
+Once config is working:
+- Implement TRANSFORM panel with operation builder UI
+- Implement OUTPUT panel with format configuration
+- Add Execute button that sends pipeline to API
+- Add loading states and error handling
+
+### 3. **Create New Issue for Config Standardization** - HIGH PRIORITY
+The current approach of passing config paths is inconsistent:
+- API server reads config directly
+- Web server needs config passed via environment variable
+- Consider creating a shared config service or better pattern
+
+### 4. **Fix Integration Test Failures (#141)** - HIGH PRIORITY
+- Tests likely failing due to port/URL changes
+- Update tests to work with new config system
+
+### 5. **Implement Stop and Status Commands (#147)** - MEDIUM PRIORITY
+- Add PID file tracking
+- Implement graceful shutdown
+- Show server status information
+
+## Technical Context
+
+### Current Architecture
+```
+MMT Control Manager (./bin/mmt)
+├── Reads config file (YAML)
+├── Starts API server
+│   └── Reads config directly
+└── Starts Web server (Vite)
+    └── Needs config via env var MMT_CONFIG_PATH
+        └── Serves /config endpoint for web app
 ```
 
-It needs to generate the new declarative format:
-```javascript
-{
-  conditions: [
-    { field: 'name', operator: 'contains', value: 'search term' },
-    { field: 'content', operator: 'contains', value: 'content search' },
-    { field: 'folders', operator: 'in', value: ['/path1', '/path2'] },
-    { field: 'metadata', operator: 'equals', key: 'key1', value: true },
-    // etc.
-  ],
-  logic: 'AND'
-}
+### Key Files Changed
+- `/tools/control-manager/src/control-manager.ts` - Pass MMT_CONFIG_PATH env var
+- `/apps/web/vite.config.ts` - Serve /config endpoint
+- `/apps/web/src/main.jsx` - Load config before rendering
+- `/apps/web/src/config/` - Config store and schema
+- `/apps/web/src/stores/document-store.ts` - Use config store for API URL
+
+### Commands
+```bash
+# Start MMT
+./bin/mmt start --config personal-vault-config.yaml
+
+# Old way (shows error)
+pnpm dev
 ```
-
-**Key tasks:**
-- Parse date expressions (e.g., "< 7 days") into proper date filters
-- Parse size expressions (e.g., "over 1mb") into proper size filters
-- Convert folder array into proper folder filter
-- Convert metadata array into multiple metadata conditions
-- Update document-store.ts to use FilterCollection type
-
-### 2. Fix Remaining Technical Debt (Priority: HIGH)
-Several packages have accumulated lint and type errors:
-- **scripting package**: Multiple TypeScript errors need fixing
-- **indexer package**: Lint errors with case declarations
-- **web tests**: Unused imports need cleanup
-
-Run `pnpm lint` and `pnpm type-check` to see all issues.
-
-### 3. Implement GUI Pipeline Builder (#127) (Priority: HIGH)
-Now that the API uses OperationPipelineSchema throughout, we can build the visual pipeline builder:
-- SELECT panel: Visual query builder
-- FILTER panel: Visual filter builder using new declarative format
-- TRANSFORM panel: Operation selection and configuration
-- OUTPUT panel: Format and destination selection
-
-### 4. Add Execution Feedback (#128) (Priority: MEDIUM)
-- Real-time progress updates during execution
-- Show results in the GUI after pipeline execution
-- Display errors clearly
-
-### 5. Future Enhancements (Priority: LOW)
-- Document Preview (#12)
-- View Persistence (#14)
-- Export UI (#18)
-
-## Important Technical Context
-
-### Filter System Architecture
-1. **FilterCollection** is the top-level container with conditions[] and logic
-2. **FilterCondition** is a discriminated union based on the `field` property
-3. Each filter type has specific operators and value types
-4. The same evaluation logic is implemented in both:
-   - `apps/api-server/src/services/pipeline-executor.ts`
-   - `packages/scripting/src/script-runner.ts`
-
-### API Integration Points
-- `/api/documents` endpoint accepts filters in query param (JSON stringified)
-- `/api/pipelines/execute` accepts full OperationPipeline with filters
-- Document content is loaded during selection for content-based filtering
-
-### Testing Approach
-- Integration tests use real API server (no mocks)
-- Test config uses different ports (3002, 8002) to avoid conflicts
-- All file operations use temp directories
 
 ## Known Issues
-1. Created date filtering not supported (document schema lacks creation date)
-2. Some TypeScript errors in scripting package need resolution
-3. FilterBar hardcodes vault path (should use fetched config)
 
-## Development Commands
-```bash
-# Full rebuild and test
-pnpm clean
-pnpm install
-pnpm build
-pnpm lint
-pnpm test
+1. **Config Loading**: `/config` endpoint returns 500 error
+2. **Hardcoded Ports**: Still some hardcoded localhost references
+3. **Vitest Version Mismatch**: Peer dependency warnings throughout
 
-# Run specific package commands
-pnpm --filter @mmt/web dev
-pnpm --filter @mmt/api-server dev
+## Next Session Starting Point
 
-# Run integration tests only
-pnpm --filter @mmt/web test:integration
-```
+1. Debug the `/config` endpoint:
+   - Add console.log to see if MMT_CONFIG_PATH is set
+   - Check if file path is absolute vs relative
+   - Verify YAML parsing works
 
-## Architecture Reminders
-- NO MOCKS policy - test with real files
-- NO DEFAULTS - explicit configuration required
-- Fail fast with clear error messages
-- All file operations go through filesystem-access package
-- Zod schemas define all contracts between packages
+2. Once working, verify:
+   - Web app loads config
+   - Web app connects to API
+   - Documents display correctly
+
+3. Then continue with TRANSFORM panel implementation

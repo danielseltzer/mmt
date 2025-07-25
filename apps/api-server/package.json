@@ -21,8 +21,7 @@
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/entities": "workspace:*",
     "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "zod": "^3.22.4"
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

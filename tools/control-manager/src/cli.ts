@@ -5,28 +5,24 @@ import { MMTControlManager } from './control-manager.js';
 
 interface StartOptions {
   config: string;
-  apiOnly?: boolean;
-  webOnly?: boolean;
 }
 
 interface StopOptions {
-  apiOnly?: boolean;
-  webOnly?: boolean;
+  // No options needed for stop
 }
 
 const program = new Command();
 
 program
-  .name('mmt-control')
-  .description('MMT Control Manager - Start and stop MMT services')
+  .name('mmt')
+  .description('MMT - Markdown Management Toolkit')
   .version('0.1.0');
 
 program
   .command('start')
-  .description('Start MMT services')
-  .requiredOption('-c, --config <path>', 'Config file path (required)')
-  .option('--api-only', 'Start only the API server')
-  .option('--web-only', 'Start only the web server')
+  .description('Start MMT services (API and Web)')
+  .requiredOption('-c, --config <path>', 'Path to config YAML file (required - no defaults)')
+  .addHelpText('after', '\nExample:\n  ./bin/mmt start --config dev-config.yaml\n  ./bin/mmt start --config personal-vault-config.yaml')
   .action(async (options: StartOptions) => {
     const manager = new MMTControlManager({
       configPath: options.config
@@ -64,14 +60,7 @@ program
 
     try {
       await manager.init(options.config);
-      
-      if (options.apiOnly) {
-        await manager.startAPI();
-      } else if (options.webOnly) {
-        await manager.startWeb();
-      } else {
-        await manager.startAll();
-      }
+      await manager.startAll();
       
       // Keep the process alive - handlers already registered above
       
@@ -83,11 +72,36 @@ program
 
 program
   .command('stop')
-  .description('Stop MMT services')
-  .option('--api-only', 'Stop only the API server')
-  .option('--web-only', 'Stop only the web server')
-  .action(async (options: StopOptions) => {
+  .description('Stop all MMT services')
+  .action(async () => {
     console.log('Stop command not implemented yet - use Ctrl+C for now');
   });
+
+program
+  .command('status')
+  .description('Show status of MMT services')
+  .action(async () => {
+    console.log('Status command not implemented yet');
+  });
+
+// Custom error handling
+program.configureOutput({
+  outputError: (str, write) => {
+    if (str.includes('required option') && str.includes('--config')) {
+      console.error('\n❌ Error: Config file is required (no defaults)\n');
+      console.error('Usage: ./bin/mmt start --config <path-to-config.yaml>\n');
+      console.error('Examples:');
+      console.error('  ./bin/mmt start --config dev-config.yaml');
+      console.error('  ./bin/mmt start --config personal-vault-config.yaml\n');
+      console.error('Create a config file with:');
+      console.error('  vaultPath: /absolute/path/to/vault');
+      console.error('  indexPath: /absolute/path/to/index');
+      console.error('  apiPort: 3001');
+      console.error('  webPort: 5173\n');
+    } else {
+      write(str);
+    }
+  }
+});
 
 program.parse();

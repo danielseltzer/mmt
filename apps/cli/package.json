@@ -35,8 +35,7 @@
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/query-parser": "workspace:*",
-    "@mmt/scripting": "workspace:*",
-    "zod": "^3.22.4"
+    "@mmt/scripting": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
