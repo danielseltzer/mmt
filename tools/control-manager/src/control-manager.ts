@@ -9,10 +9,14 @@ import net from 'net';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../../..');
+const pidFile = path.join(os.tmpdir(), 'mmt-control.pid');
+const logDir = path.join(rootDir, 'logs');
+const logFile = path.join(logDir, `mmt-${new Date().toISOString().split('T')[0]}.log`);
 
 interface ManagedProcess {
   process: ChildProcess;
@@ -42,6 +46,11 @@ export class MMTControlManager {
   constructor(options: ControlOptions) {
     this.options = options;
     
+    // Ensure log directory exists
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    
     // Register process cleanup on exit
     const exitHandler = () => {
       this.cleanup();
@@ -49,6 +58,106 @@ export class MMTControlManager {
     
     process.on('exit', exitHandler);
     this.cleanupHandlers.push(() => process.off('exit', exitHandler));
+  }
+  
+  /**
+   * Write PID file for external process management
+   */
+  private writePidFile(): void {
+    try {
+      fs.writeFileSync(pidFile, process.pid.toString());
+    } catch (err) {
+      this.log(`Warning: Could not write PID file: ${err}`);
+    }
+  }
+  
+  /**
+   * Remove PID file
+   */
+  private removePidFile(): void {
+    try {
+      if (fs.existsSync(pidFile)) {
+        fs.unlinkSync(pidFile);
+      }
+    } catch (err) {
+      // Ignore errors when removing PID file
+    }
+  }
+  
+  /**
+   * Check if another instance is running
+   */
+  static isRunning(): boolean {
+    try {
+      if (!fs.existsSync(pidFile)) {
+        return false;
+      }
+      
+      const pid = parseInt(fs.readFileSync(pidFile, 'utf-8'));
+      
+      // Check if process exists
+      try {
+        process.kill(pid, 0);
+        return true;
+      } catch {
+        // Process doesn't exist, clean up stale PID file
+        fs.unlinkSync(pidFile);
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+  
+  /**
+   * Stop running instance by PID
+   */
+  static async stopByPid(): Promise<void> {
+    try {
+      if (!fs.existsSync(pidFile)) {
+        throw new Error('No MMT instance is running (PID file not found)');
+      }
+      
+      const pid = parseInt(fs.readFileSync(pidFile, 'utf-8'));
+      
+      // Send SIGTERM
+      process.kill(pid, 'SIGTERM');
+      
+      // Wait for process to exit (up to 5 seconds)
+      let attempts = 0;
+      while (attempts < 50) {
+        try {
+          process.kill(pid, 0); // Check if still alive
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        } catch {
+          // Process is gone
+          break;
+        }
+      }
+      
+      // If still running, force kill
+      if (attempts >= 50) {
+        process.kill(pid, 'SIGKILL');
+      }
+      
+      // Clean up PID file
+      if (fs.existsSync(pidFile)) {
+        fs.unlinkSync(pidFile);
+      }
+    } catch (err: any) {
+      if (err.code === 'ESRCH') {
+        // Process already gone, just clean up PID file
+        if (fs.existsSync(pidFile)) {
+          fs.unlinkSync(pidFile);
+        }
+      } else if (err.code === 'ENOENT' && err.path === pidFile) {
+        // PID file already gone, that's fine
+        return;
+      } else {
+        throw err;
+      }
+    }
   }
   
   /**
@@ -131,7 +240,25 @@ export class MMTControlManager {
     const apiProcess = spawn('node', args, {
       cwd: rootDir,
       env,
-      stdio: 'inherit' // Always show output for debugging
+      stdio: ['ignore', 'pipe', 'pipe'] // Capture stdout and stderr
+    });
+    
+    // Log API server output
+    apiProcess.stdout?.on('data', (data) => {
+      const lines = data.toString().split('\n').filter(line => line.trim());
+      lines.forEach(line => this.log(`[API] ${line}`));
+    });
+    
+    apiProcess.stderr?.on('data', (data) => {
+      const lines = data.toString().split('\n').filter(line => line.trim());
+      lines.forEach(line => {
+        // Check if it's actually an error or just info output to stderr
+        if (line.includes('Error') || line.includes('error') || line.includes('failed') || line.includes('Failed')) {
+          this.log(`[API ERROR] ${line}`);
+        } else {
+          this.log(`[API] ${line}`);
+        }
+      });
     });
     
     // Handle process errors
@@ -185,8 +312,26 @@ export class MMTControlManager {
         ...process.env,
         MMT_API_PORT: String(this.config.apiPort)
       },
-      stdio: 'inherit', // Always show output for debugging
+      stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
       shell: true
+    });
+    
+    // Log web server output
+    webProcess.stdout?.on('data', (data) => {
+      const lines = data.toString().split('\n').filter(line => line.trim());
+      lines.forEach(line => this.log(`[WEB] ${line}`));
+    });
+    
+    webProcess.stderr?.on('data', (data) => {
+      const lines = data.toString().split('\n').filter(line => line.trim());
+      lines.forEach(line => {
+        // Check if it's actually an error or just info output to stderr
+        if (line.includes('Error') || line.includes('error') || line.includes('failed') || line.includes('Failed')) {
+          this.log(`[WEB ERROR] ${line}`);
+        } else {
+          this.log(`[WEB] ${line}`);
+        }
+      });
     });
     
     // Handle process errors
@@ -222,6 +367,14 @@ export class MMTControlManager {
    * Start both servers
    */
   async startAll(): Promise<void> {
+    // Check if already running
+    if (MMTControlManager.isRunning()) {
+      throw new Error('MMT is already running. Use "mmt stop" first.');
+    }
+    
+    // Write PID file
+    this.writePidFile();
+    
     await this.startAPI();
     await this.startWeb();
     this.log('All servers started successfully!');
@@ -389,6 +542,18 @@ export class MMTControlManager {
    * Log a message
    */
   private log(message: string): void {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] [MMT Control] ${message}`;
+    
+    // Always write to log file
+    try {
+      fs.appendFileSync(logFile, logMessage + '\n');
+    } catch (err) {
+      // If we can't write to log file, at least print to console
+      console.error('Failed to write to log file:', err);
+    }
+    
+    // Also write to console unless silent
     if (!this.options.silent) {
       console.log(`[MMT Control] ${message}`);
     }
@@ -408,6 +573,9 @@ export class MMTControlManager {
         // Process might already be dead
       }
     }
+    
+    // Remove PID file
+    this.removePidFile();
     
     // Remove event handlers
     for (const handler of this.cleanupHandlers) {

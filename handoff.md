@@ -1,117 +1,130 @@
 # MMT Handoff Document
 
-## Current Status (2025-07-25)
+## Current Status (2025-07-28)
 
 ### Recently Completed Work
 
-1. **GUI Pipeline Builder Foundation (#127)** ✅
-   - Created horizontal collapsible panels (Select/Transform/Output)
-   - Panels expand/collapse with smooth transitions
-   - Only one panel open at a time
-   - Integrated search bar on same horizontal line
-   - Filter summaries display when panels are collapsed
+1. **Configuration System Overhaul (#132)** ✅
+   - Replaced complex `/config` endpoint with Vite's built-in proxy
+   - Web app uses relative URLs (`/api/*`) that proxy to API server
+   - Pass API port via `MMT_API_PORT` environment variable
+   - Removed config store and related complexity
+   - No more hardcoded URLs or ports
 
-2. **Simplified Control System** ✅
-   - Created `./bin/mmt` as single executable entry point
-   - Removed unnecessary api-only/web-only options
-   - Fixed timeout issues (increased to 60s, simplified checks)
-   - Updated README with clear running instructions
-   - `pnpm dev` now shows helpful error directing to real command
+2. **TRANSFORM Panel Implementation (#127)** ✅
+   - Fully functional operation builder with drag-and-drop reordering
+   - Operations: Rename, Move, Delete, Update Frontmatter
+   - Template support with variables: `{name}`, `{date}`, `{timestamp}`, `{counter}`
+   - Live preview showing template expansion
+   - Compact table-like UI with minimal padding
+   - Help tooltips for template variables
+   - Filterable folder picker for move operations
+   - Frontmatter operations support add/update/remove
 
-3. **Config Management Improvements** ✅
-   - Moved yaml and zod to root-level dependencies
-   - Removed duplicate dependencies from individual packages
-   - Created config store with Zod validation for web app
-   - Web app loads config at startup before rendering
+3. **Control Manager Improvements (#147)** ✅
+   - Implemented `mmt stop` command with PID file tracking
+   - Implemented `mmt status` command
+   - Added comprehensive logging to `logs/mmt-YYYY-MM-DD.log`
+   - Fixed process management and cleanup
+   - Better error handling for port conflicts
 
-### Current Issue Being Worked On
-
-**Hardcoded URLs (#132)** - IN PROGRESS 🔧
-- Problem: Web app can't connect to API due to hardcoded URL mismatch
-- Attempted solution: 
-  - Created `/config` endpoint in Vite to serve API URL
-  - Using environment variable `MMT_CONFIG_PATH` to pass config location
-  - Web app fetches config on startup
-- Current status: `/config` endpoint returns 500 error, needs debugging
-
-### Working Branch
-`feat/127-gui-pipeline-builder` - Contains all recent work
-
-## Priority Work Queue
-
-### 1. **Fix Config Loading Issue** - IMMEDIATE 🔥
-The web app shows "Configuration Error" because the `/config` endpoint isn't working properly. Need to:
-- Debug why Vite middleware isn't serving config correctly
-- Ensure `MMT_CONFIG_PATH` environment variable is properly passed
-- Test that web app can fetch from `/config` and connect to API
-
-### 2. **Complete GUI Pipeline Builder (#127)** - HIGH PRIORITY
-Once config is working:
-- Implement TRANSFORM panel with operation builder UI
-- Implement OUTPUT panel with format configuration
-- Add Execute button that sends pipeline to API
-- Add loading states and error handling
-
-### 3. **Create New Issue for Config Standardization** - HIGH PRIORITY
-The current approach of passing config paths is inconsistent:
-- API server reads config directly
-- Web server needs config passed via environment variable
-- Consider creating a shared config service or better pattern
-
-### 4. **Fix Integration Test Failures (#141)** - HIGH PRIORITY
-- Tests likely failing due to port/URL changes
-- Update tests to work with new config system
-
-### 5. **Implement Stop and Status Commands (#147)** - MEDIUM PRIORITY
-- Add PID file tracking
-- Implement graceful shutdown
-- Show server status information
-
-## Technical Context
+4. **Test Infrastructure Fixes (#141)** ✅
+   - Fixed API server unit test configuration with `passWithNoTests`
+   - Cleaned up logging to distinguish info from errors
+   - Integration tests passing (web tests outdated but lower priority)
 
 ### Current Architecture
+
 ```
 MMT Control Manager (./bin/mmt)
 ├── Reads config file (YAML)
+├── Writes PID file for process management
+├── Logs all output to logs/mmt-YYYY-MM-DD.log
 ├── Starts API server
 │   └── Reads config directly
 └── Starts Web server (Vite)
-    └── Needs config via env var MMT_CONFIG_PATH
-        └── Serves /config endpoint for web app
+    └── Gets API port via MMT_API_PORT env var
+    └── Proxies /api/* requests to API server
 ```
 
-### Key Files Changed
-- `/tools/control-manager/src/control-manager.ts` - Pass MMT_CONFIG_PATH env var
-- `/apps/web/vite.config.ts` - Serve /config endpoint
-- `/apps/web/src/main.jsx` - Load config before rendering
-- `/apps/web/src/config/` - Config store and schema
-- `/apps/web/src/stores/document-store.ts` - Use config store for API URL
+### Working Branch
+`main` - All recent work has been merged
 
-### Commands
-```bash
-# Start MMT
-./bin/mmt start --config personal-vault-config.yaml
+## Next High Priority Work
 
-# Old way (shows error)
-pnpm dev
-```
+### 1. **OUTPUT Panel (#127)** - IMMEDIATE
+The OUTPUT panel needs to be implemented to complete the pipeline builder:
+- Format selection (JSON, YAML, CSV, Markdown table)
+- Preview of output format
+- Options specific to each format (e.g., CSV delimiter, JSON pretty print)
+- File download or copy-to-clipboard functionality
+
+### 2. **Execute Button & Pipeline Submission (#127)** - HIGH
+Wire up the pipeline execution:
+- Add Execute button (with preview/dry-run option)
+- Convert UI state to pipeline API format
+- Send to `/api/pipelines/execute` endpoint
+- Show progress/spinner during execution
+- Display results (success/error counts, affected files)
+- Handle errors gracefully
+
+### 3. **Update CLAUDE.md (#143)** - MEDIUM
+Document the new architecture:
+- Vite proxy configuration approach
+- Control manager with logging
+- Template system and variables
+- Pipeline builder components
+
+## Technical Context
+
+### Key Files Changed Recently
+- `/tools/control-manager/src/control-manager.ts` - Logging, PID file, stop/status
+- `/apps/web/vite.config.ts` - Proxy configuration
+- `/apps/web/src/components/TransformPanel.jsx` - Full TRANSFORM implementation
+- `/apps/web/src/utils/template-utils.js` - Shared template expansion function
+- `/README.md` - Updated with stop/status commands and logging info
+
+### Template System
+The `expandTemplate()` function in `utils/template-utils.js` supports:
+- `{name}` - Document filename without extension
+- `{date}` - Current date as YYYY-MM-DD
+- `{timestamp}` - ISO 8601 timestamp (e.g., 2025-07-28T15:30:45.123Z)
+- `{counter}` - Sequential counter (currently shows "1" in preview)
+
+### UI Patterns Established
+- Compact table-like rows with minimal padding
+- Drag handles for reordering (using @dnd-kit)
+- Trash icon for deletion
+- Help tooltips with ? icon
+- Preview text showing template expansion
+- Filterable dropdowns for selection
 
 ## Known Issues
 
-1. **Config Loading**: `/config` endpoint returns 500 error
-2. **Hardcoded Ports**: Still some hardcoded localhost references
-3. **Vitest Version Mismatch**: Peer dependency warnings throughout
+1. **Web Integration Tests** - Need updating to match current components
+2. **Counter Variable** - Currently hardcoded to "1" in preview
+3. **Vitest Version Mismatch** - Peer dependency warnings throughout
 
 ## Next Session Starting Point
 
-1. Debug the `/config` endpoint:
-   - Add console.log to see if MMT_CONFIG_PATH is set
-   - Check if file path is absolute vs relative
-   - Verify YAML parsing works
+1. Start with OUTPUT panel implementation
+2. Then add Execute button and wire up pipeline submission
+3. Test full pipeline flow: Select → Transform → Output → Execute
 
-2. Once working, verify:
-   - Web app loads config
-   - Web app connects to API
-   - Documents display correctly
+## Running MMT
 
-3. Then continue with TRANSFORM panel implementation
+```bash
+# Start
+./bin/mmt start --config personal-vault-config.yaml
+
+# Check logs
+tail -f logs/mmt-*.log
+
+# Stop
+./bin/mmt stop
+
+# Status
+./bin/mmt status
+```
+
+The app runs at http://localhost:5173/

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FilterBar } from './FilterBar';
+import { TransformPanel } from './TransformPanel';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput } from 'lucide-react';
@@ -27,6 +28,7 @@ function PanelHeader({ icon: Icon, title, summary, isOpen }) {
 
 export function PipelinePanels({ searchBar }) {
   const [openPanel, setOpenPanel] = useState('select'); // Only one panel open at a time
+  const [operations, setOperations] = useState([]);
   const filters = useDocumentStore(state => state.filters);
   
   // Generate filter summary from the active filters
@@ -64,6 +66,26 @@ export function PipelinePanels({ searchBar }) {
     
     return summaryParts.join(', ');
   };
+  
+  // Generate transform summary from operations
+  const getTransformSummary = () => {
+    if (operations.length === 0) {
+      return 'None';
+    }
+    
+    // Count operations by type
+    const opCounts = {};
+    operations.forEach(op => {
+      const type = op.type === 'update-frontmatter' ? 'Frontmatter' : 
+                   op.type.charAt(0).toUpperCase() + op.type.slice(1);
+      opCounts[type] = (opCounts[type] || 0) + 1;
+    });
+    
+    // Format as "Type" or "Type (n)" if more than 1
+    return Object.entries(opCounts)
+      .map(([type, count]) => count > 1 ? `${type} (${count})` : type)
+      .join(', ');
+  };
 
   const panels = [
     {
@@ -77,8 +99,8 @@ export function PipelinePanels({ searchBar }) {
       id: 'transform',
       icon: Wand2,
       title: 'Transform:',
-      summary: 'None',
-      content: <p className="text-sm text-muted-foreground">Transform operations will be implemented here</p>
+      summary: getTransformSummary(),
+      content: <TransformPanel operations={operations} onOperationsChange={setOperations} />
     },
     {
       id: 'output',
