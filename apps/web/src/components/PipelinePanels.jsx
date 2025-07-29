@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FilterBar } from './FilterBar';
 import { TransformPanel } from './TransformPanel';
+import { OutputPanel } from './OutputPanel';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput } from 'lucide-react';
@@ -29,7 +30,9 @@ function PanelHeader({ icon: Icon, title, summary, isOpen }) {
 export function PipelinePanels({ searchBar }) {
   const [openPanel, setOpenPanel] = useState('select'); // Only one panel open at a time
   const [operations, setOperations] = useState([]);
+  const [outputFormat, setOutputFormat] = useState('json');
   const filters = useDocumentStore(state => state.filters);
+  const documents = useDocumentStore(state => state.documents);
   
   // Generate filter summary from the active filters
   const getFilterSummary = () => {
@@ -87,6 +90,17 @@ export function PipelinePanels({ searchBar }) {
       .join(', ');
   };
 
+  // Generate output summary
+  const getOutputSummary = () => {
+    const formatLabels = {
+      json: 'JSON',
+      yaml: 'YAML',
+      csv: 'CSV',
+      markdown: 'Markdown'
+    };
+    return formatLabels[outputFormat] || 'JSON';
+  };
+
   const panels = [
     {
       id: 'select',
@@ -106,8 +120,11 @@ export function PipelinePanels({ searchBar }) {
       id: 'output',
       icon: FileOutput,
       title: 'Output:',
-      summary: 'Table view',
-      content: <p className="text-sm text-muted-foreground">Output configuration will be implemented here</p>
+      summary: getOutputSummary(),
+      content: <OutputPanel 
+        selectedDocuments={documents} 
+        onFormatChange={setOutputFormat}
+      />
     }
   ];
 
