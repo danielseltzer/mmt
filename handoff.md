@@ -1,17 +1,26 @@
 # MMT Handoff Document
 
-## Current Status (2025-07-28)
+## Current Status (2025-07-28 - Updated)
 
 ### Recently Completed Work
 
-1. **Configuration System Overhaul (#132)** ✅
+1. **Vault-Level Sorting Implementation** ✅ NEW!
+   - Added Sort button next to Columns button in table view
+   - Sort options: File (name), Path, Modified, Size
+   - Click same field to toggle between ascending/descending order
+   - Visual indicators: ↑ for ascending, ↓ for descending  
+   - Sorts at vault level BEFORE pagination (shows top 500 by sort criteria)
+   - API properly sorts all documents before applying limit
+   - Integrated with document store for automatic re-fetching
+
+2. **Configuration System Overhaul (#132)** ✅
    - Replaced complex `/config` endpoint with Vite's built-in proxy
    - Web app uses relative URLs (`/api/*`) that proxy to API server
    - Pass API port via `MMT_API_PORT` environment variable
    - Removed config store and related complexity
    - No more hardcoded URLs or ports
 
-2. **TRANSFORM Panel Implementation (#127)** ✅
+3. **TRANSFORM Panel Implementation (#127)** ✅
    - Fully functional operation builder with drag-and-drop reordering
    - Operations: Rename, Move, Delete, Update Frontmatter
    - Template support with variables: `{name}`, `{date}`, `{timestamp}`, `{counter}`
@@ -21,14 +30,14 @@
    - Filterable folder picker for move operations
    - Frontmatter operations support add/update/remove
 
-3. **Control Manager Improvements (#147)** ✅
+4. **Control Manager Improvements (#147)** ✅
    - Implemented `mmt stop` command with PID file tracking
    - Implemented `mmt status` command
    - Added comprehensive logging to `logs/mmt-YYYY-MM-DD.log`
    - Fixed process management and cleanup
    - Better error handling for port conflicts
 
-4. **Test Infrastructure Fixes (#141)** ✅
+5. **Test Infrastructure Fixes (#141)** ✅
    - Fixed API server unit test configuration with `passWithNoTests`
    - Cleaned up logging to distinguish info from errors
    - Integration tests passing (web tests outdated but lower priority)
@@ -78,8 +87,13 @@ Document the new architecture:
 ## Technical Context
 
 ### Key Files Changed Recently
+- `/packages/table-view/src/SortConfig.tsx` - NEW! Sort dropdown component
+- `/packages/table-view/src/TableView.tsx` - Added sort props and UI
+- `/apps/web/src/stores/document-store.ts` - Added sortBy/sortOrder state
+- `/apps/web/src/components/DocumentTable.jsx` - Wired up sorting
+- `/apps/api-server/src/routes/documents.ts` - Fixed to sort BEFORE pagination
 - `/tools/control-manager/src/control-manager.ts` - Logging, PID file, stop/status
-- `/apps/web/vite.config.ts` - Proxy configuration
+- `/apps/web/vite.config.ts` - Proxy configuration (made API port optional for builds)
 - `/apps/web/src/components/TransformPanel.jsx` - Full TRANSFORM implementation
 - `/apps/web/src/utils/template-utils.js` - Shared template expansion function
 - `/README.md` - Updated with stop/status commands and logging info
@@ -99,11 +113,27 @@ The `expandTemplate()` function in `utils/template-utils.js` supports:
 - Preview text showing template expansion
 - Filterable dropdowns for selection
 
+### How Sorting Works
+
+1. **User Interface**: Sort button appears next to Columns button
+2. **Sort Fields**: 
+   - File (sorts by document name)
+   - Path (sorts by full file path)
+   - Modified (sorts by modification date)
+   - Size (sorts by file size)
+3. **Behavior**:
+   - First click on a field sorts ascending
+   - Click same field again to toggle to descending
+   - Sorting happens at the API level before pagination
+   - Returns the top 500 documents according to sort criteria
+   - Empty/null values are placed at the end when sorting
+
 ## Known Issues
 
 1. **Web Integration Tests** - Need updating to match current components
 2. **Counter Variable** - Currently hardcoded to "1" in preview
 3. **Vitest Version Mismatch** - Peer dependency warnings throughout
+4. **Linting Errors** - Multiple eslint violations in table-view package (mostly style issues)
 
 ## Next Session Starting Point
 

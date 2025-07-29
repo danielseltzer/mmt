@@ -504,14 +504,9 @@ export function documentsRouter(context: Context): Router {
           results = applyDeclarativeFilters(results, filterCollection, context.config.vaultPath);
         }
         
-        // Apply pagination
-        const start = validatedOffset;
-        const end = validatedOffset + validatedLimit;
-        const paginatedDocs = results.slice(start, end);
-        
-        // Sort if requested
+        // Sort BEFORE pagination if requested
         if (sortBy) {
-          paginatedDocs.sort((a, b) => {
+          results.sort((a, b) => {
             let aVal: any;
             let bVal: any;
             
@@ -524,14 +519,28 @@ export function documentsRouter(context: Context): Router {
             } else if (sortBy === 'size') {
               aVal = a.size;
               bVal = b.size;
+            } else if (sortBy === 'path') {
+              aVal = a.path;
+              bVal = b.path;
             }
             
+            // Handle null/undefined values
+            if (aVal == null && bVal == null) return 0;
+            if (aVal == null) return 1;
+            if (bVal == null) return -1;
+            
+            // Compare values
             if (sortOrder === 'desc') {
-              return bVal > aVal ? 1 : -1;
+              return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
             }
-            return aVal > bVal ? 1 : -1;
+            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
           });
         }
+        
+        // Apply pagination AFTER sorting
+        const start = validatedOffset;
+        const end = validatedOffset + validatedLimit;
+        const paginatedDocs = results.slice(start, end);
         
         // Format response
         const response = DocumentsResponseSchema.parse({

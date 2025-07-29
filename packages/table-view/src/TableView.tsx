@@ -14,6 +14,7 @@ import {
 import type { Document } from '@mmt/entities';
 import { clsx } from 'clsx';
 import { ColumnConfig } from './ColumnConfig.js';
+import { SortConfig } from './SortConfig.js';
 
 export interface TableViewProps {
   documents: Document[];
@@ -21,6 +22,8 @@ export interface TableViewProps {
   onOperationRequest?: (request: { operation: string; documentPaths: string[] }) => void;
   onLoadContent?: (path: string) => Promise<string>;
   initialColumns?: string[];
+  currentSort?: { field: string; order: 'asc' | 'desc' };
+  onSortChange?: (field: string, order: 'asc' | 'desc') => void;
 }
 
 interface ContextMenuState {
@@ -37,6 +40,8 @@ export function TableView({
   onOperationRequest,
   onLoadContent,
   initialColumns = ['name', 'path', 'modified', 'size', 'tags'],
+  currentSort,
+  onSortChange,
 }: TableViewProps) {
   const totalCount = documents.length;
 
@@ -408,8 +413,20 @@ export function TableView({
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Column config */}
-      <div className="flex justify-end mb-1">
+      {/* Column and Sort config */}
+      <div className="flex justify-end gap-1 mb-1">
+        {onSortChange && (
+          <SortConfig
+            options={[
+              { id: 'name', label: 'File' },
+              { id: 'path', label: 'Path' },
+              { id: 'modified', label: 'Modified' },
+              { id: 'size', label: 'Size' },
+            ]}
+            currentSort={currentSort}
+            onSortChange={onSortChange}
+          />
+        )}
         <ColumnConfig
           columns={[
             { id: 'name', label: 'Name' },

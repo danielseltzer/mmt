@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
 export function DocumentTable() {
-  const { filteredDocuments, loading, error } = useDocumentStore();
+  const { filteredDocuments, loading, error, sortBy, sortOrder, setSort } = useDocumentStore();
   
   if (loading) {
     return (
@@ -33,6 +33,8 @@ export function DocumentTable() {
         onSelectionChange={(selectedIds) => {
           console.log('Selected:', selectedIds);
         }}
+        currentSort={sortBy ? { field: sortBy, order: sortOrder } : undefined}
+        onSortChange={setSort}
       />
     </div>
   );
