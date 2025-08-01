@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { FilterBar } from './FilterBar';
 import { TransformPanel } from './TransformPanel';
 import { OutputPanel } from './OutputPanel';
+import { PreviewModal } from './PreviewModal';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput } from 'lucide-react';
+import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput, Eye } from 'lucide-react';
 import { useDocumentStore } from '../stores/document-store';
 
 // eslint-disable-next-line no-unused-vars
@@ -31,8 +32,10 @@ export function PipelinePanels({ searchBar }) {
   const [openPanel, setOpenPanel] = useState('select'); // Only one panel open at a time
   const [operations, setOperations] = useState([]);
   const [outputFormat, setOutputFormat] = useState('json');
+  const [showPreview, setShowPreview] = useState(false);
   const filters = useDocumentStore(state => state.filters);
   const documents = useDocumentStore(state => state.documents);
+  const totalCount = useDocumentStore(state => state.totalCount);
   
   // Generate filter summary from the active filters
   const getFilterSummary = () => {
@@ -101,6 +104,20 @@ export function PipelinePanels({ searchBar }) {
     return formatLabels[outputFormat] || 'JSON';
   };
 
+  const handleExecute = async () => {
+    // TODO: Implement pipeline execution
+    console.log('Executing pipeline:', {
+      filters,
+      operations,
+      outputFormat,
+      documentCount: totalCount
+    });
+    
+    // This will be implemented in issue #128
+    // For now, just close the modal
+    setShowPreview(false);
+  };
+
   const panels = [
     {
       id: 'select',
@@ -154,6 +171,16 @@ export function PipelinePanels({ searchBar }) {
         
         {/* Search bar on the same line */}
         {searchBar}
+        
+        {/* Preview button */}
+        <Button 
+          onClick={() => setShowPreview(true)}
+          size="sm"
+          className="ml-2"
+        >
+          <Eye className="h-4 w-4 mr-1" />
+          Preview
+        </Button>
       </div>
       
       {/* Expanded panel content below the bar */}
@@ -162,6 +189,17 @@ export function PipelinePanels({ searchBar }) {
           {panels.find(p => p.id === openPanel)?.content}
         </div>
       )}
+      
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        filters={filters}
+        operations={operations}
+        outputFormat={outputFormat}
+        documentCount={totalCount}
+        onExecute={handleExecute}
+      />
     </div>
   );
 }
