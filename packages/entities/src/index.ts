@@ -65,3 +65,6 @@ export * from './size-parser.js';
 
 // Export declarative filter schemas
 export * from './filter.schema.js';
+
+// Export preview schemas
+export * from './preview.schema.js';
