@@ -136,15 +136,25 @@ export class PreviewGenerator {
           return [];
         }
         
-        const [key, value] = Object.entries(frontmatterUpdates)[0];
-        return sampleDocs.map(doc => {
-          const currentValue = doc.metadata.frontmatter?.[key];
-          return {
-            from: currentValue ? `${key}: ${currentValue}` : `${key}: [not set]`,
-            to: `${key}: ${value}`,
-            document: path.basename(doc.path),
-          };
+        // Show examples for each key being updated, using different documents
+        const examples: Array<{ from: string; to: string; document?: string }> = [];
+        const updateEntries = Object.entries(frontmatterUpdates);
+        
+        updateEntries.forEach(([key, value], index) => {
+          // Use a different document for each key update example
+          const doc = documents[index % documents.length];
+          if (doc) {
+            const currentValue = doc.metadata.frontmatter?.[key];
+            examples.push({
+              from: currentValue !== undefined ? `${key}: ${currentValue}` : `${key}: [not set]`,
+              to: `${key}: ${value}`,
+              document: path.basename(doc.path),
+            });
+          }
         });
+        
+        // Limit to 3 examples
+        return examples.slice(0, 3);
       
       default:
         return [];

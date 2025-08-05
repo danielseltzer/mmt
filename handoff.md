@@ -1,10 +1,35 @@
 # MMT Handoff Document
 
-## Current Status (2025-07-28 - Updated)
+## Current Status (2025-08-03 - Updated)
 
 ### Recently Completed Work
 
-1. **Vault-Level Sorting Implementation** ✅ NEW!
+1. **Preview Functionality Moved to API (#150)** ✅ NEW!
+   - Moved all preview logic from client to API server
+   - Created PreviewGenerator service with human-readable descriptions
+   - Added template expansion utilities on server side
+   - Preview shows operation descriptions, examples, warnings
+   - Fixed validation to show errors in preview
+   - Comprehensive test coverage for preview generation
+
+2. **Fixed Preview UI Issues** ✅ NEW!
+   - Fixed client-server data format mismatches:
+     - Date filters now convert relative dates to ISO strings
+     - Operation types use camelCase (updateFrontmatter not update-frontmatter)
+     - Operations converted to proper API format before sending
+   - Fixed duplicate examples in preview
+   - Document count now stays visible when switching panels
+   - Transform panel auto-opens operation dropdown when empty
+   - Auto-focus on first input field after selecting operation type
+
+3. **Control Manager & Logging Improvements** ✅ NEW!
+   - Fixed web server startup detection (now waits for Vite "ready" message)
+   - Improved console logging colors (info=white, warn=yellow, error=red only)
+   - Created issue #151 for Winston logging migration
+   - Created issue #152 for remaining web server startup issues
+   - Better error messages and debugging output
+
+4. **Vault-Level Sorting Implementation** ✅
    - Added Sort button next to Columns button in table view
    - Sort options: File (name), Path, Modified, Size
    - Click same field to toggle between ascending/descending order
@@ -13,7 +38,7 @@
    - API properly sorts all documents before applying limit
    - Integrated with document store for automatic re-fetching
 
-2. **Configuration System Overhaul (#132)** ✅
+5. **Configuration System Overhaul (#132)** ✅
    - Replaced complex `/config` endpoint with Vite's built-in proxy
    - Web app uses relative URLs (`/api/*`) that proxy to API server
    - Pass API port via `MMT_API_PORT` environment variable

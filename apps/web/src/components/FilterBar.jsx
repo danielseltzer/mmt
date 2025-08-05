@@ -80,10 +80,21 @@ export function FilterBar() {
       try {
         const parsed = parseDateExpression(filterValues.dateExpression);
         if (parsed) {
+          // Convert relative dates to actual ISO date strings
+          let dateValue = parsed.value;
+          
+          // Check if it's a relative date expression like "-7d"
+          if (typeof dateValue === 'string' && dateValue.match(/^-\d+d$/)) {
+            const days = parseInt(dateValue.substring(1, dateValue.length - 1));
+            const date = new Date();
+            date.setDate(date.getDate() - days);
+            dateValue = date.toISOString();
+          }
+          
           conditions.push({
             field: 'modified',
             operator: parsed.operator,
-            value: parsed.value
+            value: dateValue
           });
         }
       } catch {

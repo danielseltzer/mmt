@@ -31,7 +31,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Component for individual operation rows
-function OperationRow({ operation, onUpdate, onRemove, dragHandleProps }) {
+function OperationRow({ operation, onUpdate, onRemove, dragHandleProps, autoFocus }) {
   const { documents } = useDocumentStore();
   const [showFolderPicker, setShowFolderPicker] = useState(false);
   const [folderFilter, setFolderFilter] = useState('');
@@ -40,6 +40,22 @@ function OperationRow({ operation, onUpdate, onRemove, dragHandleProps }) {
   const [showFrontmatterHelp, setShowFrontmatterHelp] = useState(false);
   const renameHelpRef = useRef(null);
   const frontmatterHelpRef = useRef(null);
+  const renameInputRef = useRef(null);
+  const moveInputRef = useRef(null);
+  const frontmatterKeyRef = useRef(null);
+  
+  // Auto-focus the first input when this is a newly added operation
+  useEffect(() => {
+    if (autoFocus) {
+      if (operation.type === 'rename' && renameInputRef.current) {
+        renameInputRef.current.focus();
+      } else if (operation.type === 'move' && moveInputRef.current) {
+        moveInputRef.current.focus();
+      } else if (operation.type === 'updateFrontmatter' && frontmatterKeyRef.current) {
+        frontmatterKeyRef.current.focus();
+      }
+    }
+  }, [autoFocus, operation.type]);
   
   // Handle click outside for help tooltips
   useEffect(() => {
@@ -118,6 +134,7 @@ function OperationRow({ operation, onUpdate, onRemove, dragHandleProps }) {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium w-20">Rename:</span>
             <Input
+              ref={renameInputRef}
               type="text"
               placeholder="Pattern"
               value={operation.pattern || ''}
@@ -155,6 +172,7 @@ function OperationRow({ operation, onUpdate, onRemove, dragHandleProps }) {
             <div className="flex-1 relative">
               <div className="flex gap-1">
                 <Input
+                  ref={moveInputRef}
                   type="text"
                   placeholder="Select or type folder path"
                   value={selectedFolder}
@@ -207,11 +225,12 @@ function OperationRow({ operation, onUpdate, onRemove, dragHandleProps }) {
           </div>
         )}
         
-        {operation.type === 'update-frontmatter' && (
+        {operation.type === 'updateFrontmatter' && (
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium w-20">Frontmatter:</span>
             <div className="flex-1 flex gap-2">
               <Input
+                ref={frontmatterKeyRef}
                 type="text"
                 placeholder="Key"
                 value={operation.key || ''}
@@ -273,7 +292,7 @@ function OperationRow({ operation, onUpdate, onRemove, dragHandleProps }) {
 }
 
 // Sortable wrapper for operation rows
-function SortableOperationRow({ operation, onUpdate, onRemove }) {
+function SortableOperationRow({ operation, onUpdate, onRemove, autoFocus }) {
   const {
     attributes,
     listeners,
@@ -296,14 +315,16 @@ function SortableOperationRow({ operation, onUpdate, onRemove }) {
         onUpdate={onUpdate}
         onRemove={onRemove}
         dragHandleProps={{ ...attributes, ...listeners }}
+        autoFocus={autoFocus}
       />
     </div>
   );
 }
 
-export function TransformPanel({ operations = [], onOperationsChange }) {
+export function TransformPanel({ operations = [], onOperationsChange, justOpened, onOpenHandled }) {
   const [localOperations, setLocalOperations] = useState(operations);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [justAddedOperation, setJustAddedOperation] = useState(null);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -315,6 +336,16 @@ export function TransformPanel({ operations = [], onOperationsChange }) {
   useEffect(() => {
     setLocalOperations(operations);
   }, [operations]);
+  
+  // Auto-open dropdown when panel is opened with no operations
+  useEffect(() => {
+    if (justOpened && localOperations.length === 0) {
+      setShowAddDropdown(true);
+      if (onOpenHandled) {
+        onOpenHandled();
+      }
+    }
+  }, [justOpened, localOperations.length, onOpenHandled]);
   
   const handleDragEnd = (event) => {
     const { active, over } = event;
@@ -339,6 +370,7 @@ export function TransformPanel({ operations = [], onOperationsChange }) {
     setLocalOperations(updated);
     onOperationsChange(updated);
     setShowAddDropdown(false);
+    setJustAddedOperation(newOperation.id);
   };
   
   const updateOperation = (id, updatedOp) => {
@@ -373,6 +405,7 @@ export function TransformPanel({ operations = [], onOperationsChange }) {
                 operation={operation}
                 onUpdate={(updated) => updateOperation(operation.id, updated)}
                 onRemove={() => removeOperation(operation.id)}
+                autoFocus={operation.id === justAddedOperation}
               />
             ))}
           </div>
@@ -388,7 +421,7 @@ export function TransformPanel({ operations = [], onOperationsChange }) {
             <SelectItem value="rename">Rename</SelectItem>
             <SelectItem value="move">Move</SelectItem>
             <SelectItem value="delete">Delete</SelectItem>
-            <SelectItem value="update-frontmatter">Update Frontmatter</SelectItem>
+            <SelectItem value="updateFrontmatter">Update Frontmatter</SelectItem>
           </SelectContent>
         </Select>
       </div>

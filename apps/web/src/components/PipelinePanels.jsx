@@ -33,6 +33,7 @@ export function PipelinePanels({ searchBar }) {
   const [operations, setOperations] = useState([]);
   const [outputFormat, setOutputFormat] = useState('json');
   const [showPreview, setShowPreview] = useState(false);
+  const [transformJustOpened, setTransformJustOpened] = useState(false);
   const filters = useDocumentStore(state => state.filters);
   const documents = useDocumentStore(state => state.documents);
   const totalCount = useDocumentStore(state => state.totalCount);
@@ -82,7 +83,7 @@ export function PipelinePanels({ searchBar }) {
     // Count operations by type
     const opCounts = {};
     operations.forEach(op => {
-      const type = op.type === 'update-frontmatter' ? 'Frontmatter' : 
+      const type = op.type === 'updateFrontmatter' ? 'Frontmatter' : 
                    op.type.charAt(0).toUpperCase() + op.type.slice(1);
       opCounts[type] = (opCounts[type] || 0) + 1;
     });
@@ -131,7 +132,12 @@ export function PipelinePanels({ searchBar }) {
       icon: Wand2,
       title: 'Transform:',
       summary: getTransformSummary(),
-      content: <TransformPanel operations={operations} onOperationsChange={setOperations} />
+      content: <TransformPanel 
+        operations={operations} 
+        onOperationsChange={setOperations}
+        justOpened={transformJustOpened}
+        onOpenHandled={() => setTransformJustOpened(false)}
+      />
     },
     {
       id: 'output',
@@ -153,7 +159,12 @@ export function PipelinePanels({ searchBar }) {
           <Collapsible 
             key={panel.id}
             open={openPanel === panel.id} 
-            onOpenChange={(open) => setOpenPanel(open ? panel.id : null)}
+            onOpenChange={(open) => {
+              if (open && panel.id === 'transform' && operations.length === 0) {
+                setTransformJustOpened(true);
+              }
+              setOpenPanel(open ? panel.id : null);
+            }}
             className="flex-1 border rounded-lg"
           >
             <CollapsibleTrigger asChild>
@@ -171,6 +182,11 @@ export function PipelinePanels({ searchBar }) {
         
         {/* Search bar on the same line */}
         {searchBar}
+        
+        {/* Document count */}
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          {totalCount} docs
+        </span>
         
         {/* Preview button */}
         <Button 

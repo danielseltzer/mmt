@@ -14,9 +14,11 @@ export function pipelinesRouter(context: Context): Router {
     async (req, res, next) => {
       try {
         const pipeline = req.body;
+        console.log('Pipeline Request:', JSON.stringify(pipeline, null, 2));
         const result = await executor.execute(pipeline);
         res.json(result);
       } catch (error) {
+        console.error('Pipeline Execution Error:', error);
         next(error);
       }
     }

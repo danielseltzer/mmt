@@ -6,11 +6,11 @@ import { z, ZodError } from 'zod';
  */
 export function validate<T>(schema: z.ZodSchema<T>, source: 'body' | 'query' | 'params' = 'body') {
   return async (req: Request, res: Response, next: NextFunction) => {
+    const data = source === 'body' ? req.body : 
+                 source === 'query' ? req.query : 
+                 req.params;
+    
     try {
-      const data = source === 'body' ? req.body : 
-                   source === 'query' ? req.query : 
-                   req.params;
-      
       const validated = await schema.parseAsync(data);
       
       // Replace the original data with validated/transformed data
@@ -25,6 +25,11 @@ export function validate<T>(schema: z.ZodSchema<T>, source: 'body' | 'query' | '
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error('Validation Error:', {
+          source,
+          data: JSON.stringify(data, null, 2),
+          errors: error.errors
+        });
         res.status(400).json({
           error: 'Validation error',
           details: error.errors.map(err => ({

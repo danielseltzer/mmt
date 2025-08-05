@@ -306,20 +306,35 @@ export class MMTControlManager {
     
     this.log(`Starting web server on port ${port}...`);
     
-    const webProcess = spawn('pnpm', ['--filter', '@mmt/web', 'dev', '--', '--port', String(port)], {
+    const command = 'pnpm';
+    const args = ['--filter', '@mmt/web', 'dev', '--', '--port', String(port)];
+    this.log(`Executing: ${command} ${args.join(' ')} in ${rootDir}`);
+    
+    const webProcess = spawn(command, args, {
       cwd: rootDir,
       env: {
         ...process.env,
         MMT_API_PORT: String(this.config.apiPort)
       },
       stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
-      shell: true
+      shell: true,
+      detached: process.platform !== 'win32' // Detach on Unix systems to survive parent exit
     });
+    
+    // Flag to track when server is ready
+    let serverReady = false;
     
     // Log web server output
     webProcess.stdout?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter(line => line.trim());
+      const output = data.toString();
+      const lines = output.split('\n').filter(line => line.trim());
       lines.forEach(line => this.log(`[WEB] ${line}`));
+      
+      // Check for Vite ready message
+      if (!serverReady && (output.includes('ready in') || output.includes('Local:'))) {
+        serverReady = true;
+        webProcess.emit('ready');
+      }
     });
     
     webProcess.stderr?.on('data', (data) => {
@@ -339,7 +354,8 @@ export class MMTControlManager {
       console.error('[Web Error] Failed to start:', err);
     });
     
-    webProcess.on('exit', (code) => {
+    webProcess.on('exit', (code, signal) => {
+      this.log(`[WEB] Process exited with code ${code}, signal ${signal}`);
       if (code !== 0 && code !== null) {
         console.error(`[Web Error] Process exited with code ${code}`);
       }
@@ -469,35 +485,67 @@ export class MMTControlManager {
    * Wait for web server to be ready (Vite specific)
    */
   private async waitForWebReady(port: number, timeout = 60000): Promise<void> {
-    const startTime = Date.now();
     const managed = this.processes.get('web');
-    
-    // For Vite, we'll consider it ready after a short delay
-    // since it prints "ready" to stdout but may not immediately accept connections
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    while (Date.now() - startTime < timeout) {
-      // Check if process died
-      if (managed && managed.process.exitCode !== null) {
-        throw new Error(`Web process exited with code ${managed.process.exitCode}`);
-      }
-      
-      // Just check if the process is still running
-      if (managed && managed.process.pid) {
-        this.log(`✓ web server is ready (process running)`);
-        return;
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!managed) {
+      throw new Error('Web process not found');
     }
     
-    throw new Error(`Web server did not start within ${timeout}ms`);
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+      
+      // Set up timeout
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error(`Web server did not start within ${timeout}ms`));
+        }
+      }, timeout);
+      
+      // Check for process exit
+      const checkExit = setInterval(() => {
+        if (managed.process.exitCode !== null) {
+          clearInterval(checkExit);
+          clearTimeout(timeoutId);
+          if (!resolved) {
+            resolved = true;
+            reject(new Error(`Web process exited with code ${managed.process.exitCode}`));
+          }
+        }
+      }, 100);
+      
+      // Listen for ready event
+      const readyHandler = () => {
+        clearInterval(checkExit);
+        clearTimeout(timeoutId);
+        if (!resolved) {
+          resolved = true;
+          this.log(`✓ web server is ready`);
+          resolve();
+        }
+      };
+      
+      managed.process.once('ready', readyHandler);
+    });
   }
   
   /**
    * Check if a port is in use
    */
   private async isPortInUse(port: number): Promise<boolean> {
+    // Try multiple addresses as some servers only bind to specific interfaces
+    const addresses = ['127.0.0.1', 'localhost', '::1'];
+    
+    for (const address of addresses) {
+      const inUse = await this.checkPortAtAddress(port, address);
+      if (inUse) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  private async checkPortAtAddress(port: number, address: string): Promise<boolean> {
     return new Promise((resolve) => {
       const socket = new net.Socket();
       const timeout = setTimeout(() => {
@@ -517,7 +565,7 @@ export class MMTControlManager {
         resolve(false);
       });
 
-      socket.connect(port, '127.0.0.1');
+      socket.connect(port, address);
     });
   }
   

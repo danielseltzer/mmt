@@ -190,6 +190,12 @@ export class PipelineExecutor {
   }
 
   private async selectDocuments(criteria: SelectCriteria): Promise<Document[]> {
+    // Handle select all case
+    if ('all' in criteria && criteria.all === true) {
+      const allDocs = this.context.indexer.getAllDocuments();
+      return await this.convertMetadataToDocuments(allDocs);
+    }
+    
     // Handle explicit file list
     if ('files' in criteria && criteria.files) {
       const docs: Document[] = [];

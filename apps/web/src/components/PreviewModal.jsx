@@ -43,7 +43,28 @@ export function PreviewModal({
           all: true
         },
         filter: filters,
-        operations: operations,
+        operations: operations.map(op => {
+          // Convert UI operation format to API format
+          const apiOp = { type: op.type };
+          
+          switch (op.type) {
+            case 'rename':
+              apiOp.newName = op.pattern || '';
+              break;
+            case 'move':
+              apiOp.destination = op.targetPath || '';
+              break;
+            case 'delete':
+              apiOp.permanent = op.permanent || false;
+              break;
+            case 'updateFrontmatter':
+              apiOp.updates = { [op.key]: op.value };
+              apiOp.mode = 'merge';
+              break;
+          }
+          
+          return apiOp;
+        }),
         options: {
           destructive: false // Preview mode
         }
