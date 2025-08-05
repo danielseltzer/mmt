@@ -1,170 +1,144 @@
 # MMT Handoff Document
 
-## Current Status (2025-08-03 - Updated)
+## Current Status (2025-08-05)
 
-### Recently Completed Work
+### Session Summary - Similarity Search TDD Implementation
 
-1. **Preview Functionality Moved to API (#150)** ✅ NEW!
-   - Moved all preview logic from client to API server
-   - Created PreviewGenerator service with human-readable descriptions
-   - Added template expansion utilities on server side
-   - Preview shows operation descriptions, examples, warnings
-   - Fixed validation to show errors in preview
-   - Comprehensive test coverage for preview generation
+Implemented comprehensive TDD test suite for similarity search functionality following ADR-004.
 
-2. **Fixed Preview UI Issues** ✅ NEW!
-   - Fixed client-server data format mismatches:
-     - Date filters now convert relative dates to ISO strings
-     - Operation types use camelCase (updateFrontmatter not update-frontmatter)
-     - Operations converted to proper API format before sending
-   - Fixed duplicate examples in preview
-   - Document count now stays visible when switching panels
-   - Transform panel auto-opens operation dropdown when empty
-   - Auto-focus on first input field after selecting operation type
+#### Work Completed
 
-3. **Control Manager & Logging Improvements** ✅ NEW!
-   - Fixed web server startup detection (now waits for Vite "ready" message)
-   - Improved console logging colors (info=white, warn=yellow, error=red only)
-   - Created issue #151 for Winston logging migration
-   - Created issue #152 for remaining web server startup issues
-   - Better error messages and debugging output
+1. **Test Infrastructure**
+   - Created test helpers for Ollama availability checks
+   - Implemented test document generator with topic clusters (woodworking, cooking, technology)
+   - Created test factory to wrap SimilaritySearchService for test compatibility
+   - Added error log parser for structured error analysis
 
-4. **Vault-Level Sorting Implementation** ✅
-   - Added Sort button next to Columns button in table view
-   - Sort options: File (name), Path, Modified, Size
-   - Click same field to toggle between ascending/descending order
-   - Visual indicators: ↑ for ascending, ↓ for descending  
-   - Sorts at vault level BEFORE pagination (shows top 500 by sort criteria)
-   - API properly sorts all documents before applying limit
-   - Integrated with document store for automatic re-fetching
+2. **Test Files Created**
+   - `similarity-indexing.test.ts` - Basic indexing functionality (4/5 passing)
+   - `similarity-persistence.test.ts` - Index save/load functionality
+   - `similarity-file-system.test.ts` - File update/delete/move operations
+   - `similarity-error-reporting.test.ts` - Error visibility and logging
+   - `similarity-smoke.test.ts` - Topic clustering validation
+   - `similarity-test-helpers.ts` - Shared test utilities
+   - `similarity-test-factory.ts` - Service wrapper for tests
+   - `vitest.similarity.config.ts` - Dedicated test config without API server setup
 
-5. **Configuration System Overhaul (#132)** ✅
-   - Replaced complex `/config` endpoint with Vite's built-in proxy
-   - Web app uses relative URLs (`/api/*`) that proxy to API server
-   - Pass API port via `MMT_API_PORT` environment variable
-   - Removed config store and related complexity
-   - No more hardcoded URLs or ports
+3. **Service Modifications**
+   - Modified `indexDirectory()` to return `IndexingResult` with detailed error information
+   - Added error log file generation with timestamps in project root
+   - Changed empty document logging from `console.warn` to `console.error`
+   - Added Ollama health check before indexing with clear error messages
+   - Implemented `writeErrorLog()` method for persistent error reporting
 
-3. **TRANSFORM Panel Implementation (#127)** ✅
-   - Fully functional operation builder with drag-and-drop reordering
-   - Operations: Rename, Move, Delete, Update Frontmatter
-   - Template support with variables: `{name}`, `{date}`, `{timestamp}`, `{counter}`
-   - Live preview showing template expansion
-   - Compact table-like UI with minimal padding
-   - Help tooltips for template variables
-   - Filterable folder picker for move operations
-   - Frontmatter operations support add/update/remove
+4. **Test Results**
+   - **24 tests passing** out of 36 total
+   - **7 test files** successfully running
+   - All non-vector-search functionality working correctly
+   - Vector search tests failing due to Orama returning 0 results
 
-4. **Control Manager Improvements (#147)** ✅
-   - Implemented `mmt stop` command with PID file tracking
-   - Implemented `mmt status` command
-   - Added comprehensive logging to `logs/mmt-YYYY-MM-DD.log`
-   - Fixed process management and cleanup
-   - Better error handling for port conflicts
-
-5. **Test Infrastructure Fixes (#141)** ✅
-   - Fixed API server unit test configuration with `passWithNoTests`
-   - Cleaned up logging to distinguish info from errors
-   - Integration tests passing (web tests outdated but lower priority)
-
-### Current Architecture
-
-```
-MMT Control Manager (./bin/mmt)
-├── Reads config file (YAML)
-├── Writes PID file for process management
-├── Logs all output to logs/mmt-YYYY-MM-DD.log
-├── Starts API server
-│   └── Reads config directly
-└── Starts Web server (Vite)
-    └── Gets API port via MMT_API_PORT env var
-    └── Proxies /api/* requests to API server
-```
+#### Key Achievements
+- ✅ Error visibility with console logging and file output
+- ✅ Comprehensive error tracking and reporting
+- ✅ Graceful handling of empty documents
+- ✅ Clear Ollama availability error messages
+- ✅ Persistence testing infrastructure
+- ✅ File system operation testing
 
 ### Working Branch
-`main` - All recent work has been merged
+`feat/22-similarity-search` - Similarity search implementation with TDD tests
 
-## Next High Priority Work
+## Current Issues
 
-### 1. **OUTPUT Panel (#127)** - IMMEDIATE
-The OUTPUT panel needs to be implemented to complete the pipeline builder:
-- Format selection (JSON, YAML, CSV, Markdown table)
-- Preview of output format
-- Options specific to each format (e.g., CSV delimiter, JSON pretty print)
-- File download or copy-to-clipboard functionality
+### 1. **Orama Vector Search Issue** - CRITICAL
+Vector similarity search returns 0 results despite documents being successfully indexed.
 
-### 2. **Execute Button & Pipeline Submission (#127)** - HIGH
-Wire up the pipeline execution:
-- Add Execute button (with preview/dry-run option)
-- Convert UI state to pipeline API format
-- Send to `/api/pipelines/execute` endpoint
-- Show progress/spinner during execution
-- Display results (success/error counts, affected files)
-- Handle errors gracefully
+**Symptoms:**
+```javascript
+// This works - returns 8 documents
+const allDocs = await search(this.db, {
+  term: '',
+  limit: 1000
+});
 
-### 3. **Update CLAUDE.md (#143)** - MEDIUM
-Document the new architecture:
-- Vite proxy configuration approach
-- Control manager with logging
-- Template system and variables
-- Pipeline builder components
+// This returns 0 hits
+const results = await search(this.db, {
+  mode: 'vector',
+  vector: {
+    value: queryEmbedding, // 768-dimension array
+    property: 'embedding'
+  },
+  limit: 5
+});
+```
 
-## Technical Context
+**Potential Causes:**
+1. Orama 3.x vector search configuration issue
+2. Schema mismatch for vector fields
+3. Missing vector search plugin/initialization
+4. Embedding format incompatibility
 
-### Key Files Changed Recently
-- `/packages/table-view/src/SortConfig.tsx` - NEW! Sort dropdown component
-- `/packages/table-view/src/TableView.tsx` - Added sort props and UI
-- `/apps/web/src/stores/document-store.ts` - Added sortBy/sortOrder state
-- `/apps/web/src/components/DocumentTable.jsx` - Wired up sorting
-- `/apps/api-server/src/routes/documents.ts` - Fixed to sort BEFORE pagination
-- `/tools/control-manager/src/control-manager.ts` - Logging, PID file, stop/status
-- `/apps/web/vite.config.ts` - Proxy configuration (made API port optional for builds)
-- `/apps/web/src/components/TransformPanel.jsx` - Full TRANSFORM implementation
-- `/apps/web/src/utils/template-utils.js` - Shared template expansion function
-- `/README.md` - Updated with stop/status commands and logging info
+**Next Steps:**
+1. Check Orama 3.x documentation for vector search setup
+2. Verify vector field schema matches Orama expectations
+3. Test with smaller embedding dimensions
+4. Check if additional Orama plugins are needed
+5. Try explicit vector search initialization
 
-### Template System
-The `expandTemplate()` function in `utils/template-utils.js` supports:
-- `{name}` - Document filename without extension
-- `{date}` - Current date as YYYY-MM-DD
-- `{timestamp}` - ISO 8601 timestamp (e.g., 2025-07-28T15:30:45.123Z)
-- `{counter}` - Sequential counter (currently shows "1" in preview)
+### 2. **TypeScript Module Resolution**
+- Import `@orama/plugin-data-persistence/server` fails with current tsconfig
+- Error suggests updating moduleResolution to 'node16', 'nodenext', or 'bundler'
 
-### UI Patterns Established
-- Compact table-like rows with minimal padding
-- Drag handles for reordering (using @dnd-kit)
-- Trash icon for deletion
-- Help tooltips with ? icon
-- Preview text showing template expansion
-- Filterable dropdowns for selection
-
-### How Sorting Works
-
-1. **User Interface**: Sort button appears next to Columns button
-2. **Sort Fields**: 
-   - File (sorts by document name)
-   - Path (sorts by full file path)
-   - Modified (sorts by modification date)
-   - Size (sorts by file size)
-3. **Behavior**:
-   - First click on a field sorts ascending
-   - Click same field again to toggle to descending
-   - Sorting happens at the API level before pagination
-   - Returns the top 500 documents according to sort criteria
-   - Empty/null values are placed at the end when sorting
-
-## Known Issues
-
-1. **Web Integration Tests** - Need updating to match current components
-2. **Counter Variable** - Currently hardcoded to "1" in preview
-3. **Vitest Version Mismatch** - Peer dependency warnings throughout
-4. **Linting Errors** - Multiple eslint violations in table-view package (mostly style issues)
+### 3. **Integration Test Port Conflicts**
+- Multiple integration tests try to start API server on port 3001
+- Solved for similarity tests by creating separate vitest config without server setup
 
 ## Next Session Starting Point
 
-1. Start with OUTPUT panel implementation
-2. Then add Execute button and wire up pipeline submission
-3. Test full pipeline flow: Select → Transform → Output → Execute
+1. **Debug Orama Vector Search** - Get remaining 12 tests passing
+   - Relevant files: `/apps/api-server/src/services/similarity-search.ts`
+   - Schema definition at lines 89-96 and 104-111
+   - Check Orama 3.x docs for vector search requirements
+
+2. **Fix TypeScript build issue** with Orama import
+
+3. **Similarity Search UI (#22)** - After tests pass
+   - Add "Find Similar" context menu to document table
+   - Show similarity scores in results
+   - Add similarity search option to filter bar
+   - Disable features when Ollama unavailable
+
+## Files Modified/Created This Session
+
+1. `/apps/api-server/src/services/similarity-search.ts` - Added error handling and IndexingResult
+2. `/apps/api-server/tests/integration/similarity-*.test.ts` (5 test files)
+3. `/apps/api-server/tests/helpers/similarity-test-helpers.ts`
+4. `/apps/api-server/tests/integration/similarity-test-factory.ts`
+5. `/apps/api-server/vitest.similarity.config.ts`
+6. `/docs/adr/004-similarity-search-testing-strategy.md`
+
+## Running Tests
+
+```bash
+# Run similarity tests without API server setup
+pnpm vitest run --config vitest.similarity.config.ts
+
+# Run specific test file
+pnpm vitest run --config vitest.similarity.config.ts tests/integration/similarity-indexing.test.ts
+```
+
+## Technical Context
+
+### Similarity Search Architecture
+- **Orama**: In-process TypeScript vector database (v3.1.11)
+- **Ollama**: Local LLM for embeddings (nomic-embed-text model, 768 dimensions)
+- **Persistence**: Binary format using @orama/plugin-data-persistence
+- **Error Handling**: Graceful - continues indexing even if individual files fail
+
+### Performance Metrics
+- Embedding generation: ~11ms per document
+- Estimated for 6k docs: ~1.1 minutes
+- Empty documents are skipped with appropriate error logging
 
 ## Running MMT
 

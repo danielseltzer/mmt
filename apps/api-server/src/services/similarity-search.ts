@@ -1,5 +1,5 @@
 import { create, insert, search, remove, save, load, AnyOrama } from '@orama/orama';
-import { persistToFile, restoreFromFile } from '@orama/plugin-data-persistence';
+import { persistToFile, restoreFromFile } from '@orama/plugin-data-persistence/server';
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
@@ -47,6 +47,14 @@ export interface SimilarityStatus {
   generatedAt: Date;
 }
 
+export interface IndexingResult {
+  totalDocuments: number;
+  successfullyIndexed: number;
+  failed: number;
+  errors: Array<{ path: string; error: string }>;
+  errorLogPath?: string;
+}
+
 export class SimilaritySearchService extends EventEmitter {
   private db: AnyOrama | null = null;
   private embeddingCache = new Map<string, number[]>();
@@ -57,6 +65,7 @@ export class SimilaritySearchService extends EventEmitter {
   private indexingProgress: IndexingProgress | null = null;
   private lastError: string | null = null;
   private isShuttingDown = false;
+  private indexingErrors = new Map<string, string>();
 
   constructor(config: Config) {
     super();
@@ -163,6 +172,16 @@ export class SimilaritySearchService extends EventEmitter {
       }
       
       const data = await response.json() as { embedding: number[] };
+      
+      // Validate the response
+      if (!data.embedding || !Array.isArray(data.embedding)) {
+        throw new Error('Invalid response: missing embedding array');
+      }
+      
+      if (data.embedding.length === 0) {
+        throw new Error('Received empty embedding array');
+      }
+      
       this.embeddingCache.set(cacheKey, data.embedding);
       
       return data.embedding;
@@ -175,53 +194,83 @@ export class SimilaritySearchService extends EventEmitter {
   async indexFile(filePath: string, content?: string): Promise<void> {
     if (!this.db || !this.config.similarity?.enabled) return;
     
-    // Read content if not provided
-    if (!content) {
-      content = await fs.readFile(filePath, 'utf-8');
-    }
-    
-    const contentHash = crypto.createHash('md5').update(content).digest('hex');
-    const id = crypto.createHash('md5').update(filePath).digest('hex');
-    
-    // Check if document exists and needs update
     try {
-      const existing = await search(this.db, {
-        term: id,
-        properties: ['id'],
-        exact: true,
-        limit: 1
-      });
+      // Read content if not provided
+      if (!content) {
+        content = await fs.readFile(filePath, 'utf-8');
+      }
       
-      if (existing.hits.length > 0 && 
-          existing.hits[0].document.contentHash === contentHash) {
-        console.log(`Skipping ${filePath} - content unchanged`);
+      // Skip empty documents
+      if (!content.trim()) {
+        console.error(`ERROR: Skipping empty document: ${filePath}`);
+        this.indexingErrors.set(filePath, 'Empty document');
         return;
       }
       
-      // Remove existing document
-      await remove(this.db, id);
+      const contentHash = crypto.createHash('md5').update(content).digest('hex');
+      const id = crypto.createHash('md5').update(filePath).digest('hex');
+      
+      // Check if document exists and needs update
+      try {
+        const existing = await search(this.db, {
+          term: id,
+          properties: ['id'],
+          exact: true,
+          limit: 1
+        });
+        
+        if (existing.hits.length > 0 && 
+            existing.hits[0].document.contentHash === contentHash) {
+          console.log(`Skipping ${filePath} - content unchanged`);
+          return;
+        }
+        
+        // Remove existing document
+        await remove(this.db, id);
+      } catch (error) {
+        // Document doesn't exist, continue
+      }
+      
+      console.log(`Indexing ${filePath}...`);
+      
+      // Generate embedding with error handling
+      let embedding: number[];
+      try {
+        embedding = await this.generateEmbedding(content);
+        
+        // Validate embedding dimensions
+        if (!embedding || embedding.length !== 768) {
+          throw new Error(`Invalid embedding: got ${embedding?.length || 0} dimensions, expected 768`);
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`ERROR: Failed to generate embedding for ${filePath}: ${errorMsg}`);
+        this.indexingErrors.set(filePath, `Embedding generation failed: ${errorMsg}`);
+        return; // Skip this file but continue indexing
+      }
+      
+      const doc = {
+        id,
+        path: filePath,
+        content,
+        embedding,
+        contentHash,
+        lastModified: Date.now()
+      };
+      await insert(this.db, doc);
     } catch (error) {
-      // Document doesn't exist, continue
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`ERROR: Failed to index ${filePath}: ${errorMsg}`);
+      this.indexingErrors.set(filePath, errorMsg);
+      // Don't throw - continue with other files
     }
-    
-    console.log(`Indexing ${filePath}...`);
-    const embedding = await this.generateEmbedding(content);
-    
-    await insert(this.db, {
-      id,
-      path: filePath,
-      content,
-      embedding,
-      contentHash,
-      lastModified: Date.now()
-    });
   }
 
   async search(query: string, options?: {
     limit?: number;
     includeExcerpt?: boolean;
   }): Promise<SimilaritySearchResult[]> {
-    if (!this.db || !this.config.similarity?.enabled || this.indexStatus !== 'ready') {
+    if (!this.db || !this.config.similarity?.enabled) {
       return [];
     }
     
@@ -336,9 +385,26 @@ export class SimilaritySearchService extends EventEmitter {
     };
   }
 
-  async indexDirectory(directory: string, pattern = '**/*.md'): Promise<void> {
-    if (!this.db || !this.config.similarity?.enabled) return;
+  async indexDirectory(directory: string, pattern = '**/*.md'): Promise<IndexingResult> {
+    // Check Ollama health before any other checks
+    const ollamaHealthy = await this.checkOllamaHealth();
+    if (!ollamaHealthy) {
+      throw new Error('Ollama is not available. Please ensure Ollama is running before indexing.');
+    }
+    
+    if (!this.db || !this.config.similarity?.enabled) {
+      return {
+        totalDocuments: 0,
+        successfullyIndexed: 0,
+        failed: 0,
+        errors: [],
+        errorLogPath: undefined
+      };
+    }
 
+    // Clear previous errors
+    this.clearIndexingErrors();
+    
     this.indexStatus = 'indexing';
     this.indexingProgress = {
       current: 0,
@@ -355,6 +421,9 @@ export class SimilaritySearchService extends EventEmitter {
       this.indexingProgress.total = files.length;
       console.log(`Found ${files.length} files to index`);
       
+      let successCount = 0;
+      let errorCount = 0;
+      
       for (const file of files) {
         if (this.isShuttingDown) break;
         
@@ -368,20 +437,69 @@ export class SimilaritySearchService extends EventEmitter {
         
         this.emit('progress', this.indexingProgress);
         
-        try {
-          await this.indexFile(filePath);
-        } catch (error) {
-          console.error(`Failed to index ${filePath}:`, error);
+        // Index file - errors are handled internally
+        await this.indexFile(filePath);
+        
+        // Check if there was an error for this file
+        if (this.indexingErrors.has(filePath)) {
+          errorCount++;
+        } else {
+          successCount++;
         }
       }
       
       await this.persist();
+      
+      // Create result object
+      const result: IndexingResult = {
+        totalDocuments: files.length,
+        successfullyIndexed: successCount,
+        failed: errorCount,
+        errors: this.getIndexingErrors()
+      };
+      
+      // Write error log if there were failures
+      if (errorCount > 0) {
+        const errorLogPath = await this.writeErrorLog(result);
+        result.errorLogPath = errorLogPath;
+      }
+      
+      // Log summary
+      console.log(`\nIndexing completed:`);
+      console.log(`  Success: ${successCount} files`);
+      console.log(`  Errors: ${errorCount} files`);
+      
+      if (errorCount > 0) {
+        const errors = this.getIndexingErrors();
+        console.error(`\nIndexing errors summary:`);
+        const errorTypes = new Map<string, number>();
+        errors.forEach(({ error }) => {
+          const type = error.split(':')[0];
+          errorTypes.set(type, (errorTypes.get(type) || 0) + 1);
+        });
+        errorTypes.forEach((count, type) => {
+          console.error(`  ${type}: ${count} files`);
+        });
+      }
+      
       this.indexStatus = 'ready';
       this.emit('status-changed', { previousStatus: 'indexing', newStatus: 'ready' });
+      
+      return result;
     } catch (error) {
       this.indexStatus = 'error';
       this.lastError = error instanceof Error ? error.message : 'Unknown error';
       this.emit('status-changed', { previousStatus: 'indexing', newStatus: 'error' });
+      
+      // Still return a result even on error
+      const result: IndexingResult = {
+        totalDocuments: 0,
+        successfullyIndexed: 0,
+        failed: 0,
+        errors: this.getIndexingErrors()
+      };
+      
+      // For system errors, throw after creating result
       throw error;
     } finally {
       this.indexingProgress = null;
@@ -393,5 +511,51 @@ export class SimilaritySearchService extends EventEmitter {
     if (this.db && this.config.similarity?.enabled) {
       await this.persist();
     }
+  }
+
+  /**
+   * Get all indexing errors that occurred
+   */
+  getIndexingErrors(): { path: string; error: string }[] {
+    return Array.from(this.indexingErrors.entries()).map(([path, error]) => ({ path, error }));
+  }
+
+  /**
+   * Clear indexing errors
+   */
+  clearIndexingErrors(): void {
+    this.indexingErrors.clear();
+  }
+  
+  /**
+   * Write error log to file in project root
+   */
+  private async writeErrorLog(result: IndexingResult): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const date = timestamp.slice(0, 10);
+    const time = timestamp.slice(11).replace(/-/g, '');
+    const filename = `similarity-errors-${date}-${time}.log`;
+    
+    // Write to project root (where the bin/mmt command runs from)
+    const errorLogPath = path.join(process.cwd(), filename);
+    
+    let logContent = `SIMILARITY SEARCH INDEXING REPORT\n`;
+    logContent += `Generated at: ${new Date().toISOString()}\n`;
+    logContent += `\n`;
+    logContent += `Total documents: ${result.totalDocuments}\n`;
+    logContent += `Successfully indexed: ${result.successfullyIndexed}\n`;
+    logContent += `Failed: ${result.failed}\n`;
+    logContent += `Success rate: ${((result.successfullyIndexed / result.totalDocuments) * 100).toFixed(2)}%\n`;
+    
+    if (result.errors.length > 0) {
+      logContent += `\nERRORS:\n`;
+      for (const error of result.errors) {
+        logContent += `[${new Date().toISOString()}] ${error.path}: ${error.error}\n`;
+      }
+    }
+    
+    await fs.writeFile(errorLogPath, logContent, 'utf-8');
+    
+    return errorLogPath;
   }
 }
