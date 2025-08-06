@@ -5,6 +5,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/unit/**/*.test.ts'],
-    exclude: ['tests/integration/**']
+    exclude: ['tests/integration/**'],
+    // Allow empty test suites - API server has integration tests only by design
+    passWithNoTests: true
   }
 });

@@ -5,11 +5,13 @@ import type {
   SelectCriteria,
   ScriptOperation,
   FilterCollection,
-  FilterCondition
+  FilterCondition,
+  PipelinePreviewResponse
 } from '@mmt/entities';
 import { OperationRegistry } from '@mmt/document-operations';
 import type { OperationContext } from '@mmt/document-operations';
 import { basename, join } from 'path';
+import { PreviewGenerator } from './preview-generator.js';
 
 export interface PipelineExecutionResult {
   success: boolean;
@@ -62,13 +64,43 @@ export interface PipelineExecutionResult {
 export class PipelineExecutor {
   private readonly context: Context;
   private readonly operationRegistry: OperationRegistry;
+  private readonly previewGenerator: PreviewGenerator;
 
   constructor(context: Context) {
     this.context = context;
     this.operationRegistry = new OperationRegistry();
+    this.previewGenerator = new PreviewGenerator();
   }
 
-  async execute(pipeline: OperationPipeline): Promise<PipelineExecutionResult> {
+  async execute(pipeline: OperationPipeline): Promise<PipelineExecutionResult | PipelinePreviewResponse> {
+    // If in preview mode, generate and return preview
+    const isPreview = !pipeline.options?.destructive;
+    if (isPreview) {
+      return this.generatePreview(pipeline);
+    }
+    
+    // Otherwise, execute the pipeline
+    return this.executePipeline(pipeline);
+  }
+
+  private async generatePreview(pipeline: OperationPipeline): Promise<PipelinePreviewResponse> {
+    // SELECT phase - get documents based on criteria
+    let documents = await this.selectDocuments(pipeline.select);
+    
+    // FILTER phase - apply declarative filters if present
+    if (pipeline.filter) {
+      documents = this.applyFilters(documents, pipeline.filter);
+    }
+    
+    // Generate preview
+    return this.previewGenerator.generatePreview(
+      documents,
+      pipeline.operations,
+      pipeline.filter
+    );
+  }
+
+  private async executePipeline(pipeline: OperationPipeline): Promise<PipelineExecutionResult> {
     const errors: PipelineExecutionResult['errors'] = [];
     const results: NonNullable<PipelineExecutionResult['results']> = {
       succeeded: [],
@@ -88,34 +120,21 @@ export class PipelineExecutor {
       }
       
       // TRANSFORM phase - apply operations to documents
-      const isPreview = !pipeline.options?.destructive;
-      
       for (const doc of documents) {
         for (const operation of pipeline.operations) {
           try {
-            if (isPreview) {
-              // Preview mode - just validate operations
-              await this.validateOperation(doc, operation);
-              skipped++;
-              results.skipped.push({
-                document: doc,
-                operation,
-                reason: 'Preview mode'
-              });
-            } else {
-              // Execute mode - actually perform operations
-              await this.executeOperation(doc, operation);
-              succeeded++;
-              results.succeeded.push({
-                document: doc,
-                operation,
-                details: {
-                  type: operation.type,
-                  source: doc.path,
-                  target: this.getOperationTarget(doc, operation)
-                }
-              });
-            }
+            // Execute mode - actually perform operations
+            await this.executeOperation(doc, operation);
+            succeeded++;
+            results.succeeded.push({
+              document: doc,
+              operation,
+              details: {
+                type: operation.type,
+                source: doc.path,
+                target: this.getOperationTarget(doc, operation)
+              }
+            });
           } catch (error) {
             failed++;
             const errorMsg = error instanceof Error ? error.message : String(error);
@@ -171,6 +190,12 @@ export class PipelineExecutor {
   }
 
   private async selectDocuments(criteria: SelectCriteria): Promise<Document[]> {
+    // Handle select all case
+    if ('all' in criteria && criteria.all === true) {
+      const allDocs = this.context.indexer.getAllDocuments();
+      return await this.convertMetadataToDocuments(allDocs);
+    }
+    
     // Handle explicit file list
     if ('files' in criteria && criteria.files) {
       const docs: Document[] = [];

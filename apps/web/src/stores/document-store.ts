@@ -67,10 +67,13 @@ interface DocumentStoreState {
   error: string | null;
   searchQuery: string;
   filters: FilterCollection;
+  sortBy?: string;
+  sortOrder: 'asc' | 'desc';
   
   // Actions
   setSearchQuery: (query: string) => void;
   setFilters: (filters: FilterCollection) => void;
+  setSort: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   fetchDocuments: () => Promise<void>;
   clearError: () => void;
   reset: () => void;
@@ -88,6 +91,8 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   error: null,
   searchQuery: '',
   filters: { conditions: [], logic: 'AND' },
+  sortBy: undefined,
+  sortOrder: 'asc',
   
   // Actions
   setSearchQuery: (query: string) => set({ searchQuery: query }),
@@ -98,12 +103,20 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     get().fetchDocuments();
   },
   
+  setSort: (sortBy: string, sortOrder: 'asc' | 'desc') => {
+    set({ sortBy, sortOrder });
+    // Trigger a new fetch with the updated sort
+    get().fetchDocuments();
+  },
+  
   fetchDocuments: async () => {
     set({ loading: true, error: null });
     
     try {
       const query = get().searchQuery;
       const filters = get().filters;
+      const sortBy = get().sortBy;
+      const sortOrder = get().sortOrder;
       // Limit to 500 for performance
       const limit = 500;
       
@@ -112,6 +125,12 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       if (query) params.append('q', query);
       params.append('limit', limit.toString());
       params.append('offset', '0');
+      
+      // Add sort parameters
+      if (sortBy) {
+        params.append('sortBy', sortBy);
+        params.append('sortOrder', sortOrder);
+      }
       
       // Add filters as JSON if present
       if (filters && filters.conditions.length > 0) {
@@ -149,6 +168,8 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     loading: false,
     error: null,
     searchQuery: '',
-    filters: { conditions: [], logic: 'AND' }
+    filters: { conditions: [], logic: 'AND' },
+    sortBy: undefined,
+    sortOrder: 'asc'
   })
 }));

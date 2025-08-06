@@ -85,6 +85,36 @@ export const ConfigSchema = z.object({
    * Required when running the web UI in development mode.
    */
   webPort: z.number().int().min(1).max(65535).describe('Port for the web server'),
+  
+  /**
+   * Similarity search configuration using Ollama embeddings.
+   * When enabled, provides semantic search capabilities through vector similarity.
+   */
+  similarity: z.object({
+    /**
+     * Whether to enable similarity search features.
+     * Requires Ollama to be installed and running.
+     */
+    enabled: z.boolean().default(false),
+    
+    /**
+     * URL of the Ollama API server.
+     * Default is the standard Ollama local endpoint.
+     */
+    ollamaUrl: z.string().url().default('http://localhost:11434'),
+    
+    /**
+     * Ollama model to use for generating embeddings.
+     * Must be a model that supports embeddings (e.g., nomic-embed-text).
+     */
+    model: z.string().default('nomic-embed-text'),
+    
+    /**
+     * Optional custom path for the similarity index file.
+     * If not specified, will be stored alongside the regular index.
+     */
+    indexFilename: z.string().optional().describe('Filename for similarity index (stored in indexPath directory)'),
+  }).default({ enabled: false }).optional(),
 }).strict();
 
 export type Config = z.infer<typeof ConfigSchema>;

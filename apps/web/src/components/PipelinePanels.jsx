@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { FilterBar } from './FilterBar';
+import { TransformPanel } from './TransformPanel';
+import { OutputPanel } from './OutputPanel';
+import { PreviewModal } from './PreviewModal';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput } from 'lucide-react';
+import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput, Eye } from 'lucide-react';
 import { useDocumentStore } from '../stores/document-store';
 
 // eslint-disable-next-line no-unused-vars
@@ -27,7 +30,13 @@ function PanelHeader({ icon: Icon, title, summary, isOpen }) {
 
 export function PipelinePanels({ searchBar }) {
   const [openPanel, setOpenPanel] = useState('select'); // Only one panel open at a time
+  const [operations, setOperations] = useState([]);
+  const [outputFormat, setOutputFormat] = useState('json');
+  const [showPreview, setShowPreview] = useState(false);
+  const [transformJustOpened, setTransformJustOpened] = useState(false);
   const filters = useDocumentStore(state => state.filters);
+  const documents = useDocumentStore(state => state.documents);
+  const totalCount = useDocumentStore(state => state.totalCount);
   
   // Generate filter summary from the active filters
   const getFilterSummary = () => {
@@ -64,6 +73,51 @@ export function PipelinePanels({ searchBar }) {
     
     return summaryParts.join(', ');
   };
+  
+  // Generate transform summary from operations
+  const getTransformSummary = () => {
+    if (operations.length === 0) {
+      return 'None';
+    }
+    
+    // Count operations by type
+    const opCounts = {};
+    operations.forEach(op => {
+      const type = op.type === 'updateFrontmatter' ? 'Frontmatter' : 
+                   op.type.charAt(0).toUpperCase() + op.type.slice(1);
+      opCounts[type] = (opCounts[type] || 0) + 1;
+    });
+    
+    // Format as "Type" or "Type (n)" if more than 1
+    return Object.entries(opCounts)
+      .map(([type, count]) => count > 1 ? `${type} (${count})` : type)
+      .join(', ');
+  };
+
+  // Generate output summary
+  const getOutputSummary = () => {
+    const formatLabels = {
+      json: 'JSON',
+      yaml: 'YAML',
+      csv: 'CSV',
+      markdown: 'Markdown'
+    };
+    return formatLabels[outputFormat] || 'JSON';
+  };
+
+  const handleExecute = async () => {
+    // TODO: Implement pipeline execution
+    console.log('Executing pipeline:', {
+      filters,
+      operations,
+      outputFormat,
+      documentCount: totalCount
+    });
+    
+    // This will be implemented in issue #128
+    // For now, just close the modal
+    setShowPreview(false);
+  };
 
   const panels = [
     {
@@ -77,15 +131,23 @@ export function PipelinePanels({ searchBar }) {
       id: 'transform',
       icon: Wand2,
       title: 'Transform:',
-      summary: 'None',
-      content: <p className="text-sm text-muted-foreground">Transform operations will be implemented here</p>
+      summary: getTransformSummary(),
+      content: <TransformPanel 
+        operations={operations} 
+        onOperationsChange={setOperations}
+        justOpened={transformJustOpened}
+        onOpenHandled={() => setTransformJustOpened(false)}
+      />
     },
     {
       id: 'output',
       icon: FileOutput,
       title: 'Output:',
-      summary: 'Table view',
-      content: <p className="text-sm text-muted-foreground">Output configuration will be implemented here</p>
+      summary: getOutputSummary(),
+      content: <OutputPanel 
+        selectedDocuments={documents} 
+        onFormatChange={setOutputFormat}
+      />
     }
   ];
 
@@ -97,7 +159,12 @@ export function PipelinePanels({ searchBar }) {
           <Collapsible 
             key={panel.id}
             open={openPanel === panel.id} 
-            onOpenChange={(open) => setOpenPanel(open ? panel.id : null)}
+            onOpenChange={(open) => {
+              if (open && panel.id === 'transform' && operations.length === 0) {
+                setTransformJustOpened(true);
+              }
+              setOpenPanel(open ? panel.id : null);
+            }}
             className="flex-1 border rounded-lg"
           >
             <CollapsibleTrigger asChild>
@@ -115,6 +182,21 @@ export function PipelinePanels({ searchBar }) {
         
         {/* Search bar on the same line */}
         {searchBar}
+        
+        {/* Document count */}
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          {totalCount} docs
+        </span>
+        
+        {/* Preview button */}
+        <Button 
+          onClick={() => setShowPreview(true)}
+          size="sm"
+          className="ml-2"
+        >
+          <Eye className="h-4 w-4 mr-1" />
+          Preview
+        </Button>
       </div>
       
       {/* Expanded panel content below the bar */}
@@ -123,6 +205,17 @@ export function PipelinePanels({ searchBar }) {
           {panels.find(p => p.id === openPanel)?.content}
         </div>
       )}
+      
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        filters={filters}
+        operations={operations}
+        outputFormat={outputFormat}
+        documentCount={totalCount}
+        onExecute={handleExecute}
+      />
     </div>
   );
 }

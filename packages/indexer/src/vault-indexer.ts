@@ -45,7 +45,7 @@ export class VaultIndexer {
    * Initialize the indexer by scanning the vault
    */
   async initialize(): Promise<void> {
-    console.error(`Initializing indexer for vault: ${this.options.vaultPath}`);
+    console.log(`Initializing indexer for vault: ${this.options.vaultPath}`);
     
     const startTime = Date.now();
     this.errorCount = 0; // Reset error count
@@ -57,7 +57,7 @@ export class VaultIndexer {
     
     // Scan vault for markdown files
     const files = await this.findMarkdownFiles();
-    console.error(`Found ${files.length.toString()} markdown files`);
+    console.log(`Found ${files.length.toString()} markdown files`);
     
     // Update link extractor with file list for resolution
     this.linkExtractor.updateFileLookup(files);
@@ -74,12 +74,12 @@ export class VaultIndexer {
     const totalTime = Date.now() - startTime;
     
     // Display timing information
-    console.error(`\n✓ Indexing completed in ${(indexingTime / 1000).toFixed(2)}s`);
-    console.error(`  Successfully indexed: ${String(files.length - this.errorCount)} files`);
+    console.log(`\n✓ Indexing completed in ${(indexingTime / 1000).toFixed(2)}s`);
+    console.log(`  Successfully indexed: ${String(files.length - this.errorCount)} files`);
     if (this.errorCount > 0) {
-      console.error(`  ⚠️  Skipped ${String(this.errorCount)} files due to errors`);
+      console.warn(`  ⚠️  Skipped ${String(this.errorCount)} files due to errors`);
     }
-    console.error(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
+    console.log(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
     
     // Start file watching
     if (this.options.fileWatching?.enabled ?? this.options.useCache) {
@@ -312,7 +312,7 @@ export class VaultIndexer {
         }
       }
       
-      console.error(`Loaded ${String(entries.size)} documents from cache`);
+      console.log(`Loaded ${String(entries.size)} documents from cache`);
     } catch (error) {
       console.warn('Failed to load cache:', error);
     }

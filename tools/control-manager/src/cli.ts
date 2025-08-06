@@ -74,14 +74,25 @@ program
   .command('stop')
   .description('Stop all MMT services')
   .action(async () => {
-    console.log('Stop command not implemented yet - use Ctrl+C for now');
+    try {
+      await MMTControlManager.stopByPid();
+      console.log('✓ MMT services stopped successfully');
+    } catch (error: any) {
+      console.error(`Error: ${error.message}`);
+      process.exit(1);
+    }
   });
 
 program
   .command('status')
   .description('Show status of MMT services')
   .action(async () => {
-    console.log('Status command not implemented yet');
+    if (MMTControlManager.isRunning()) {
+      console.log('✓ MMT is running');
+      // Could add more details like checking individual ports
+    } else {
+      console.log('✗ MMT is not running');
+    }
   });
 
 // Custom error handling

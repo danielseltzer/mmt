@@ -4,6 +4,7 @@ import { OperationRegistry, MoveOperation, UpdateFrontmatterOperation, RenameOpe
 import { ConfigService } from '@mmt/config';
 import type { Config } from '@mmt/entities';
 import { NodeFileSystem } from '@mmt/filesystem-access';
+import { SimilaritySearchService } from './services/similarity-search.js';
 
 export interface Context {
   config: Config;
@@ -11,6 +12,7 @@ export interface Context {
   fileRelocator: FileRelocator;
   operationRegistry: OperationRegistry;
   fs: NodeFileSystem;
+  similaritySearch?: SimilaritySearchService;
 }
 
 export async function createContext(): Promise<Context> {
@@ -39,11 +41,19 @@ export async function createContext(): Promise<Context> {
   // OperationRegistry already has default operations registered
   const operationRegistry = new OperationRegistry();
   
+  // Initialize similarity search if enabled
+  let similaritySearch: SimilaritySearchService | undefined;
+  if (config.similarity?.enabled) {
+    similaritySearch = new SimilaritySearchService(config);
+    await similaritySearch.initialize();
+  }
+  
   return {
     config,
     indexer,
     fileRelocator,
     operationRegistry,
     fs,
+    similaritySearch,
   };
 }

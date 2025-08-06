@@ -21,14 +21,33 @@ A desktop application for managing large markdown vaults with bulk operations, s
 ./bin/mmt start --config your-config.yaml
 
 # Stop MMT
-# Press Ctrl+C in the terminal where it's running
+./bin/mmt stop
+
+# Check status
+./bin/mmt status
 ```
 
 ### Commands
 
 - `./bin/mmt start --config <file>` - Start both API and web servers
-- `./bin/mmt stop` - Stop all running servers (not yet implemented - use Ctrl+C)
-- `./bin/mmt status` - Show status of servers (not yet implemented)
+- `./bin/mmt stop` - Stop all running servers
+- `./bin/mmt status` - Show whether MMT is running
+
+### Logs
+
+MMT writes logs to the `logs/` directory in the project root:
+- Log files are named: `mmt-YYYY-MM-DD.log`
+- Logs include output from both API and web servers
+- Useful for debugging issues when running in background
+
+View logs:
+```bash
+# Follow latest log
+tail -f logs/mmt-*.log
+
+# View today's log
+cat logs/mmt-$(date +%Y-%m-%d).log
+```
 
 ### Configuration
 
