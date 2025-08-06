@@ -1,4 +1,4 @@
-import { create, insert, search, remove, save, load, AnyOrama } from '@orama/orama';
+import { create, insert, insertMultiple, search, remove, save, load, AnyOrama, RawData } from '@orama/orama';
 import { persistToFile, restoreFromFile } from '@orama/plugin-data-persistence/server';
 import crypto from 'crypto';
 import fs from 'fs/promises';
@@ -92,20 +92,18 @@ export class SimilaritySearchService extends EventEmitter {
 
       // Try to load existing index
       try {
-        const dbData = await restoreFromFile('binary', this.indexPath);
-        this.db = await create({
-          schema: {
-            id: 'string',
-            path: 'string',
-            content: 'string',
-            embedding: 'vector[768]',
-            contentHash: 'string',
-            lastModified: 'number'
-          }
-        });
-        await load(this.db, dbData);
+        // restoreFromFile returns the database directly
+        this.db = await restoreFromFile('binary', this.indexPath) as AnyOrama;
+        
+        if (!this.db) {
+          throw new Error('Loaded database is null or undefined');
+        }
+        
         this.indexStatus = 'ready';
-        console.log('Loaded existing similarity index');
+        
+        // Verify loaded data
+        const verifyCount = await search(this.db, { term: '', limit: 1 });
+        console.log(`Loaded existing similarity index with ${verifyCount.count} documents`);
       } catch (error) {
         // Create new index
         this.db = await create({
@@ -275,6 +273,7 @@ export class SimilaritySearchService extends EventEmitter {
     }
     
     const limit = options?.limit ?? 10;
+    
     const queryEmbedding = await this.generateEmbedding(query);
     
     const results = await search(this.db, {
@@ -283,6 +282,7 @@ export class SimilaritySearchService extends EventEmitter {
         value: queryEmbedding,
         property: 'embedding'
       },
+      similarity: 0.2,  // Lower threshold for better recall with Ollama embeddings
       limit,
       includeVectors: false
     });
@@ -363,7 +363,7 @@ export class SimilaritySearchService extends EventEmitter {
         term: '',
         limit: 999999
       });
-      stats.documentsIndexed = allDocs.hits.length;
+      stats.documentsIndexed = allDocs.count;
       
       try {
         const stat = await fs.stat(this.indexPath);

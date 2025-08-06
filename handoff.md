@@ -1,6 +1,6 @@
 # MMT Handoff Document
 
-## Current Status (2025-08-05)
+## Current Status (2025-08-05) - UPDATED
 
 ### Session Summary - Similarity Search TDD Implementation
 
@@ -32,10 +32,10 @@ Implemented comprehensive TDD test suite for similarity search functionality fol
    - Implemented `writeErrorLog()` method for persistent error reporting
 
 4. **Test Results**
-   - **24 tests passing** out of 36 total
-   - **7 test files** successfully running
-   - All non-vector-search functionality working correctly
-   - Vector search tests failing due to Orama returning 0 results
+   - **36 tests passing** out of 36 total ✅
+   - **7 test files** all successfully running
+   - Vector search fully functional with similarity threshold adjustment
+   - Persistence and loading working correctly
 
 #### Key Achievements
 - ✅ Error visibility with console logging and file output
@@ -44,50 +44,24 @@ Implemented comprehensive TDD test suite for similarity search functionality fol
 - ✅ Clear Ollama availability error messages
 - ✅ Persistence testing infrastructure
 - ✅ File system operation testing
+- ✅ **ALL 36 TESTS PASSING** - Vector search fully functional!
 
 ### Working Branch
 `feat/22-similarity-search` - Similarity search implementation with TDD tests
 
-## Current Issues
+## ~~Current Issues~~ RESOLVED!
 
-### 1. **Orama Vector Search Issue** - CRITICAL
-Vector similarity search returns 0 results despite documents being successfully indexed.
+### 1. ✅ **Orama Vector Search Issue** - FIXED
+Vector similarity search was returning 0 results due to Orama's default similarity threshold (0.8) being too strict for Ollama embeddings.
 
-**Symptoms:**
-```javascript
-// This works - returns 8 documents
-const allDocs = await search(this.db, {
-  term: '',
-  limit: 1000
-});
+**Solution:**
+Added `similarity: 0.2` parameter to vector search to lower the threshold for better recall with nomic-embed-text embeddings.
 
-// This returns 0 hits
-const results = await search(this.db, {
-  mode: 'vector',
-  vector: {
-    value: queryEmbedding, // 768-dimension array
-    property: 'embedding'
-  },
-  limit: 5
-});
-```
+### 2. ✅ **TypeScript Module Resolution** - FIXED
+Changed `moduleResolution` from `"node"` to `"bundler"` in `tsconfig.base.json` to support subpath exports like `@orama/plugin-data-persistence/server`.
 
-**Potential Causes:**
-1. Orama 3.x vector search configuration issue
-2. Schema mismatch for vector fields
-3. Missing vector search plugin/initialization
-4. Embedding format incompatibility
-
-**Next Steps:**
-1. Check Orama 3.x documentation for vector search setup
-2. Verify vector field schema matches Orama expectations
-3. Test with smaller embedding dimensions
-4. Check if additional Orama plugins are needed
-5. Try explicit vector search initialization
-
-### 2. **TypeScript Module Resolution**
-- Import `@orama/plugin-data-persistence/server` fails with current tsconfig
-- Error suggests updating moduleResolution to 'node16', 'nodenext', or 'bundler'
+### 3. ✅ **Persistence Loading** - FIXED
+Fixed index persistence by using `restoreFromFile` directly (it returns the database, not raw data to load).
 
 ### 3. **Integration Test Port Conflicts**
 - Multiple integration tests try to start API server on port 3001
@@ -95,14 +69,12 @@ const results = await search(this.db, {
 
 ## Next Session Starting Point
 
-1. **Debug Orama Vector Search** - Get remaining 12 tests passing
-   - Relevant files: `/apps/api-server/src/services/similarity-search.ts`
-   - Schema definition at lines 89-96 and 104-111
-   - Check Orama 3.x docs for vector search requirements
-
-2. **Fix TypeScript build issue** with Orama import
-
-3. **Similarity Search UI (#22)** - After tests pass
+1. **Similarity Search UI (#22)** - Ready to implement!
+   ✅ All backend tests passing
+   ✅ TypeScript build issues resolved
+   ✅ Vector search fully functional
+   
+2. **UI Features to Add**
    - Add "Find Similar" context menu to document table
    - Show similarity scores in results
    - Add similarity search option to filter bar
