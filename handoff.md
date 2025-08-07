@@ -1,6 +1,17 @@
 # MMT Handoff Document
 
-## Current Status (2025-08-07)
+## Current Status (2025-08-07 - Updated)
+
+### 🚀 V3 Implementation In Progress
+
+**COMPLETED**: 
+- ✅ Issue #156: Multi-vault configuration schema implemented and merged (PR #188)
+- ✅ All config files migrated to new format
+- ✅ API server updated to use first vault as default
+- ✅ Issue #186 created for vault context architecture
+
+**IN PROGRESS**:
+- 🔄 Issue #186: Establishing vault context as first-class domain concept (branch: `feat/186-vault-context-architecture`)
 
 ### 🎯 MAJOR UPDATE: V3 Planning Complete - Ready for Implementation
 
@@ -37,22 +48,33 @@ MMT V3 introduces **multiple document sets in tabs**, where each tab represents:
 
 ## Implementation Phases (Start Immediately)
 
-### 📍 Phase 1: Multi-Vault Foundation (Weeks 1-2) - START HERE
+### 📍 Phase 1: Multi-Vault Foundation (Weeks 1-2) - IN PROGRESS
 **Issues #156-160 in Milestone 7**
 
 Priority order:
-1. **#156**: Update configuration schema for multiple vaults
-2. **#159**: Update API endpoints to accept vault identifier  
-3. **#158**: Create per-tab state management
-4. **#157**: Implement tab bar component
-5. **#160**: Create vault selector component
+1. **#156**: ✅ DONE - Update configuration schema for multiple vaults (PR #188 merged)
+2. **#186**: 🔄 IN PROGRESS - Establish vault context as first-class domain concept
+3. **#159**: ⏳ NEXT - Update API endpoints to accept vault identifier  
+4. **#158**: ⏳ Create per-tab state management
+5. **#157**: ⏳ Implement tab bar component
+6. **#160**: ⏳ Create vault selector component
 
-**First Steps**:
+**Current Work - Issue #186**:
+```typescript
+// Designing VaultContext to flow through entire system
+interface VaultContext {
+  vaultId: string;  // Unique vault identifier
+  vault: VaultConfig;  // Full vault configuration
+  // Context will expand as requirements emerge
+}
+```
+
+**Next Steps After #186**:
 ```bash
-# Start with config schema update
-git checkout -b feat/156-multi-vault-config
-# Update packages/config/src/schema.ts to support vaults array
-# See PRD-v3.md for exact schema specification
+# Continue with API vault awareness
+git checkout -b feat/159-vault-aware-endpoints
+# Update all API endpoints to use VaultContext
+# See issue #159 for detailed requirements
 ```
 
 ### Upcoming Phases
@@ -64,16 +86,35 @@ git checkout -b feat/156-multi-vault-config
 
 ## Critical Implementation Notes
 
-### Multi-Vault Configuration Schema
+### Multi-Vault Configuration Schema (✅ IMPLEMENTED)
 ```yaml
-# New V3 format
+# New V3 format - NOW LIVE IN CODEBASE
 vaults:
   - name: "Personal"
     path: "/absolute/path/to/personal"
     indexPath: "/absolute/path/to/personal-index"
+    fileWatching:  # Optional
+      enabled: true
+      debounceMs: 200
   - name: "Work"
     path: "/absolute/path/to/work"
     indexPath: "/absolute/path/to/work-index"
+```
+
+### Vault Context Pattern (🔄 DESIGNING)
+```typescript
+// Issue #186 - Establishing proper context flow
+// Key insight: Don't just pass vault IDs around
+// Create a proper context that will be understood by future AI agents
+
+// Current "first vault as default" pattern (temporary):
+const defaultVault = config.vaults[0];
+
+// Target pattern (after #186):
+const context = createVaultContext(vaultId);
+// Context flows through all operations
+await indexer.query(query, context);
+await operation.execute(document, context);
 ```
 
 ### State Management Architecture
@@ -171,10 +212,22 @@ pnpm type-check
 
 ## Next Session Recommendations
 
-1. **Start with Issue #156** - Update configuration schema
-2. **Then #159** - API vault support (backend parallel work)
+1. **Continue Issue #186** - Complete vault context architecture
+   - Design the VaultContext interface
+   - Create context module in entities package
+   - Update API server to use context
+   - Update indexer and services
+   
+2. **Then #159** - API vault support (builds on context)
 3. **Then #158** - State management refactor (critical path)
 4. **Visual comes last** - Tab bar UI after state works
+
+## Key Decisions from Previous Session
+
+1. **No backward compatibility** - I am the only user
+2. **First vault as default** - Temporary pattern to avoid massive refactoring
+3. **Vault context is critical** - Must be a first-class domain concept, not just ID passing
+4. **Let structure emerge** - Don't over-design context with tab/user fields yet
 
 ## Performance Targets
 - Tab switching: < 100ms
