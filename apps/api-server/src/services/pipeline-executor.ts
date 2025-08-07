@@ -203,9 +203,10 @@ export class PipelineExecutor {
         if (typeof filePath !== 'string') continue;
         
         // Check if filePath is already absolute
+        const defaultVault = this.context.config.vaults[0];
         const fullPath = filePath.startsWith('/') || (process.platform === 'win32' && /^[A-Za-z]:[\\/]/u.test(filePath)) 
           ? filePath 
-          : join(this.context.config.vaultPath, filePath);
+          : join(defaultVault.path, filePath);
         const exists = await this.context.fs.exists(fullPath);
         
         if (exists) {
@@ -324,8 +325,9 @@ export class PipelineExecutor {
   }
 
   private createOperationContext(): OperationContext {
+    const defaultVault = this.context.config.vaults[0];
     return {
-      vault: { path: this.context.config.vaultPath },
+      vault: { path: defaultVault.path },
       fs: this.context.fs,
       indexer: this.context.indexer,
       options: {

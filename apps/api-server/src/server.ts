@@ -24,8 +24,10 @@ async function start(): Promise<void> {
     
     app.listen(config.apiPort, () => {
       console.log(`MMT API Server running on http://localhost:${config.apiPort}`);
-      console.log(`Vault: ${config.vaultPath}`);
-      console.log(`Index: ${config.indexPath}`);
+      console.log(`Vaults configured: ${config.vaults.length}`);
+      config.vaults.forEach((vault, index) => {
+        console.log(`  ${index === 0 ? '[Active]' : '       '} ${vault.name}: ${vault.path}`);
+      });
     });
   } catch (error) {
     console.error('Failed to start server:', error);

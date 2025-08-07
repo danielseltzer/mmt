@@ -10,6 +10,7 @@ import type {
   ScriptOperation,
   FilterCollection,
   FilterCondition,
+  Config,
 } from '@mmt/entities';
 import { OperationPipelineSchema } from '@mmt/entities';
 import type { FileSystemAccess } from '@mmt/filesystem-access';
@@ -43,16 +44,7 @@ interface OperationExecutionResult {
 }
 
 export interface ScriptRunnerOptions {
-  config: {
-    vaultPath: string;
-    indexPath: string;
-    fileWatching?: {
-      enabled: boolean;
-      debounceMs?: number;
-      ignorePatterns?: string[];
-    };
-    apiPort: number;
-  };
+  config: Config;
   fileSystem: FileSystemAccess;
   queryParser: QueryParser;
   outputStream?: NodeJS.WritableStream;
@@ -91,12 +83,13 @@ export class ScriptRunner {
   async runScript(scriptPath: string, cliOptions: Record<string, unknown> = {}): Promise<ScriptExecutionResult> {
     // Initialize indexer if not already done
     if (this.indexer === undefined) {
+      const defaultVault = this.config.vaults[0];
       this.indexer = new VaultIndexer({
-        vaultPath: this.config.vaultPath,
+        vaultPath: defaultVault.path,
         fileSystem: this.fs,
         useCache: true,
         useWorkers: true,
-        fileWatching: this.config.fileWatching,
+        fileWatching: defaultVault.fileWatching,
       });
       await this.indexer.initialize();
     }
@@ -105,9 +98,10 @@ export class ScriptRunner {
     const script = await this.loadScript(scriptPath);
     
     // Create script context
+    const defaultVault = this.config.vaults[0];
     const context: ScriptContext = {
-      vaultPath: this.config.vaultPath,
-      indexPath: this.config.indexPath,
+      vaultPath: defaultVault.path,
+      indexPath: defaultVault.indexPath,
       scriptPath,
       cliOptions,
       indexer: this.indexer,
@@ -138,9 +132,10 @@ export class ScriptRunner {
     // Generate report if requested
     if (cliOptions.reportPath !== undefined && cliOptions.reportPath !== null) {
       const resultWithTable = result as ScriptExecutionResult & { analysisTable?: Table };
+      const defaultVault = this.config.vaults[0];
       await this.reportGenerator.generateReport({
         scriptPath,
-        vaultPath: this.config.vaultPath,
+        vaultPath: defaultVault.path,
         executionResult: result,
         pipeline: validatedPipeline,
         analysisTable: resultWithTable.analysisTable,
@@ -490,9 +485,10 @@ export class ScriptRunner {
     }
 
     // Create operation context
+    const defaultVault = this.config.vaults[0];
     const operationContext: OperationContext = {
       vault: {
-        path: this.config.vaultPath
+        path: defaultVault.path
       },
       fs: this.fs,
       indexer: this.indexer,
@@ -597,9 +593,10 @@ export class ScriptRunner {
     }
 
     // Create operation context
+    const defaultVault = this.config.vaults[0];
     const operationContext: OperationContext = {
       vault: {
-        path: this.config.vaultPath
+        path: defaultVault.path
       },
       fs: this.fs,
       indexer: this.indexer,

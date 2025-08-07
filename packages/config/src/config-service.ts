@@ -67,7 +67,7 @@ export class ConfigService {
           if (issue.code === 'unrecognized_keys') {
             const zodIssue = issue as z.ZodIssue & { keys?: string[] };
             const unrecognized = zodIssue.keys ?? [];
-            return `  - Unrecognized fields: ${unrecognized.join(', ')}\n    Allowed fields: vaultPath, indexPath`;
+            return `  - Unrecognized fields: ${unrecognized.join(', ')}\n    Allowed fields: vaults, apiPort, webPort, similarity`;
           }
           // Special handling for path validation errors
           if (issue.message === 'Path must be absolute' && issue.path.length > 0) {
@@ -86,26 +86,32 @@ export class ConfigService {
         this.exitWithError(
           `Configuration validation failed:\n${issues}\n\n` +
           `Example config:\n` +
-          `vaultPath: /absolute/path/to/vault\n` +
-          `indexPath: /absolute/path/to/index`
+          `vaults:\n` +
+          `  - name: 'MyVault'\n` +
+          `    path: /absolute/path/to/vault\n` +
+          `    indexPath: /absolute/path/to/index\n` +
+          `apiPort: 3001\n` +
+          `webPort: 5173`
         );
       }
       this.exitWithError(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Check vault directory exists
-    if (!existsSync(config.vaultPath)) {
-      this.exitWithError(`Vault directory not found: ${config.vaultPath}`);
-    }
-
-    // Verify vault path is a directory
-    try {
-      const stats = statSync(config.vaultPath);
-      if (!stats.isDirectory()) {
-        this.exitWithError(`Vault path is not a directory: ${config.vaultPath}`);
+    // Check vault directories exist
+    for (const vault of config.vaults) {
+      if (!existsSync(vault.path)) {
+        this.exitWithError(`Vault directory not found for '${vault.name}': ${vault.path}`);
       }
-    } catch (error) {
-      this.exitWithError(`Cannot access vault directory: ${error instanceof Error ? error.message : String(error)}`);
+
+      // Verify vault path is a directory
+      try {
+        const stats = statSync(vault.path);
+        if (!stats.isDirectory()) {
+          this.exitWithError(`Vault path is not a directory for '${vault.name}': ${vault.path}`);
+        }
+      } catch (error) {
+        this.exitWithError(`Cannot access vault directory for '${vault.name}': ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
 
     // Note: We don't check if indexPath exists because it might be created by the indexer

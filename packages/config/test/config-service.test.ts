@@ -43,7 +43,7 @@ describe('ConfigService', () => {
     it('should load valid config with absolute paths', () => {
       // GIVEN: A valid YAML config file with absolute paths
       // WHEN: Loading the config file
-      // THEN: Returns parsed config with vaultPath and indexPath
+      // THEN: Returns parsed config with vaults array
       
       // Create vault directory
       const vaultPath = join(tempDir, 'vault');
@@ -52,14 +52,16 @@ describe('ConfigService', () => {
       // Create config file
       const configPath = join(tempDir, 'config.yaml');
       const indexPath = join(tempDir, 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
+      writeFileSync(configPath, `vaults:\n  - name: 'TestVault'\n    path: ${vaultPath}\n    indexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       // Load config
       const config = configService.load(configPath);
       
       // Verify
-      expect(config.vaultPath).toBe(vaultPath);
-      expect(config.indexPath).toBe(indexPath);
+      expect(config.vaults).toHaveLength(1);
+      expect(config.vaults[0].name).toBe('TestVault');
+      expect(config.vaults[0].path).toBe(vaultPath);
+      expect(config.vaults[0].indexPath).toBe(indexPath);
     });
 
     it('should load config when index path does not exist', () => {
@@ -74,11 +76,11 @@ describe('ConfigService', () => {
       // Create config file with non-existent index path
       const configPath = join(tempDir, 'config.yaml');
       const indexPath = join(tempDir, 'non-existent', 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
+      writeFileSync(configPath, `vaults:\n  - name: 'TestVault'\n    path: ${vaultPath}\n    indexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       // Should succeed - index path will be created by indexer
       const config = configService.load(configPath);
-      expect(config.indexPath).toBe(indexPath);
+      expect(config.vaults[0].indexPath).toBe(indexPath);
     });
   });
 
@@ -134,26 +136,28 @@ describe('ConfigService', () => {
   });
 
   describe('schema validation', () => {
-    it('should exit when vaultPath is missing', () => {
-      // GIVEN: A config file missing required vaultPath field
+    it('should exit when vaults is missing', () => {
+      // GIVEN: A config file missing required vaults field
       // WHEN: Validating against schema
       // THEN: Exits with Zod validation error for missing required field
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `indexPath: ${join(tempDir, 'index')}`);
+      writeFileSync(configPath, `apiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(capturedErrors.join(' ')).toContain('vaultPath: Required');
+      expect(capturedErrors.join(' ')).toContain('vaults: Required');
     });
 
-    it('should exit when indexPath is missing', () => {
-      // GIVEN: A config file missing required indexPath field
+    it('should exit when vault has no name', () => {
+      // GIVEN: A config file with vault missing name field
       // WHEN: Validating against schema
-      // THEN: Exits with Zod validation error (both fields are required)
+      // THEN: Exits with Zod validation error
+      const vaultPath = join(tempDir, 'vault');
+      mkdirSync(vaultPath);
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${join(tempDir, 'vault')}`);
+      writeFileSync(configPath, `vaults:\n  - path: ${vaultPath}\n    indexPath: ${join(tempDir, 'index')}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
-      expect(capturedErrors.join(' ')).toContain('indexPath: Required');
+      expect(capturedErrors.join(' ')).toContain('name: Required');
     });
 
     it('should exit when extra fields are present', () => {
@@ -164,20 +168,36 @@ describe('ConfigService', () => {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${join(tempDir, 'index')}\nextraField: value`);
+      writeFileSync(configPath, `vaults:\n  - name: 'Test'\n    path: ${vaultPath}\n    indexPath: ${join(tempDir, 'index')}\napiPort: 3001\nwebPort: 3000\nextraField: value`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(capturedErrors.join(' ')).toContain('Unrecognized fields');
     });
+
+    it('should exit when vault names are not unique', () => {
+      // GIVEN: A config file with duplicate vault names
+      // WHEN: Validating vault names uniqueness
+      // THEN: Exits with error about duplicate names
+      const vaultPath1 = join(tempDir, 'vault1');
+      const vaultPath2 = join(tempDir, 'vault2');
+      mkdirSync(vaultPath1);
+      mkdirSync(vaultPath2);
+      
+      const configPath = join(tempDir, 'config.yaml');
+      writeFileSync(configPath, `vaults:\n  - name: 'Duplicate'\n    path: ${vaultPath1}\n    indexPath: ${join(tempDir, 'index1')}\n  - name: 'Duplicate'\n    path: ${vaultPath2}\n    indexPath: ${join(tempDir, 'index2')}\napiPort: 3001\nwebPort: 3000`);
+      
+      expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
+      expect(capturedErrors.join(' ')).toContain('Vault names must be unique');
+    });
   });
 
   describe('path validation', () => {
-    it('should exit when vaultPath is relative', () => {
+    it('should exit when vault path is relative', () => {
       // GIVEN: A config with relative vault path
       // WHEN: Validating path requirements
       // THEN: Exits requiring absolute path (no implicit resolution)
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ./vault\nindexPath: ${join(tempDir, 'index')}\napiPort: 3001\nwebPort: 3000`);
+      writeFileSync(configPath, `vaults:\n  - name: 'Test'\n    path: ./vault\n    indexPath: ${join(tempDir, 'index')}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(capturedErrors.join(' ')).toContain('Path must be absolute');
@@ -191,7 +211,7 @@ describe('ConfigService', () => {
       mkdirSync(vaultPath);
       
       const configPath = join(tempDir, 'config.yaml');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ./index\napiPort: 3001\nwebPort: 3000`);
+      writeFileSync(configPath, `vaults:\n  - name: 'Test'\n    path: ${vaultPath}\n    indexPath: ./index\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(capturedErrors.join(' ')).toContain('Path must be absolute');
@@ -204,7 +224,7 @@ describe('ConfigService', () => {
       const configPath = join(tempDir, 'config.yaml');
       const vaultPath = join(tempDir, 'non-existent-vault');
       const indexPath = join(tempDir, 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
+      writeFileSync(configPath, `vaults:\n  - name: 'Test'\n    path: ${vaultPath}\n    indexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(capturedErrors.join(' ')).toContain('Vault directory not found');
@@ -220,7 +240,7 @@ describe('ConfigService', () => {
       
       const configPath = join(tempDir, 'config.yaml');
       const indexPath = join(tempDir, 'index');
-      writeFileSync(configPath, `vaultPath: ${vaultPath}\nindexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
+      writeFileSync(configPath, `vaults:\n  - name: 'Test'\n    path: ${vaultPath}\n    indexPath: ${indexPath}\napiPort: 3001\nwebPort: 3000`);
       
       expect(() => configService.load(configPath)).toThrow('Process exited with code 1');
       expect(capturedErrors.join(' ')).toContain('Vault path is not a directory');

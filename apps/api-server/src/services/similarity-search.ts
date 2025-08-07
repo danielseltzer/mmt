@@ -70,8 +70,10 @@ export class SimilaritySearchService extends EventEmitter {
   constructor(config: Config) {
     super();
     this.config = config;
+    // For Phase 1: Use first vault's index path
+    const defaultVault = config.vaults[0];
     this.indexPath = path.join(
-      config.indexPath,
+      defaultVault.indexPath,
       config.similarity?.indexFilename || 'similarity-index.msp'
     );
   }

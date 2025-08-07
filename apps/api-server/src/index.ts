@@ -37,8 +37,10 @@ async function main() {
   // Start server
   app.listen(PORT, () => {
     console.log(`MMT API Server running on http://localhost:${PORT}`);
-    console.log(`Vault path: ${context.config.vaultPath}`);
-    console.log(`Index path: ${context.config.indexPath}`);
+    console.log(`Vaults configured: ${context.config.vaults.length}`);
+    context.config.vaults.forEach((vault, index) => {
+      console.log(`  ${index === 0 ? '[Active]' : '       '} ${vault.name}: ${vault.path}`);
+    });
   });
 }
 

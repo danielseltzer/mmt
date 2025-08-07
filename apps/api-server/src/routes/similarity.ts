@@ -129,7 +129,8 @@ export function similarityRouter(context: Context): Router {
       }
       
       // Start reindexing in the background
-      context.similaritySearch!.indexDirectory(context.config.vaultPath)
+      const defaultVault = context.config.vaults[0];
+      context.similaritySearch!.indexDirectory(defaultVault.path)
         .catch(error => {
           console.error('Reindexing failed:', error);
         });
