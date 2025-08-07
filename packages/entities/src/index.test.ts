@@ -19,12 +19,17 @@ import {
 describe('Entity Schemas', () => {
   describe('ConfigSchema', () => {
     it('should validate valid config', () => {
-      // GIVEN: A config object with required paths
+      // GIVEN: A config object with required vaults array
       // WHEN: Validating against ConfigSchema
-      // THEN: Valid because both vaultPath and indexPath are absolute paths
+      // THEN: Valid because vaults contain name, path, and indexPath
       const config: Config = {
-        vaultPath: '/Users/test/vault',
-        indexPath: '/Users/test/.mmt/index',
+        vaults: [
+          {
+            name: 'TestVault',
+            path: '/Users/test/vault',
+            indexPath: '/Users/test/.mmt/index',
+          }
+        ],
         apiPort: 3001,
         webPort: 5173,
       };
@@ -33,13 +38,14 @@ describe('Entity Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should require both vaultPath and indexPath', () => {
-      // GIVEN: A config missing required indexPath
+    it('should require vaults array', () => {
+      // GIVEN: A config missing required vaults array
       // WHEN: Validating against ConfigSchema
-      // THEN: Invalid because both paths are required (no defaults policy)
+      // THEN: Invalid because vaults is required (no defaults policy)
       const config = {
-        vaultPath: '/Users/test/vault',
-        // missing indexPath
+        apiPort: 3001,
+        webPort: 5173,
+        // missing vaults
       };
       
       const result = ConfigSchema.safeParse(config);
@@ -49,9 +55,11 @@ describe('Entity Schemas', () => {
     it('should reject invalid config', () => {
       // GIVEN: A config with wrong data types
       // WHEN: Validating against ConfigSchema
-      // THEN: Invalid because vaultPath must be a string, not a number
+      // THEN: Invalid because vaults must be an array, not a string
       const invalidConfig = {
-        vaultPath: 123, // Should be string
+        vaults: 'not-an-array', // Should be array
+        apiPort: 3001,
+        webPort: 5173,
       };
       
       const result = ConfigSchema.safeParse(invalidConfig);

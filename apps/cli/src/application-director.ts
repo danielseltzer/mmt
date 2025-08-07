@@ -90,11 +90,11 @@ export class ApplicationDirector {
       const config = configService.load(cliArgs.configPath);
       
       // Override file watching setting with CLI flag if provided
-      if (cliArgs.watch) {
-        config.fileWatching = {
+      if (cliArgs.watch && config.vaults[0]) {
+        config.vaults[0].fileWatching = {
           enabled: true,
-          debounceMs: config.fileWatching?.debounceMs ?? 100,
-          ignorePatterns: config.fileWatching?.ignorePatterns ?? [
+          debounceMs: config.vaults[0].fileWatching?.debounceMs ?? 100,
+          ignorePatterns: config.vaults[0].fileWatching?.ignorePatterns ?? [
             '.git/**',
             '.obsidian/**',
             '.trash/**',

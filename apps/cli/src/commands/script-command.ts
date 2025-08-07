@@ -35,11 +35,12 @@ export class ScriptCommand implements CommandHandler {
       scriptArgs: args.slice(1),
     });
     
+    const defaultVault = context.config.vaults[0];
     debugLog('Script command received:', {
       scriptPath: scriptArgs.scriptPath,
       scriptArgs: scriptArgs.scriptArgs,
-      vaultPath: context.config.vaultPath,
-      indexPath: context.config.indexPath,
+      vaultPath: defaultVault.path,
+      indexPath: defaultVault.indexPath,
     });
     
     // Resolve script path

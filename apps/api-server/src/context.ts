@@ -24,12 +24,15 @@ export async function createContext(): Promise<Context> {
   // Initialize services
   const fs = new NodeFileSystem();
   
+  // For Phase 1: Use the first vault as default
+  const defaultVault = config.vaults[0];
+  
   const indexer = new VaultIndexer({
-    vaultPath: config.vaultPath,
+    vaultPath: defaultVault.path,
     fileSystem: fs,
-    cacheDir: config.indexPath,
+    cacheDir: defaultVault.indexPath,
     useCache: true,
-    fileWatching: config.fileWatching,
+    fileWatching: defaultVault.fileWatching,
   });
   await indexer.initialize();
   

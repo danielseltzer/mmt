@@ -22,10 +22,14 @@ export async function createApp(config: Config): Promise<Express> {
   
   // Initialize services
   const fs = new NodeFileSystem();
+  
+  // For Phase 1: Use the first vault as default
+  const defaultVault = config.vaults[0];
+  
   const indexer = new VaultIndexer({
-    vaultPath: config.vaultPath,
+    vaultPath: defaultVault.path,
     fileSystem: fs,
-    cacheDir: config.indexPath,
+    cacheDir: defaultVault.indexPath,
     useCache: true
   });
   await indexer.initialize();
@@ -40,13 +44,13 @@ export async function createApp(config: Config): Promise<Express> {
     
     // Hook similarity search into indexer's file changes
     // For now, we'll set up our own file watcher that mirrors the indexer's behavior
-    if (config.fileWatching?.enabled) {
+    if (defaultVault.fileWatching?.enabled) {
       const { FileWatcher } = await import('@mmt/vault');
       const similarityWatcher = new FileWatcher({
-        paths: [config.vaultPath],
+        paths: [defaultVault.path],
         recursive: true,
-        debounceMs: config.fileWatching.debounceMs,
-        ignorePatterns: config.fileWatching.ignorePatterns,
+        debounceMs: defaultVault.fileWatching.debounceMs,
+        ignorePatterns: defaultVault.fileWatching.ignorePatterns,
       });
       
       similarityWatcher.onFileChange(async (event) => {
@@ -88,8 +92,8 @@ export async function createApp(config: Config): Promise<Express> {
   app.get('/health', (req, res) => {
     res.json({
       status: 'ok',
-      vaultPath: config.vaultPath,
-      indexPath: config.indexPath
+      vaultPath: defaultVault.path,
+      indexPath: defaultVault.indexPath
     });
   });
   

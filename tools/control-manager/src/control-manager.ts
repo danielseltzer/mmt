@@ -171,18 +171,46 @@ export class MMTControlManager {
     
     const configContent = fs.readFileSync(configFile, 'utf-8');
     // Simple YAML parsing for our basic needs
-    const vaultMatch = configContent.match(/vaultPath:\s*(.+)/);
-    const indexMatch = configContent.match(/indexPath:\s*(.+)/);
     const apiPortMatch = configContent.match(/apiPort:\s*(\d+)/);
     const webPortMatch = configContent.match(/webPort:\s*(\d+)/);
     
-    if (!vaultMatch || !indexMatch || !apiPortMatch || !webPortMatch) {
-      throw new Error('Config must include vaultPath, indexPath, apiPort, and webPort');
+    // Try new format first (vaults array)
+    const vaultsMatch = configContent.match(/vaults:\s*\n((?:\s+.*\n)+)/);
+    let vaultPath: string;
+    let indexPath: string;
+    
+    if (vaultsMatch) {
+      // New format with vaults array - extract first vault
+      const firstVaultBlock = vaultsMatch[1];
+      const pathMatch = firstVaultBlock.match(/\s+path:\s*(.+)/);
+      const indexMatch = firstVaultBlock.match(/\s+indexPath:\s*(.+)/);
+      
+      if (!pathMatch || !indexMatch) {
+        throw new Error('First vault must include path and indexPath');
+      }
+      
+      vaultPath = pathMatch[1].trim();
+      indexPath = indexMatch[1].trim();
+    } else {
+      // Fall back to old format for backward compatibility
+      const vaultMatch = configContent.match(/vaultPath:\s*(.+)/);
+      const indexMatch = configContent.match(/indexPath:\s*(.+)/);
+      
+      if (!vaultMatch || !indexMatch) {
+        throw new Error('Config must include vaults array or vaultPath/indexPath');
+      }
+      
+      vaultPath = vaultMatch[1].trim();
+      indexPath = indexMatch[1].trim();
+    }
+    
+    if (!apiPortMatch || !webPortMatch) {
+      throw new Error('Config must include apiPort and webPort');
     }
     
     this.config = {
-      vaultPath: vaultMatch[1].trim(),
-      indexPath: indexMatch[1].trim(),
+      vaultPath,
+      indexPath,
       apiPort: parseInt(apiPortMatch[1], 10),
       webPort: parseInt(webPortMatch[1], 10)
     };

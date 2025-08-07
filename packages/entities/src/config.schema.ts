@@ -18,26 +18,32 @@ const absolutePath = z.string().refine(
 );
 
 /**
- * Main configuration schema for MMT.
+ * Individual vault configuration schema.
  * 
- * The configuration is the entry point for all MMT operations, whether through
- * the GUI or scripting interface. It defines the vault to work with and any
- * optional service integrations.
+ * Each vault represents a separate collection of markdown files with its own
+ * index and optional configuration.
  * 
  * @example
  * ```typescript
- * const config: Config = {
- *   vaultPath: '/Users/me/Documents/notes',
- *   indexPath: '/Users/me/.mmt/notes-index'
+ * const vault: VaultConfig = {
+ *   name: 'Personal',
+ *   path: '/Users/me/Documents/personal-notes',
+ *   indexPath: '/Users/me/.mmt/personal-index'
  * };
  * ```
  */
-export const ConfigSchema = z.object({
+export const VaultConfigSchema = z.object({
+  /**
+   * Unique name identifier for the vault.
+   * Used in the UI and API to reference this vault.
+   */
+  name: z.string().min(1).describe('Unique vault identifier'),
+  
   /**
    * Absolute path to the markdown vault directory.
    * This is the root directory containing all markdown files to be managed.
    */
-  vaultPath: absolutePath.describe('Absolute path to the markdown vault'),
+  path: absolutePath.describe('Absolute path to the markdown vault'),
   
   /**
    * Absolute path to store the vault index.
@@ -73,6 +79,51 @@ export const ConfigSchema = z.object({
       'node_modules/**'
     ]),
   }).default({}).optional(),
+});
+
+export type VaultConfig = z.infer<typeof VaultConfigSchema>;
+
+/**
+ * Main configuration schema for MMT.
+ * 
+ * The configuration is the entry point for all MMT operations, whether through
+ * the GUI or scripting interface. It defines multiple vaults and application-wide
+ * settings.
+ * 
+ * @example
+ * ```typescript
+ * const config: Config = {
+ *   vaults: [
+ *     {
+ *       name: 'Personal',
+ *       path: '/Users/me/Documents/personal-notes',
+ *       indexPath: '/Users/me/.mmt/personal-index'
+ *     },
+ *     {
+ *       name: 'Work',
+ *       path: '/Users/me/Documents/work-notes',
+ *       indexPath: '/Users/me/.mmt/work-index'
+ *     }
+ *   ],
+ *   apiPort: 3001,
+ *   webPort: 5173
+ * };
+ * ```
+ */
+export const ConfigSchema = z.object({
+  /**
+   * Array of vault configurations.
+   * Each vault is independently indexed and managed.
+   */
+  vaults: z.array(VaultConfigSchema)
+    .min(1, 'At least one vault must be configured')
+    .refine(
+      (vaults) => {
+        const names = vaults.map(v => v.name);
+        return new Set(names).size === names.length;
+      },
+      { message: 'Vault names must be unique' }
+    ),
   
   /**
    * Port number for the API server.
@@ -89,6 +140,7 @@ export const ConfigSchema = z.object({
   /**
    * Similarity search configuration using Ollama embeddings.
    * When enabled, provides semantic search capabilities through vector similarity.
+   * Currently applies globally to all vaults.
    */
   similarity: z.object({
     /**

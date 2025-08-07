@@ -501,7 +501,8 @@ export function documentsRouter(context: Context): Router {
         
         // Apply filters if provided
         if (filterCollection && filterCollection.conditions.length > 0) {
-          results = applyDeclarativeFilters(results, filterCollection, context.config.vaultPath);
+          const defaultVault = context.config.vaults[0];
+          results = applyDeclarativeFilters(results, filterCollection, defaultVault.path);
         }
         
         // Sort BEFORE pagination if requested
