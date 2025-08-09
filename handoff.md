@@ -1,17 +1,20 @@
 # MMT Handoff Document
 
-## Current Status (2025-08-07 - Updated)
+## Current Status (2025-08-07 - Evening Update)
 
 ### 🚀 V3 Implementation In Progress
 
-**COMPLETED**: 
-- ✅ Issue #156: Multi-vault configuration schema implemented and merged (PR #188)
-- ✅ All config files migrated to new format
-- ✅ API server updated to use first vault as default
-- ✅ Issue #186 created for vault context architecture
+**COMPLETED TODAY**: 
+- ✅ Issue #156: Multi-vault configuration schema (PR #188 merged)
+- ✅ Issue #186: Vault context architecture implemented
+  - Created `@mmt/vault` package with VaultRegistry singleton
+  - Documented in ADR-006: Vault as Container Architecture
+  - Branch `feat/186-vault-context-architecture` ready for PR
 
-**IN PROGRESS**:
-- 🔄 Issue #186: Establishing vault context as first-class domain concept (branch: `feat/186-vault-context-architecture`)
+**READY TO START**:
+- 📋 Issue #189: Update API server routes to vault-aware pattern
+- 📋 Issue #190: Initialize vaults at application startup
+- 📋 Issue #191: Add vault selector to web UI
 
 ### 🎯 MAJOR UPDATE: V3 Planning Complete - Ready for Implementation
 
@@ -49,32 +52,82 @@ MMT V3 introduces **multiple document sets in tabs**, where each tab represents:
 ## Implementation Phases (Start Immediately)
 
 ### 📍 Phase 1: Multi-Vault Foundation (Weeks 1-2) - IN PROGRESS
-**Issues #156-160 in Milestone 7**
+**Issues in Milestone 7**
 
 Priority order:
 1. **#156**: ✅ DONE - Update configuration schema for multiple vaults (PR #188 merged)
-2. **#186**: 🔄 IN PROGRESS - Establish vault context as first-class domain concept
-3. **#159**: ⏳ NEXT - Update API endpoints to accept vault identifier  
-4. **#158**: ⏳ Create per-tab state management
-5. **#157**: ⏳ Implement tab bar component
-6. **#160**: ⏳ Create vault selector component
+2. **#186**: ✅ DONE - Establish vault context as first-class domain concept
+3. **#189**: 📋 READY - Update API endpoints to vault-aware pattern `/api/vaults/:vaultId`
+4. **#190**: 📋 READY - Initialize vaults at application startup
+5. **#191**: 📋 READY - Add vault selector component to web UI
+6. **#158**: ⏳ FUTURE - Create per-tab state management
+7. **#157**: ⏳ FUTURE - Implement tab bar component
 
-**Current Work - Issue #186**:
+## 🎯 Work Completed Today (Issue #186)
+
+### Vault Package Created (`@mmt/vault`)
 ```typescript
-// Designing VaultContext to flow through entire system
-interface VaultContext {
-  vaultId: string;  // Unique vault identifier
-  vault: VaultConfig;  // Full vault configuration
-  // Context will expand as requirements emerge
+// Vault as container for all services
+interface Vault {
+  id: string;
+  config: VaultConfig;
+  status: 'initializing' | 'ready' | 'error';
+  services?: {
+    indexer: VaultIndexer;
+    // watcher and similarity search will be added
+  };
+  get indexer(): VaultIndexer; // Convenience accessor
 }
+
+// Singleton registry manages all vaults
+class VaultRegistry {
+  private vaults: Map<string, Vault>;
+  async initializeVaults(config: Config): Promise<void>;
+  getVault(id: string): Vault;
+  getAllVaults(): Vault[];
+}
+
+// Global singleton instance
+export const vaultRegistry = VaultRegistry.getInstance();
 ```
 
-**Next Steps After #186**:
+### Key Architecture Decisions (ADR-006)
+- **Vault as Container**: Each vault owns its stateful services
+- **URL Path Pattern**: `/api/vaults/:vaultId/documents`
+- **Initialization**: Default vault sync, others async in background
+- **File Watchers**: Run for ALL vaults to keep indexes current
+- **Error Handling**: Fail fast for default vault, graceful for others
+
+## 📝 Next Session Instructions
+
+### Option 1: Create PR for Issue #186
 ```bash
-# Continue with API vault awareness
-git checkout -b feat/159-vault-aware-endpoints
-# Update all API endpoints to use VaultContext
-# See issue #159 for detailed requirements
+# The work is complete on branch feat/186-vault-context-architecture
+git add .
+git commit -m "feat: implement vault context architecture (#186)
+
+- Create @mmt/vault package with VaultRegistry singleton
+- Implement vault as container for services
+- Document architecture in ADR-006
+- Ready for API integration"
+
+gh pr create --title "feat: implement vault context architecture (#186)" \
+  --body "Implements vault as first-class domain concept per ADR-006" \
+  --base main
+```
+
+### Option 2: Start Issue #189 (API Routes)
+```bash
+git checkout -b feat/189-vault-aware-api
+# Update apps/api-server/src/routes/*.ts
+# See issue #189 for detailed requirements
+```
+
+### Option 3: Start Issue #190 (Vault Initialization)
+```bash
+git checkout -b feat/190-vault-initialization
+# Update tools/control-manager/src/control-manager.ts
+# See issue #190 for detailed requirements
 ```
 
 ### Upcoming Phases
@@ -101,20 +154,24 @@ vaults:
     indexPath: "/absolute/path/to/work-index"
 ```
 
-### Vault Context Pattern (🔄 DESIGNING)
+### Vault Access Pattern (✅ IMPLEMENTED)
 ```typescript
-// Issue #186 - Establishing proper context flow
-// Key insight: Don't just pass vault IDs around
-// Create a proper context that will be understood by future AI agents
+// The vault IS the context - it owns all services
+import { vaultRegistry } from '@mmt/vault';
 
-// Current "first vault as default" pattern (temporary):
-const defaultVault = config.vaults[0];
+// Initialize all vaults at startup
+await vaultRegistry.initializeVaults(config);
 
-// Target pattern (after #186):
-const context = createVaultContext(vaultId);
-// Context flows through all operations
-await indexer.query(query, context);
-await operation.execute(document, context);
+// Access vault and its services
+const vault = vaultRegistry.getVault('Personal');
+const documents = await vault.indexer.getAllDocuments();
+const backlinks = vault.indexer.getBacklinks('some-doc.md');
+
+// API routes will use this pattern
+app.get('/api/vaults/:vaultId/documents', (req, res) => {
+  const vault = vaultRegistry.getVault(req.params.vaultId);
+  res.json(vault.indexer.getAllDocuments());
+});
 ```
 
 ### State Management Architecture
@@ -157,13 +214,18 @@ pipelines:
 - ✅ Similarity search backend (API complete)
 - ✅ Document filtering and operations
 - ✅ Pipeline preview mode
+- ✅ Multi-vault configuration support
+- ✅ Vault package with registry architecture
 
-### What Needs V3 Updates
-- ❌ No multi-vault support (hardcoded single vault)
-- ❌ No tab interface
-- ❌ No workflow history
-- ❌ No manual selection/exclusion
-- ❌ No similarity search UI
+### What Needs Implementation (Issues Created)
+- 🔄 #189: API routes with vault ID in path
+- 🔄 #190: Vault initialization at startup
+- 🔄 #191: Web UI vault selector
+- ⏳ Tab interface (#157)
+- ⏳ Per-tab state (#158)
+- ⏳ Workflow history
+- ⏳ Manual selection/exclusion
+- ⏳ Similarity search UI
 
 ## Development Commands
 
@@ -212,22 +274,41 @@ pnpm type-check
 
 ## Next Session Recommendations
 
-1. **Continue Issue #186** - Complete vault context architecture
-   - Design the VaultContext interface
-   - Create context module in entities package
-   - Update API server to use context
-   - Update indexer and services
-   
-2. **Then #159** - API vault support (builds on context)
-3. **Then #158** - State management refactor (critical path)
-4. **Visual comes last** - Tab bar UI after state works
+### Priority 1: Complete Current Branch
+```bash
+# Create PR for completed work on Issue #186
+git status  # Should be on feat/186-vault-context-architecture
+git add .
+git commit -m "feat: implement vault context architecture (#186)"
+gh pr create
+```
 
-## Key Decisions from Previous Session
+### Priority 2: API Routes (#189)
+Most critical for multi-vault - all other work depends on this:
+- Update all routes in `apps/api-server/src/routes/`
+- Add vault management endpoints
+- Test with multiple vaults
 
-1. **No backward compatibility** - I am the only user
-2. **First vault as default** - Temporary pattern to avoid massive refactoring
-3. **Vault context is critical** - Must be a first-class domain concept, not just ID passing
-4. **Let structure emerge** - Don't over-design context with tab/user fields yet
+### Priority 3: Vault Initialization (#190)
+Makes multi-vault actually work:
+- Update `tools/control-manager/src/control-manager.ts`
+- Import and use vaultRegistry
+- Test startup with multiple vaults
+
+### Priority 4: Web UI (#191)
+User-facing changes:
+- Add vault selector component
+- Update document store
+- Update all API calls
+
+## Key Decisions from This Session
+
+1. **Vault as Container** - Vault owns all stateful services (indexer, watcher, etc.)
+2. **Singleton Registry** - Global VaultRegistry manages all vaults
+3. **URL Path Pattern** - API uses `/api/vaults/:vaultId/...` for all endpoints
+4. **Initialization Strategy** - Default vault sync, others async, all watchers run
+5. **Fail Fast** - Default vault must work or app won't start
+6. **Package Structure** - New `@mmt/vault` package as central domain concept
 
 ## Performance Targets
 - Tab switching: < 100ms
@@ -243,6 +324,23 @@ pnpm type-check
 - ✅ Set operations create new tabs
 - ✅ Similarity search as separate panel initially
 
+## Files Created/Modified Today
+
+### New Package Created
+- `/packages/vault/` - Complete vault package with:
+  - `src/vault.ts` - Vault class implementation
+  - `src/registry.ts` - VaultRegistry singleton
+  - `src/types.ts` - TypeScript interfaces
+  - `src/index.ts` - Package exports
+
+### Documentation
+- `/docs/adr/006-vault-as-container-architecture.md` - Architecture decision record
+
+### GitHub Issues Created
+- #189: API vault-aware routes
+- #190: Vault initialization at startup  
+- #191: Web UI vault selector
+
 ---
 
-*This handoff includes complete context for V3 implementation. All planning is done - execute Phase 1 starting with issue #156.*
+*This handoff includes complete implementation of Issue #186. The vault architecture is ready - next steps are API integration (#189) and startup initialization (#190).*
