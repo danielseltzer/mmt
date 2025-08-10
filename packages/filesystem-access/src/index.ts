@@ -3,6 +3,10 @@
  * All file operations in the application must go through this package.
  */
 
+// Export file watcher functionality
+export { FileWatcher } from './file-watcher.js';
+export type { FileWatcherOptions, FileChangeEvent } from './file-watcher.js';
+
 import {
   readFile as fsReadFile,
   writeFile as fsWriteFile,

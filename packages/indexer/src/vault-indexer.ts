@@ -13,7 +13,7 @@ import { LinkExtractor } from './link-extractor.js';
 import { QueryExecutor } from './query-executor.js';
 import { MetadataCache } from './metadata-cache.js';
 import { WorkerPool } from './worker-pool.js';
-import { FileWatcher } from './file-watcher.js';
+import { FileWatcher } from '@mmt/filesystem-access';
 import { join, relative } from 'path';
 
 export class VaultIndexer {

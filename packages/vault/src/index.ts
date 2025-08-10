@@ -1,23 +1,10 @@
-/**
- * @fileoverview Vault loading and monitoring for MMT markdown management
- */
-
-export { loadVault, createVaultContext } from './vault-operations.js';
-export { FileWatcher } from './file-watcher/index.js';
+export { Vault } from './vault.js';
+export { VaultRegistry, vaultRegistry } from './registry.js';
 export type { 
-  FileChangeEvent, 
-  FileChangeType, 
-  FileWatcherOptions, 
-  FileChangeListener 
-} from './file-watcher/index.js';
+  Vault as IVault,
+  VaultStatus, 
+  VaultServices 
+} from './types.js';
 
-// Re-export types from entities that are part of the public API
-export type {
-  Vault,
-  VaultContext,
-  Document,
-  DocumentSet,
-  QueryInput,
-  ExecutionResult,
-  Operation,
-} from '@mmt/entities';
+// Re-export singleton convenience access
+export { vaultRegistry as registry } from './registry.js';

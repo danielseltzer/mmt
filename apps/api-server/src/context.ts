@@ -4,6 +4,7 @@ import { OperationRegistry, MoveOperation, UpdateFrontmatterOperation, RenameOpe
 import { ConfigService } from '@mmt/config';
 import type { Config } from '@mmt/entities';
 import { NodeFileSystem } from '@mmt/filesystem-access';
+import { vaultRegistry } from '@mmt/vault';
 import { SimilaritySearchService } from './services/similarity-search.js';
 
 export interface Context {
@@ -13,13 +14,10 @@ export interface Context {
   operationRegistry: OperationRegistry;
   fs: NodeFileSystem;
   similaritySearch?: SimilaritySearchService;
+  vaultRegistry: typeof vaultRegistry;
 }
 
-export async function createContext(): Promise<Context> {
-  // Load config from environment or default location
-  const configPath = process.env.MMT_CONFIG || 'mmt.config.yaml';
-  const configService = new ConfigService();
-  const config = await configService.load(configPath);
+export async function createContext(config: Config): Promise<Context> {
   
   // Initialize services
   const fs = new NodeFileSystem();
@@ -50,6 +48,9 @@ export async function createContext(): Promise<Context> {
     similaritySearch = new SimilaritySearchService(config);
     await similaritySearch.initialize();
   }
+
+  // Initialize vault registry with all configured vaults
+  await vaultRegistry.initializeVaults(config);
   
   return {
     config,
@@ -58,5 +59,6 @@ export async function createContext(): Promise<Context> {
     operationRegistry,
     fs,
     similaritySearch,
+    vaultRegistry,
   };
 }
