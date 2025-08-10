@@ -23,7 +23,9 @@
   },
   "dependencies": {
     "@mmt/entities": "workspace:*",
-    "gray-matter": "^4.0.3"
+    "chokidar": "^3.5.3",
+    "gray-matter": "^4.0.3",
+    "minimatch": "^9.0.3"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

@@ -101,7 +101,7 @@ importers:
         version: link:../../packages/indexer
       '@mmt/vault':
         specifier: workspace:^
-        version: link:../../packages/vault-old
+        version: link:../../packages/vault
       '@orama/orama':
         specifier: ^3.1.11
         version: 3.1.11
@@ -400,9 +400,15 @@ importers:
       '@mmt/entities':
         specifier: workspace:*
         version: link:../entities
+      chokidar:
+        specifier: ^3.5.3
+        version: 3.6.0
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
+      minimatch:
+        specifier: ^9.0.3
+        version: 9.0.5
     devDependencies:
       '@types/node':
         specifier: ^20.14.0
@@ -422,9 +428,6 @@ importers:
       '@mmt/filesystem-access':
         specifier: workspace:*
         version: link:../filesystem-access
-      '@mmt/vault':
-        specifier: workspace:*
-        version: link:../vault-old
       chokidar:
         specifier: ^3.5.3
         version: 3.6.0
@@ -591,31 +594,6 @@ importers:
       '@mmt/filesystem-access':
         specifier: workspace:*
         version: link:../filesystem-access
-      '@mmt/indexer':
-        specifier: workspace:*
-        version: link:../indexer
-    devDependencies:
-      '@types/node':
-        specifier: ^20.11.5
-        version: 20.19.6
-      eslint:
-        specifier: ^8.57.1
-        version: 8.57.1
-      typescript:
-        specifier: ^5.3.3
-        version: 5.8.3
-      vitest:
-        specifier: ^1.2.1
-        version: 1.6.1(@types/node@20.19.6)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(lightningcss@1.30.1)
-
-  packages/vault-old:
-    dependencies:
-      '@mmt/config':
-        specifier: workspace:*
-        version: link:../config
-      '@mmt/entities':
-        specifier: workspace:*
-        version: link:../entities
       '@mmt/indexer':
         specifier: workspace:*
         version: link:../indexer
