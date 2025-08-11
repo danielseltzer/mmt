@@ -80,7 +80,7 @@ The project is documented but not yet implemented. Follow these steps:
 - **Config**: Require explicit --config flag, fail fast on invalid config
 - **Errors**: Fail fast with clear messages, no silent failures
 - **Performance**: Keep indexing under 5 seconds for 5000 files
-- **NO BACKWARD COMPATIBILITY**: I am the only user. Never add backward compatibility, aliases, or legacy support. Keep the codebase clean and simple.
+- **NO BACKWARD COMPATIBILITY**: I am the only user. Never add backward compatibility, aliases, or legacy support. Keep the codebase clean and simple. When updating APIs or interfaces, directly change them - do not maintain old versions.
 - **File Watching**: Indexer supports automatic updates via `fileWatching` config or `--watch` CLI flag. See `/docs/features/file-watching.md`
 
 ## MUST READ: Critical Documentation
