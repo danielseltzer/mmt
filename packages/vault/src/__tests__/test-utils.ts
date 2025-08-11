@@ -79,7 +79,12 @@ export class TestVaultFactory {
     return {
       name,
       path,
-      fileWatching: fileWatching ? { enabled: true } : undefined
+      indexPath: join(path, '.mmt-index'),
+      fileWatching: fileWatching ? {
+        enabled: true,
+        debounceMs: 100,
+        ignorePatterns: ['.git/**', '.obsidian/**', '.trash/**', 'node_modules/**']
+      } : undefined
     };
   }
 
@@ -134,18 +139,5 @@ export function suppressConsoleError(): () => void {
   
   return () => {
     console.error = originalError;
-  };
-}
-
-/**
- * Utility to suppress process.exit during tests.
- * Required for testing registry initialization failures.
- */
-export function suppressProcessExit(): () => void {
-  const originalExit = process.exit;
-  process.exit = (() => {}) as any;
-  
-  return () => {
-    process.exit = originalExit;
   };
 }

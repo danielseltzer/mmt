@@ -3,8 +3,7 @@ import { vaultRegistry } from '../registry.js';
 import type { Config } from '@mmt/entities';
 import { 
   TestVaultFactory, 
-  suppressConsoleError,
-  suppressProcessExit 
+  suppressConsoleError
 } from './test-utils.js';
 
 describe('VaultRegistry', () => {
@@ -33,7 +32,9 @@ describe('VaultRegistry', () => {
       });
 
       const config: Config = {
-        vaults: [factory.createVaultConfig('main-vault', path)]
+        vaults: [factory.createVaultConfig('main-vault', path)],
+        apiPort: 3001,
+        webPort: 5173
       };
       
       await vaultRegistry.initializeVaults(config);
@@ -60,7 +61,9 @@ describe('VaultRegistry', () => {
         vaults: [
           factory.createVaultConfig('vault-1', path1),
           factory.createVaultConfig('vault-2', path2)
-        ]
+        ],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -85,7 +88,9 @@ describe('VaultRegistry', () => {
     it('should prevent multiple initializations', async () => {
       const { path, cleanup } = await factory.createTempVault();
       const config: Config = {
-        vaults: [factory.createVaultConfig('test-vault', path)]
+        vaults: [factory.createVaultConfig('test-vault', path)],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -98,37 +103,29 @@ describe('VaultRegistry', () => {
     });
 
     it('should fail if no vault configurations provided', async () => {
-      const config: Config = { vaults: [] };
+      const config: Config = { vaults: [], apiPort: 3001, webPort: 5173 };
       
       await expect(vaultRegistry.initializeVaults(config))
         .rejects
         .toThrow('No vaults configured');
     });
 
-    it('should exit process if default vault fails to initialize', async () => {
+    it('should throw error if default vault fails to initialize', async () => {
       const restoreConsoleError = suppressConsoleError();
-      const restoreProcessExit = suppressProcessExit();
-      let processExitCalled = false;
-
-      // Mock process.exit to capture the call
-      process.exit = ((code: number) => {
-        processExitCalled = true;
-        expect(code).toBe(1);
-      }) as any;
 
       try {
         const config: Config = {
-          vaults: [factory.createVaultConfig('bad-vault', '/nonexistent/path')]
+          vaults: [factory.createVaultConfig('bad-vault', '/nonexistent/path')],
+          apiPort: 3001,
+          webPort: 5173
         };
         
-        await vaultRegistry.initializeVaults(config);
-        
-        // Verify process.exit was called
-        expect(processExitCalled).toBe(true);
+        await expect(vaultRegistry.initializeVaults(config))
+          .rejects
+          .toThrow('Failed to initialize default vault bad-vault');
         
       } finally {
         restoreConsoleError();
-        restoreProcessExit();
       }
     });
 
@@ -142,7 +139,9 @@ describe('VaultRegistry', () => {
           vaults: [
             factory.createVaultConfig('valid-vault', validPath),
             factory.createVaultConfig('invalid-vault', '/nonexistent/path')
-          ]
+          ],
+          apiPort: 3001,
+          webPort: 5173
         };
 
         await vaultRegistry.initializeVaults(config);
@@ -170,7 +169,9 @@ describe('VaultRegistry', () => {
     it('should get specific vault by ID', async () => {
       const { path, cleanup } = await factory.createTempVault();
       const config: Config = {
-        vaults: [factory.createVaultConfig('test-vault', path)]
+        vaults: [factory.createVaultConfig('test-vault', path)],
+        apiPort: 3001,
+        webPort: 5173
       };
       
       await vaultRegistry.initializeVaults(config);
@@ -193,7 +194,9 @@ describe('VaultRegistry', () => {
         vaults: [
           factory.createVaultConfig('first-vault', path1),
           factory.createVaultConfig('second-vault', path2)
-        ]
+        ],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -214,7 +217,9 @@ describe('VaultRegistry', () => {
         vaults: [
           factory.createVaultConfig('vault-1', path1),
           factory.createVaultConfig('vault-2', path2)
-        ]
+        ],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -238,7 +243,9 @@ describe('VaultRegistry', () => {
         vaults: [
           factory.createVaultConfig('vault-1', path1),
           factory.createVaultConfig('vault-2', path2)
-        ]
+        ],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -255,7 +262,9 @@ describe('VaultRegistry', () => {
     it('should check if vault exists', async () => {
       const { path, cleanup } = await factory.createTempVault();
       const config: Config = {
-        vaults: [factory.createVaultConfig('test-vault', path)]
+        vaults: [factory.createVaultConfig('test-vault', path)],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -271,7 +280,9 @@ describe('VaultRegistry', () => {
     it('should initialize vaults with file watching enabled', async () => {
       const { path, cleanup } = await factory.createTempVault();
       const config: Config = {
-        vaults: [factory.createVaultConfig('watched-vault', path, true)]
+        vaults: [factory.createVaultConfig('watched-vault', path, true)],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -292,7 +303,9 @@ describe('VaultRegistry', () => {
         vaults: [
           factory.createVaultConfig('watched-vault', watchedPath, true),
           factory.createVaultConfig('unwatched-vault', unwatchedPath, false)
-        ]
+        ],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -321,7 +334,9 @@ describe('VaultRegistry', () => {
         vaults: [
           factory.createVaultConfig('vault-1', path1),
           factory.createVaultConfig('vault-2', path2)
-        ]
+        ],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -347,7 +362,9 @@ describe('VaultRegistry', () => {
     it('should allow re-initialization after shutdown', async () => {
       const { path, cleanup } = await factory.createTempVault();
       const config: Config = {
-        vaults: [factory.createVaultConfig('test-vault', path)]
+        vaults: [factory.createVaultConfig('test-vault', path)],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -368,7 +385,9 @@ describe('VaultRegistry', () => {
     it('should maintain singleton state', async () => {
       const { path, cleanup } = await factory.createTempVault();
       const config: Config = {
-        vaults: [factory.createVaultConfig('test-vault', path)]
+        vaults: [factory.createVaultConfig('test-vault', path)],
+        apiPort: 3001,
+        webPort: 5173
       };
 
       await vaultRegistry.initializeVaults(config);
@@ -396,7 +415,9 @@ describe('VaultRegistry', () => {
           vaults: [
             factory.createVaultConfig('valid-vault', validPath),
             factory.createVaultConfig('invalid-vault', '/nonexistent/path')
-          ]
+          ],
+          apiPort: 3001,
+          webPort: 5173
         };
 
         await vaultRegistry.initializeVaults(config);

@@ -88,8 +88,8 @@ describe('Vault', () => {
       expect(indexer).toBeDefined();
       
       // Test that indexer is functional
-      const stats = await indexer.getStats();
-      expect(stats.totalDocuments).toBe(2);
+      const documents = indexer.getAllDocuments();
+      expect(documents).toHaveLength(2);
 
       await cleanup();
     });
@@ -196,11 +196,11 @@ describe('Vault', () => {
       expect(vault2.config.path).toBe(path2);
 
       // Each vault should have its own indexer
-      const stats1 = await vault1.indexer.getStats();
-      const stats2 = await vault2.indexer.getStats();
+      const docs1 = vault1.indexer.getAllDocuments();
+      const docs2 = vault2.indexer.getAllDocuments();
 
-      expect(stats1.totalDocuments).toBe(1);
-      expect(stats2.totalDocuments).toBe(1);
+      expect(docs1).toHaveLength(1);
+      expect(docs2).toHaveLength(1);
 
       await cleanup1();
       await cleanup2();
@@ -215,8 +215,8 @@ describe('Vault', () => {
       
       await vault.initialize();
       
-      const stats = await vault.indexer.getStats();
-      expect(stats.totalDocuments).toBe(3); // Default test files
+      const documents = vault.indexer.getAllDocuments();
+      expect(documents).toHaveLength(3); // Default test files
       
       await cleanup();
     });
@@ -233,8 +233,8 @@ describe('Vault', () => {
       await vault.initialize();
       
       // Indexer should only pick up markdown files
-      const stats = await vault.indexer.getStats();
-      expect(stats.totalDocuments).toBe(0);
+      const documents = vault.indexer.getAllDocuments();
+      expect(documents).toHaveLength(0);
       
       await cleanup();
     });
@@ -250,8 +250,8 @@ describe('Vault', () => {
       const vault = new Vault('nested-vault', config);
       await vault.initialize();
       
-      const stats = await vault.indexer.getStats();
-      expect(stats.totalDocuments).toBe(3);
+      const documents = vault.indexer.getAllDocuments();
+      expect(documents).toHaveLength(3);
       
       await cleanup();
     });

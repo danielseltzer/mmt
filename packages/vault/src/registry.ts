@@ -10,9 +10,12 @@ import { Vault } from './vault.js';
  * - Singleton pattern ensures consistent vault access across all application components
  * 
  * DESIGN DECISION: Mixed sync/async initialization because:
- * - Default vault failure should crash the app early (fail-fast principle)
+ * - Default vault failure should throw an error (fail-fast principle)
  * - Additional vaults are optional and shouldn't block application startup
  * - UI can show loading states for async vault initialization
+ * 
+ * ERROR HANDLING: Throws errors instead of calling process.exit() to maintain
+ * testability and allow the application layer to decide how to handle failures
  * 
  * ARCHITECTURE ROLE: Central coordinator between:
  * - Config system (provides vault configurations)
@@ -44,14 +47,15 @@ export class VaultRegistry {
    * 
    * INITIALIZATION STRATEGY:
    * 1. Default vault (first in config): Initialize synchronously and await completion
-   *    - If it fails, the application exits with process.exit(1)
+   *    - If it fails, throws an error (fail-fast principle)
    *    - This ensures the core vault is available before app continues
    * 2. Additional vaults: Initialize asynchronously in parallel
-   *    - Failures are logged but don't crash the application
+   *    - Failures are logged but don't throw
    *    - UI can show loading/error states for individual vaults
    * 
    * @param config Application configuration containing vault definitions
    * @returns Promise that resolves when initialization is complete
+   * @throws Error if no vaults configured or if default vault fails to initialize
    */
   async initializeVaults(config: Config): Promise<void> {
     // Prevent multiple initializations
@@ -84,8 +88,9 @@ export class VaultRegistry {
       await defaultVault.initialize();
       this.vaults.set(defaultVault.id, defaultVault);
     } catch (error) {
-      console.error('Failed to initialize default vault, exiting');
-      process.exit(1);
+      const message = `Failed to initialize default vault ${defaultVault.id}: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(message);
+      throw new Error(message);
     }
 
     // Initialize additional vaults asynchronously in parallel
