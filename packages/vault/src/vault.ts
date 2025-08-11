@@ -51,6 +51,7 @@ export class Vault implements IVault {
    */
   async initialize(): Promise<void> {
     try {
+      // eslint-disable-next-line no-console
       console.log(`Initializing vault: ${this.id}`);
       this.status = 'initializing';
 
@@ -71,6 +72,7 @@ export class Vault implements IVault {
       };
 
       this.status = 'ready';
+      // eslint-disable-next-line no-console
       console.log(`Vault ${this.id} initialized successfully`);
     } catch (error) {
       this.status = 'error';
@@ -108,7 +110,8 @@ export class Vault implements IVault {
    * 
    * NOTE: After shutdown, vault must be re-initialized before use.
    */
-  async shutdown(): Promise<void> {
+  shutdown(): void {
+    // eslint-disable-next-line no-console
     console.log(`Shutting down vault: ${this.id}`);
     
     // Indexer will handle its own cleanup including file watcher

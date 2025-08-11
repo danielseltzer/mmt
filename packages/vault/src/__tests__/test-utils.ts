@@ -48,7 +48,7 @@ export class TestVaultFactory {
       await writeFile(filepath, content);
     }
 
-    const cleanup = async () => {
+    const cleanup = async (): Promise<void> => {
       try {
         await rm(tempDir, { recursive: true, force: true });
         const index = this.createdPaths.indexOf(tempDir);
@@ -95,19 +95,19 @@ export class TestVaultFactory {
    * @param timeoutMs Maximum time to wait in milliseconds
    * @returns Promise that resolves when vault is ready or rejects on error/timeout
    */
-  async waitForVaultReady(vault: any, timeoutMs = 5000): Promise<void> {
+  async waitForVaultReady(vault: { id: string; status: string; error?: Error }, timeoutMs = 5000): Promise<void> {
     const startTime = Date.now();
     
     while (vault.status === 'initializing') {
       if (Date.now() - startTime > timeoutMs) {
-        throw new Error(`Vault ${vault.id} did not initialize within ${timeoutMs}ms`);
+        throw new Error(`Vault ${vault.id} did not initialize within ${String(timeoutMs)}ms`);
       }
       
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     if (vault.status === 'error') {
-      throw vault.error || new Error(`Vault ${vault.id} failed to initialize`);
+      throw vault.error ?? new Error(`Vault ${vault.id} failed to initialize`);
     }
   }
 
@@ -135,7 +135,9 @@ export class TestVaultFactory {
  */
 export function suppressConsoleError(): () => void {
   const originalError = console.error;
-  console.error = () => {};
+  console.error = () => {
+    // Intentionally empty for testing
+  };
   
   return () => {
     console.error = originalError;

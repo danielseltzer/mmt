@@ -28,7 +28,7 @@ import { Vault } from './vault.js';
  */
 export class VaultRegistry {
   private static instance: VaultRegistry;
-  private vaults: Map<string, Vault> = new Map();
+  private vaults = new Map<string, Vault>();
   private initializationPromise?: Promise<void>;
 
   private constructor() {
@@ -36,6 +36,7 @@ export class VaultRegistry {
   }
 
   static getInstance(): VaultRegistry {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
     if (!VaultRegistry.instance) {
       VaultRegistry.instance = new VaultRegistry();
     }
@@ -68,11 +69,13 @@ export class VaultRegistry {
   }
 
   private async doInitializeVaults(config: Config): Promise<void> {
-    console.log(`Initializing ${config.vaults.length} vault(s)`);
+    // Log for debugging purposes
+    // eslint-disable-next-line no-console
+    console.log(`Initializing ${String(config.vaults.length)} vault(s)`);
 
     // Clear any existing vaults
     for (const vault of this.vaults.values()) {
-      await vault.shutdown();
+      vault.shutdown();
     }
     this.vaults.clear();
 
@@ -81,7 +84,7 @@ export class VaultRegistry {
     }
 
     // Initialize default vault synchronously (blocking)
-    const defaultVaultConfig = config.vaults[0];
+    const [defaultVaultConfig] = config.vaults;
     const defaultVault = new Vault(defaultVaultConfig.name, defaultVaultConfig);
     
     try {
@@ -118,12 +121,16 @@ export class VaultRegistry {
     const readyVaults = this.getAllVaults().filter(v => v.status === 'ready');
     const errorVaults = this.getAllVaults().filter(v => v.status === 'error');
     
+    // eslint-disable-next-line no-console
     console.log(`Vault initialization complete:`);
-    console.log(`  - Ready: ${readyVaults.length} vault(s)`);
+    // eslint-disable-next-line no-console
+    console.log(`  - Ready: ${String(readyVaults.length)} vault(s)`);
     if (errorVaults.length > 0) {
-      console.log(`  - Failed: ${errorVaults.length} vault(s)`);
+      // eslint-disable-next-line no-console
+      console.log(`  - Failed: ${String(errorVaults.length)} vault(s)`);
       errorVaults.forEach(v => {
-        console.log(`    - ${v.id}: ${v.error?.message}`);
+        // eslint-disable-next-line no-console
+        console.log(`    - ${v.id}: ${String(v.error?.message)}`);
       });
     }
   }
@@ -194,14 +201,16 @@ export class VaultRegistry {
    * 
    * USAGE: Call during application shutdown or in test cleanup
    */
-  async shutdown(): Promise<void> {
+  shutdown(): void {
+    // eslint-disable-next-line no-console
     console.log('Shutting down all vaults');
-    const shutdownPromises = Array.from(this.vaults.values()).map(
-      vault => vault.shutdown().catch(error => {
+    Array.from(this.vaults.values()).forEach(vault => {
+      try {
+        vault.shutdown();
+      } catch (error: unknown) {
         console.error(`Error shutting down vault ${vault.id}:`, error);
-      })
-    );
-    await Promise.all(shutdownPromises);
+      }
+    });
     this.vaults.clear();
     this.initializationPromise = undefined;
   }

@@ -16,7 +16,7 @@ describe('Vault Integration Tests', () => {
   afterEach(async () => {
     await factory.cleanupAll();
     try {
-      await vaultRegistry.shutdown();
+      vaultRegistry.shutdown();
     } catch {
       // Registry might already be shut down
     }
@@ -47,7 +47,7 @@ describe('Vault Integration Tests', () => {
       const vault = vaultRegistry.getVault('docs-vault');
       await factory.waitForVaultReady(vault);
 
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       const documents = indexer.getAllDocuments();
 
       expect(documents).toHaveLength(9);
@@ -81,7 +81,7 @@ describe('Vault Integration Tests', () => {
       const vault = vaultRegistry.getVault('notes-vault');
       await factory.waitForVaultReady(vault);
 
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       const documents = indexer.getAllDocuments();
 
       // Should only index markdown files (8 out of 11 files)
@@ -178,7 +178,7 @@ describe('Vault Integration Tests', () => {
       const vault = vaultRegistry.getVault('watched-vault');
       await factory.waitForVaultReady(vault);
 
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       let documents = indexer.getAllDocuments();
       expect(documents).toHaveLength(1);
 
@@ -212,10 +212,10 @@ describe('Vault Integration Tests', () => {
       const vault = vaultRegistry.getVault('watched-vault');
       await factory.waitForVaultReady(vault);
 
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       
       // Get initial document
-      const initialDocs = await indexer.getAllDocuments();
+      const initialDocs = indexer.getAllDocuments();
       expect(initialDocs).toHaveLength(1);
 
       // Modify the file
@@ -238,8 +238,8 @@ describe('Vault Integration Tests', () => {
       
       for (let i = 1; i <= 50; i++) {
         const category = i <= 20 ? 'docs' : i <= 35 ? 'notes' : 'archive';
-        largeVaultFiles[`${category}/file-${i.toString().padStart(2, '0')}.md`] = 
-          `# File ${i}\n\nContent for file number ${i}.\n\n## Section\n\nMore content.`;
+        largeVaultFiles[`${category}/file-${String(i).padStart(2, '0')}.md`] = 
+          `# File ${String(i)}\n\nContent for file number ${String(i)}.\n\n## Section\n\nMore content.`;
       }
 
       const { path, cleanup } = await factory.createTempVault(largeVaultFiles);
@@ -255,7 +255,7 @@ describe('Vault Integration Tests', () => {
       const vault = vaultRegistry.getVault('large-vault');
       await factory.waitForVaultReady(vault);
 
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       const documents = indexer.getAllDocuments();
 
       expect(documents).toHaveLength(50);
@@ -283,9 +283,11 @@ describe('Vault Integration Tests', () => {
 
       // Delete the directory
       await rm(path, { recursive: true, force: true });
+      // Skip normal cleanup since directory was deleted
+      await cleanup();
 
       // Vault should handle the missing directory gracefully
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       
       // Indexer might cache results or throw an error
       try {
@@ -296,8 +298,6 @@ describe('Vault Integration Tests', () => {
         // If it throws, should be a clear error
         expect(error).toBeDefined();
       }
-
-      // Skip normal cleanup since directory was deleted
     });
 
     it('should handle permission issues gracefully', async () => {
@@ -409,7 +409,7 @@ describe('Vault Integration Tests', () => {
       expect(documents).toHaveLength(1);
 
       // Shutdown should clean up all resources
-      await vaultRegistry.shutdown();
+      vaultRegistry.shutdown();
 
       // Registry should be empty
       expect(vaultRegistry.getAllVaults()).toHaveLength(0);
@@ -422,19 +422,20 @@ describe('Vault Integration Tests', () => {
 
       for (let i = 0; i < 3; i++) {
         const config: Config = {
-          vaults: [factory.createVaultConfig(`vault-${i}`, path)],
+          vaults: [factory.createVaultConfig(`vault-${String(i)}`, path)],
           apiPort: 3001,
           webPort: 5173
         };
         
         await vaultRegistry.initializeVaults(config);
         
-        const vault = vaultRegistry.getVault(`vault-${i}`);
+        const vault = vaultRegistry.getVault(`vault-${String(i)}`);
+
         await factory.waitForVaultReady(vault);
         
         expect(vault.status).toBe('ready');
         
-        await vaultRegistry.shutdown();
+        vaultRegistry.shutdown();
       }
 
       await cleanup();
@@ -457,7 +458,7 @@ describe('Vault Integration Tests', () => {
       expect(vault.error).toBeUndefined();
 
       // Access indexer and verify it's working
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       expect(indexer).toBeDefined();
 
       // Test indexer functionality
@@ -472,7 +473,7 @@ describe('Vault Integration Tests', () => {
       expect(doc1).toBeDefined();
       expect(doc1?.title).toBe('Document 1');
 
-      await vault.shutdown();
+      vault.shutdown();
       await cleanup();
     });
 
@@ -493,7 +494,7 @@ describe('Vault Integration Tests', () => {
       const vault = vaultRegistry.getVault('dev-vault');
       await factory.waitForVaultReady(vault);
 
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       
       // Query for documents - VaultIndexer.query() takes a Query object
       // For now, just test that we can get all documents

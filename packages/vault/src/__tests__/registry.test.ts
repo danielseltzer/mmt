@@ -19,7 +19,7 @@ describe('VaultRegistry', () => {
     await factory.cleanupAll();
     // Shutdown registry after each test to prevent resource leaks
     try {
-      await vaultRegistry.shutdown();
+      vaultRegistry.shutdown();
     } catch {
       // Registry might already be shut down
     }
@@ -344,7 +344,7 @@ describe('VaultRegistry', () => {
       // Verify vaults exist
       expect(vaultRegistry.getAllVaults()).toHaveLength(2);
 
-      await vaultRegistry.shutdown();
+      vaultRegistry.shutdown();
 
       // Registry should be cleared
       expect(vaultRegistry.getAllVaults()).toHaveLength(0);
@@ -354,9 +354,11 @@ describe('VaultRegistry', () => {
       await cleanup2();
     });
 
-    it('should handle shutdown when not initialized', async () => {
+    it('should handle shutdown when not initialized', () => {
       // Should not throw
-      await expect(vaultRegistry.shutdown()).resolves.toBeUndefined();
+      expect(() => {
+        vaultRegistry.shutdown();
+      }).not.toThrow();
     });
 
     it('should allow re-initialization after shutdown', async () => {
@@ -370,7 +372,7 @@ describe('VaultRegistry', () => {
       await vaultRegistry.initializeVaults(config);
       expect(vaultRegistry.getAllVaults()).toHaveLength(1);
 
-      await vaultRegistry.shutdown();
+      vaultRegistry.shutdown();
       expect(vaultRegistry.getAllVaults()).toHaveLength(0);
 
       // Should be able to initialize again
@@ -405,7 +407,9 @@ describe('VaultRegistry', () => {
 
   describe('error handling', () => {
     it('should handle vault initialization summary', async () => {
-      const restoreConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const restoreConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {
+        // Intentionally empty for testing
+      });
       const restoreConsoleError = suppressConsoleError();
 
       try {

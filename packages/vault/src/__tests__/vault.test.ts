@@ -68,7 +68,7 @@ describe('Vault', () => {
       expect(vault.status).toBe('ready');
       expect(vault.config.fileWatching?.enabled).toBe(true);
 
-      await vault.shutdown();
+      vault.shutdown();
       await cleanup();
     });
   });
@@ -84,7 +84,7 @@ describe('Vault', () => {
       const vault = new Vault('test-vault', config);
       await vault.initialize();
       
-      const indexer = vault.indexer;
+      const {indexer} = vault;
       expect(indexer).toBeDefined();
       
       // Test that indexer is functional
@@ -130,7 +130,9 @@ describe('Vault', () => {
       expect(vault.status).toBe('ready');
       
       // Should not throw
-      await expect(vault.shutdown()).resolves.toBeUndefined();
+      expect(() => {
+        vault.shutdown();
+      }).not.toThrow();
 
       await cleanup();
     });
@@ -143,7 +145,7 @@ describe('Vault', () => {
       await vault.initialize();
       expect(vault.status).toBe('ready');
       
-      await vault.shutdown();
+      vault.shutdown();
       expect(vault.status).toBe('initializing');
       expect(vault.services).toBeUndefined();
 
@@ -165,7 +167,7 @@ describe('Vault', () => {
       await new Promise(resolve => setTimeout(resolve, 300));
       
       // Shutdown should stop file watching
-      await vault.shutdown();
+      vault.shutdown();
 
       await cleanup();
     });
