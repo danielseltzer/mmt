@@ -44,11 +44,8 @@ export async function createApp(config: Config): Promise<Express> {
   vaultRouter.use('/similarity', similarityRouter(context));
   app.use('/api/vaults/:vaultId', vaultRouter);
   
-  // Legacy routes (use first vault as default for backward compatibility)
+  // Config route (not vault-specific)
   app.use('/api/config', configRouter(context));
-  app.use('/api/documents', documentsRouter(context));
-  app.use('/api/pipelines', pipelinesRouter(context));
-  app.use('/api/similarity', similarityRouter(context));
   
   // Error handling
   app.use(errorHandler);

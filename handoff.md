@@ -13,100 +13,98 @@
   - All routes now use `/api/vaults/:vaultId/...` pattern
   - Fixed circular dependency (FileWatcher → filesystem-access)
   - Added vault validation middleware
+- ✅ Issue #195: Add test coverage for vault package (PR #196 merged)
+  - Implemented comprehensive test suite with NO MOCKS
+  - Achieved 100% test coverage
+  - Fixed process.exit() anti-pattern (throw exceptions instead)
+  - All 45 tests passing
 
-**IN PROGRESS - Issue #195: Add test coverage for vault package**
-- 🔴 **HIGH PRIORITY** - Must complete before continuing with #190
-- ✅ Analyzed vault package architecture - well-designed factory pattern:
-  - `Vault` class: Manages single file collection from one directory
-  - `VaultProvider` class: Factory that creates/manages multiple Vault instances  
-  - `VaultRegistry` class: Singleton for app-wide vault management
-- ✅ Created comprehensive test plan: `/docs/planning/vault-test-plan-issue-195.md`
-- 📋 **NEXT STEPS** (in order):
-  1. Add JSDoc documentation to vault classes for clarity
-  2. Create test utilities following NO MOCKS rule (real files in temp dirs)
-  3. Implement vault.test.ts - core Vault class tests
-  4. Implement vault-provider.test.ts - factory pattern tests
-  5. Implement registry.test.ts - singleton and multi-vault tests
-  6. Implement integration.test.ts - real indexer integration
-  7. Ensure >90% test coverage before marking complete
+**IN PROGRESS - Issue #194: Remove backward compatibility code**
+- 🔧 **CURRENT WORK** - Removing unnecessary legacy code
+- Identified backward compatibility locations:
+  - Legacy routes in `/apps/api-server/src/app.ts` (lines 47-51)
+  - Legacy filter conversion in `/apps/api-server/src/routes/documents.ts`
+  - Default vault fallbacks using `context.config.vaults[0]`
+- Branch: `fix/194-remove-backward-compatibility`
+- **NEXT STEPS**:
+  1. Remove legacy routes from app.ts
+  2. Remove convertLegacyFilters function
+  3. Ensure all routes require explicit vault ID
+  4. Update any `context.config.vaults[0]` fallbacks
+  5. Update CLAUDE.md to emphasize no backward compatibility
 
 **UPCOMING PRIORITIES**:
-- 📋 Issue #194: Remove backward compatibility code
-- 📋 Issue #190: Initialize vaults at application startup (blocked by #195)
+- 📋 Issue #190: Initialize vaults at application startup (unblocked, next after #194)
 - 📋 Issue #191: Add vault selector to web UI
 
-## 🎯 Critical Context for Issue #195
+## 🎯 Critical Context for Issue #194
 
-### NO MOCKS Rule - ABSOLUTE
-The project has a **ZERO TOLERANCE** policy for mocks, stubs, or test doubles:
-- ✅ Use real markdown files in OS temp directories
-- ✅ Real file operations with Node.js `fs/promises`
-- ✅ Proper cleanup in afterEach hooks
-- ❌ NO mocks, stubs, or test doubles of any kind
-- ❌ NO in-memory file system simulations
+### NO BACKWARD COMPATIBILITY Policy
+The project has **ZERO TOLERANCE** for backward compatibility:
+- ❌ Never maintain old API versions
+- ❌ Never add aliases or legacy support
+- ❌ Never keep deprecated code paths
+- ✅ Direct breaking changes are fine (only one user)
+- ✅ Keep codebase clean and simple
 
-See `/docs/building/testing-strategy.md` for full details.
+See CLAUDE.md for this critical policy.
 
-### Vault Package Architecture (No Changes Needed)
-After analysis, the architecture is well-designed:
-- **Naming is correct** - Don't rename `Vault` or `VaultProvider`
-- **Pattern is standard** - Factory pattern with provider
-- **Just needs documentation** - Add JSDoc comments to clarify relationships
+### Backward Compatibility Code to Remove
+1. **Legacy routes** in `/apps/api-server/src/app.ts`:
+   - Lines 47-51: Routes that use first vault as default
+   - These duplicate the vault-aware routes
 
-### Test Requirements from User
-1. **Real markdown files** in temp directories for all tests
-2. **Integration tests** with real indexer package
-3. **Registry tests** for multi-vault initialization and singleton behavior
-4. **Target 100% coverage** (not critical, but aim high)
-5. **No performance tests** - user will test with 6000-doc production vault
+2. **Legacy filter conversion** in `/apps/api-server/src/routes/documents.ts`:
+   - `convertLegacyFilters` function (lines 152-230)
+   - Legacy filter handling in GET /documents route
+
+3. **Default vault fallbacks**:
+   - Uses of `context.config.vaults[0]` as fallback
+   - Found in documents.ts and similarity.ts
 
 ## 📝 Next Session Instructions
 
-### Start on Branch
+### Continue on Branch
 ```bash
-git checkout -b feat/195-vault-test-coverage
+# Already on: fix/194-remove-backward-compatibility
+git status
 ```
 
-### Implementation Order
-1. **First**: Add JSDoc documentation to vault classes
-   ```bash
-   # Edit these files to add documentation:
-   packages/vault/src/vault.ts
-   packages/vault/src/vault-provider.ts
-   packages/vault/src/registry.ts
+### Implementation Steps
+1. **Remove legacy routes** from `/apps/api-server/src/app.ts`:
+   ```typescript
+   // DELETE lines 47-51 (legacy routes)
    ```
 
-2. **Second**: Create test structure
+2. **Remove legacy filter conversion** from documents router:
+   - Delete `convertLegacyFilters` function
+   - Update route handler to only accept new format
+
+3. **Remove default vault fallbacks**:
+   - Search for `context.config.vaults[0]`
+   - Ensure all routes require explicit vault ID
+
+4. **Update CLAUDE.md** to reinforce no backward compatibility
+
+5. **Test and verify**:
    ```bash
-   mkdir -p packages/vault/src/__tests__/fixtures
-   # Create test files as outlined in test plan
+   pnpm build
+   pnpm test
+   pnpm lint
    ```
 
-3. **Third**: Implement tests following the plan in `/docs/planning/vault-test-plan-issue-195.md`
+### Key Files to Modify
+- `/apps/api-server/src/app.ts` - Remove legacy routes
+- `/apps/api-server/src/routes/documents.ts` - Remove legacy filter code
+- `/apps/api-server/src/routes/similarity.ts` - Remove default vault
+- `/CLAUDE.md` - Emphasize no backward compatibility
 
-### Key Files to Reference
-- **Test Plan**: `/docs/planning/vault-test-plan-issue-195.md` - Complete test implementation guide
-- **NO MOCKS Policy**: `/docs/building/testing-strategy.md` - Critical testing rules
-- **Vault Package**: `/packages/vault/src/` - Code to test
-- **Example Config**: `/dev-config.yaml` - Multi-vault configuration example
+## Key Decisions from Previous Sessions
 
-### Test Implementation Checklist
-- [ ] Add JSDoc documentation to all vault classes
-- [ ] Create TestVaultFactory utility class
-- [ ] Write vault.test.ts with real file operations
-- [ ] Write vault-provider.test.ts for factory tests
-- [ ] Write registry.test.ts for singleton tests
-- [ ] Write integration.test.ts with real indexer
-- [ ] Verify >90% test coverage
-- [ ] Run full test suite: `pnpm --filter @mmt/vault test`
-- [ ] Create PR for review
-
-## Key Decisions from This Session
-
-1. **Vault architecture is sound** - No refactoring needed, just documentation
-2. **Test plan created** - Comprehensive coverage of all vault functionality
-3. **NO MOCKS understood** - All tests must use real files in temp directories
-4. **Priority confirmed** - Must complete tests before continuing with #190
+1. **Vault architecture is sound** - No refactoring needed
+2. **Issue #195 completed** - 100% test coverage with NO MOCKS
+3. **Process.exit() removed** - Library code now throws exceptions
+4. **Issue #194 started** - Removing all backward compatibility code
 
 ## Testing Commands
 
@@ -141,24 +139,24 @@ pnpm test
 
 ## GitHub Context
 
-### Current PR Status
-- All previous PRs merged to main
-- Ready to create new branch for #195
+### Current Branch
+- Branch: `fix/194-remove-backward-compatibility`
+- Status: In progress, removing legacy code
 
-### Issue #195 Details
-**Title**: Add test coverage for vault package  
-**Priority**: HIGH - Blocking #190  
-**Milestone**: 7 (Multi-Vault Foundation)  
-**Labels**: `v3-core`, `testing`
+### Issue #194 Details
+**Title**: Remove backward compatibility code  
+**Priority**: Medium  
+**Milestone**: 2.5 (Clean Up & Tech Debt)  
+**Labels**: `tech-debt`
 
 ### Success Criteria for PR
-1. All test files implemented and passing
-2. NO MOCKS used anywhere
-3. >90% test coverage achieved
-4. Integration tests with indexer working
-5. Multi-vault scenarios tested
-6. Documentation added via JSDoc
+1. All legacy routes removed from app.ts
+2. Legacy filter conversion function deleted
+3. No default vault fallbacks remaining
+4. All routes require explicit vault ID
+5. Tests pass with no backward compatibility
+6. CLAUDE.md updated to emphasize policy
 
 ---
 
-*This handoff includes completed analysis and test planning for Issue #195. The vault architecture has been validated as sound - it just needs comprehensive test coverage following the NO MOCKS rule with real files in temp directories.*
+*This handoff documents the completion of Issue #195 (vault test coverage) and the current progress on Issue #194 (removing backward compatibility). The next session should continue removing the identified legacy code.*

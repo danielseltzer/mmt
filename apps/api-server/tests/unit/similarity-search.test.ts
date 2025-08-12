@@ -17,8 +17,12 @@ describe('SimilaritySearchService', () => {
     await fs.mkdir(indexDir);
 
     config = {
-      vaultPath: testDir,
-      indexPath: indexDir,
+      vaults: [{
+        id: 'test-vault',
+        name: 'Test Vault',
+        path: testDir,
+        indexPath: indexDir
+      }],
       apiPort: 3001,
       webPort: 5173,
       similarity: {
