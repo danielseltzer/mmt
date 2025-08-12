@@ -149,85 +149,6 @@ function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: stri
   return filtered;
 }
 
-// Convert legacy FilterCriteria to new FilterCollection format
-function convertLegacyFilters(filters: FilterCriteria): FilterCollection {
-  const conditions: FilterCondition[] = [];
-  
-  if (filters.name) {
-    conditions.push({
-      field: 'name',
-      operator: 'contains',
-      value: filters.name,
-      caseSensitive: false
-    });
-  }
-  
-  if (filters.content) {
-    conditions.push({
-      field: 'content',
-      operator: 'contains',
-      value: filters.content,
-      caseSensitive: false
-    });
-  }
-  
-  if (filters.folders && filters.folders.length > 0) {
-    conditions.push({
-      field: 'folders',
-      operator: 'in',
-      value: filters.folders
-    });
-  }
-  
-  if (filters.metadata && filters.metadata.length > 0) {
-    filters.metadata.forEach(metaFilter => {
-      const [key, value] = metaFilter.split(':');
-      if (key) {
-        conditions.push({
-          field: 'metadata',
-          key,
-          operator: 'equals',
-          value: value === undefined ? true : value
-        });
-      }
-    });
-  }
-  
-  if (filters.dateExpression) {
-    try {
-      const parsed = parseDateExpression(filters.dateExpression);
-      if (parsed) {
-        conditions.push({
-          field: 'modified',
-          operator: parsed.operator as any,
-          value: parsed.value
-        });
-      }
-    } catch (e) {
-      // Ignore invalid expressions
-    }
-  }
-  
-  if (filters.sizeExpression) {
-    try {
-      const parsed = parseSizeExpression(filters.sizeExpression);
-      if (parsed) {
-        conditions.push({
-          field: 'size',
-          operator: parsed.operator as any,
-          value: parseInt(parsed.value) // Convert string to number
-        });
-      }
-    } catch (e) {
-      // Ignore invalid expressions
-    }
-  }
-  
-  return {
-    conditions,
-    logic: 'AND'
-  };
-}
 
 // Apply declarative filters to documents
 function applyDeclarativeFilters(documents: any[], filterCollection: FilterCollection, vaultPath: string): any[] {
@@ -472,12 +393,11 @@ export function documentsRouter(context: Context): Router {
         if (req.query.filters && typeof req.query.filters === 'string') {
           try {
             const parsed = JSON.parse(req.query.filters);
-            // Check if it's the new FilterCollection format
+            // Only accept FilterCollection format
             if (parsed.conditions && Array.isArray(parsed.conditions)) {
               filterCollection = parsed as FilterCollection;
             } else {
-              // Legacy FilterCriteria format - convert it
-              filterCollection = convertLegacyFilters(parsed);
+              throw new Error('Invalid filter format - must be FilterCollection with conditions array');
             }
           } catch {
             filterCollection = null;
@@ -501,8 +421,13 @@ export function documentsRouter(context: Context): Router {
         
         // Apply filters if provided
         if (filterCollection && filterCollection.conditions.length > 0) {
-          const defaultVault = context.config.vaults[0];
-          results = applyDeclarativeFilters(results, filterCollection, defaultVault.path);
+          const vault = (req as any).vault;
+          if (!vault) {
+            return res.status(400).json({
+              error: 'Vault not found in request'
+            });
+          }
+          results = applyDeclarativeFilters(results, filterCollection, vault.config.path);
         }
         
         // Sort BEFORE pagination if requested
