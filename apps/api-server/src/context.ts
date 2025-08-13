@@ -22,17 +22,21 @@ export async function createContext(config: Config): Promise<Context> {
   // Initialize services
   const fs = new NodeFileSystem();
   
-  // For Phase 1: Use the first vault as default
-  const defaultVault = config.vaults[0];
+  // Initialize vault registry with all configured vaults
+  // This creates and manages all indexers
+  await vaultRegistry.initializeVaults(config);
   
-  const indexer = new VaultIndexer({
-    vaultPath: defaultVault.path,
-    fileSystem: fs,
-    cacheDir: defaultVault.indexPath,
-    useCache: true,
-    fileWatching: defaultVault.fileWatching,
-  });
-  await indexer.initialize();
+  // Get the default vault's indexer for backward compatibility
+  // (some routes still expect a single indexer in the context)
+  const defaultVault = config.vaults[0];
+  if (!defaultVault) {
+    throw new Error('No vaults configured. At least one vault is required.');
+  }
+  
+  const vault = vaultRegistry.getVault(defaultVault.id);
+  if (!vault) {
+    throw new Error(`Default vault '${defaultVault.id}' not found in registry.`);
+  }
   
   const fileRelocator = new FileRelocator(fs, {
     updateMovedFile: true,
@@ -48,13 +52,10 @@ export async function createContext(config: Config): Promise<Context> {
     similaritySearch = new SimilaritySearchService(config);
     await similaritySearch.initialize();
   }
-
-  // Initialize vault registry with all configured vaults
-  await vaultRegistry.initializeVaults(config);
   
   return {
     config,
-    indexer,
+    indexer: vault.indexer,
     fileRelocator,
     operationRegistry,
     fs,
