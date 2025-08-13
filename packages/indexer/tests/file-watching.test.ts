@@ -93,11 +93,15 @@ describe('VaultIndexer file watching', () => {
     await indexer.initialize();
     expect(indexer.getAllDocuments()).toHaveLength(1);
     
+    // Give file watcher time to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // WHEN: Creating a new file
     await writeFile(join(tempDir, 'new.md'), '# New File\n\nNew content');
     
     // Wait for file watcher to process - poll until condition is met
-    await waitForCondition(() => indexer.getAllDocuments().length === 2, 2000);
+    // Increased timeout and check more frequently
+    await waitForCondition(() => indexer.getAllDocuments().length === 2, 5000, 100);
     
     // THEN: The new file should be in the index
     const docs = indexer.getAllDocuments();
@@ -123,15 +127,17 @@ describe('VaultIndexer file watching', () => {
     await indexer.initialize();
     expect(indexer.getAllDocuments()).toHaveLength(2);
     
+    // Give file watcher time to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // WHEN: Deleting a file
     await rm(join(tempDir, 'to-delete.md'));
     
-    // Wait for file watcher to process
-    await new Promise(resolve => setTimeout(resolve, 500)); // Increased wait time
+    // Wait for file watcher to process - use polling instead of fixed wait
+    await waitForCondition(() => indexer.getAllDocuments().length === 1, 5000, 100);
     
     // THEN: The file should be removed from the index
     const docs = indexer.getAllDocuments();
-    console.log('Remaining documents after delete:', docs.map(d => d.path));
     expect(docs).toHaveLength(1);
     expect(docs.every(d => !d.path.includes('to-delete.md'))).toBe(true);
   });

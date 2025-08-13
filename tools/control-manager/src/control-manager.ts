@@ -342,11 +342,12 @@ export class MMTControlManager {
       cwd: rootDir,
       env: {
         ...process.env,
-        MMT_API_PORT: String(this.config.apiPort)
+        MMT_API_PORT: String(this.config.apiPort),
+        FORCE_COLOR: '1' // Ensure colored output from Vite
       },
       stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
       shell: true,
-      detached: process.platform !== 'win32' // Detach on Unix systems to survive parent exit
+      detached: false // Don't detach - we want to manage the process lifecycle
     });
     
     // Flag to track when server is ready
@@ -385,7 +386,10 @@ export class MMTControlManager {
     webProcess.on('exit', (code, signal) => {
       this.log(`[WEB] Process exited with code ${code}, signal ${signal}`);
       if (code !== 0 && code !== null) {
-        console.error(`[Web Error] Process exited with code ${code}`);
+        console.error(`[Web Error] Process exited unexpectedly with code ${code}`);
+        // Log additional diagnostic info
+        const managed = this.processes.get('web');
+        this.log(`[WEB] Exit diagnostic: PID was ${webProcess.pid}, uptime was ${Date.now() - (managed?.startTime || Date.now())}ms`);
       }
       this.processes.delete('web');
     });
@@ -518,42 +522,38 @@ export class MMTControlManager {
       throw new Error('Web process not found');
     }
     
-    return new Promise((resolve, reject) => {
-      let resolved = false;
+    const startTime = Date.now();
+    let serverReady = false;
+    let viteOutputReceived = false;
+    
+    // Set up listener for Vite output
+    const readyHandler = () => {
+      viteOutputReceived = true;
+    };
+    managed.process.once('ready', readyHandler);
+    
+    // Poll for both Vite output and port availability
+    while (Date.now() - startTime < timeout) {
+      // Check if process died
+      if (managed.process.exitCode !== null) {
+        throw new Error(`Web process exited with code ${managed.process.exitCode}`);
+      }
       
-      // Set up timeout
-      const timeoutId = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          reject(new Error(`Web server did not start within ${timeout}ms`));
+      // Check if port is listening AND we've seen Vite output
+      if (viteOutputReceived && await this.isPortInUse(port)) {
+        // Double check with a small delay to ensure stability
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (await this.isPortInUse(port)) {
+          this.log(`✓ web server is ready (port ${port} is listening)`);
+          return;
         }
-      }, timeout);
+      }
       
-      // Check for process exit
-      const checkExit = setInterval(() => {
-        if (managed.process.exitCode !== null) {
-          clearInterval(checkExit);
-          clearTimeout(timeoutId);
-          if (!resolved) {
-            resolved = true;
-            reject(new Error(`Web process exited with code ${managed.process.exitCode}`));
-          }
-        }
-      }, 100);
-      
-      // Listen for ready event
-      const readyHandler = () => {
-        clearInterval(checkExit);
-        clearTimeout(timeoutId);
-        if (!resolved) {
-          resolved = true;
-          this.log(`✓ web server is ready`);
-          resolve();
-        }
-      };
-      
-      managed.process.once('ready', readyHandler);
-    });
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Timeout reached
+    throw new Error(`Web server did not become ready within ${timeout}ms (viteOutput: ${viteOutputReceived}, portOpen: ${await this.isPortInUse(port)})`);
   }
   
   /**
