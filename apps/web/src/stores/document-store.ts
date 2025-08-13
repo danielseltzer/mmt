@@ -3,6 +3,7 @@ import { create } from 'zustand';
 // Local type definitions to avoid importing from @mmt/entities
 interface Document {
   path: string;
+  fullPath?: string; // Full path for unique identification
   metadata: {
     name: string;
     modified: string;

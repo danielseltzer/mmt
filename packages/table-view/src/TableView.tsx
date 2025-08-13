@@ -11,7 +11,12 @@ import {
   ColumnOrderState,
   ColumnSizingState,
 } from '@tanstack/react-table';
-import type { Document } from '@mmt/entities';
+import type { Document as BaseDocument } from '@mmt/entities';
+
+// Extend Document type to include fullPath for unique identification
+type Document = BaseDocument & {
+  fullPath?: string;
+};
 import { clsx } from 'clsx';
 import { ColumnConfig } from './ColumnConfig.js';
 import { SortConfig } from './SortConfig.js';
@@ -63,6 +68,18 @@ export function TableView({
   // Track last selected index for shift-click
   const lastSelectedIndex = React.useRef<number>(-1);
 
+  // Sync external sort with internal table state
+  useEffect(() => {
+    if (currentSort) {
+      setSorting([{
+        id: currentSort.field,
+        desc: currentSort.order === 'desc'
+      }]);
+    } else {
+      setSorting([]);
+    }
+  }, [currentSort]);
+
   // Load content when preview column is visible
   useEffect(() => {
     if (columnVisibility.preview && onLoadContent) {
@@ -108,6 +125,7 @@ export function TableView({
       {
         id: 'select',
         size: 30,
+        enableSorting: false,
         header: ({ table }) => (
           <input
             type="checkbox"
@@ -366,14 +384,26 @@ export function TableView({
       columnOrder,
       columnSizing,
     },
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => {
+      const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
+      setSorting(newSorting);
+      
+      // Notify parent component about sort changes
+      if (onSortChange && newSorting.length > 0) {
+        const sort = newSorting[0];
+        onSortChange(sort.id, sort.desc ? 'desc' : 'asc');
+      } else if (onSortChange && newSorting.length === 0) {
+        // Clear sorting - though this might need special handling
+        // For now, we'll keep the last sort state
+      }
+    },
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnOrderChange: setColumnOrder,
     onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getRowId: (row) => row.path,
+    getRowId: (row) => row.fullPath || row.path, // Use fullPath for unique ID, fallback to path
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
   });
@@ -472,6 +502,7 @@ export function TableView({
                         className="absolute right-0 top-0 h-full w-1 bg-border cursor-col-resize hover:bg-primary"
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     )}
                   </th>

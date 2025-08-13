@@ -21,9 +21,14 @@ export class MetadataExtractor {
     const relativePath = relative(this.vaultPath, fullPath);
     const name = basename(fullPath, '.md');
     
+    // Calculate folder path relative to vault root
+    const lastSlash = relativePath.lastIndexOf('/');
+    const folderPath = lastSlash === -1 ? '/' : '/' + relativePath.substring(0, lastSlash);
+    
     return {
       path: fullPath,
       relativePath,
+      folderPath,
       basename: name,
       
       // Extract title from first H1 or use filename

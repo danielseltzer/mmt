@@ -405,12 +405,8 @@ export function documentsRouter(context: Context): Router {
         }
         
         // Get all documents first from the vault's indexer
-        console.log('[DEBUG] Vault ID:', (req as any).vaultId);
-        console.log('[DEBUG] Vault name:', (req as any).vault?.config?.name);
-        console.log('[DEBUG] Vault path:', (req as any).vault?.config?.path);
         let results = (req as any).vault.indexer.getAllDocuments();
         const vaultTotal = results.length; // Store total vault size before filtering
-        console.log('[DEBUG] Documents count:', vaultTotal);
         
         // Apply search query if provided
         if (q) {
@@ -436,7 +432,7 @@ export function documentsRouter(context: Context): Router {
         
         // Sort BEFORE pagination if requested
         if (sortBy) {
-          results.sort((a, b) => {
+          results.sort((a: any, b: any) => {
             let aVal: any;
             let bVal: any;
             
@@ -474,8 +470,9 @@ export function documentsRouter(context: Context): Router {
         
         // Format response
         const response = DocumentsResponseSchema.parse({
-          documents: paginatedDocs.map(doc => ({
-            path: doc.path,
+          documents: paginatedDocs.map((doc: any) => ({
+            path: doc.folderPath || '/', // Use folderPath for the path field (folder relative to vault root)
+            fullPath: doc.path, // Keep the full path for unique identification
             metadata: {
               name: doc.basename,
               modified: new Date(doc.mtime).toISOString(),
@@ -505,7 +502,7 @@ export function documentsRouter(context: Context): Router {
       const path = fullPath.substring('/by-path/'.length);
       
       const documents = await (req as any).vault.indexer.getAllDocuments();
-      const document = documents.find(d => d.path === path || d.relativePath === path);
+      const document = documents.find((d: any) => d.path === path || d.relativePath === path);
       
       if (!document) {
         return res.status(404).json({ error: 'Document not found' });
