@@ -3,6 +3,7 @@ import { FilterBar } from './FilterBar';
 import { TransformPanel } from './TransformPanel';
 import { OutputPanel } from './OutputPanel';
 import { PreviewModal } from './PreviewModal';
+import { VaultSelector } from './VaultSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput, Eye } from 'lucide-react';
@@ -179,6 +180,9 @@ export function PipelinePanels({ searchBar }) {
             </CollapsibleTrigger>
           </Collapsible>
         ))}
+        
+        {/* Vault selector */}
+        <VaultSelector />
         
         {/* Search bar on the same line */}
         {searchBar}

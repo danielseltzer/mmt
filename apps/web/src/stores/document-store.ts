@@ -27,6 +27,13 @@ interface FilterCollection {
   logic: 'AND' | 'OR';
 }
 
+interface Vault {
+  id: string;
+  name: string;
+  status: 'ready' | 'initializing' | 'error';
+  error?: string;
+}
+
 /**
  * Document Store - Manages document fetching with server-side filtering
  * 
@@ -70,6 +77,11 @@ interface DocumentStoreState {
   sortBy?: string;
   sortOrder: 'asc' | 'desc';
   
+  // Vault state
+  vaults: Vault[];
+  currentVaultId: string | null;
+  isLoadingVaults: boolean;
+  
   // Actions
   setSearchQuery: (query: string) => void;
   setFilters: (filters: FilterCollection) => void;
@@ -77,9 +89,16 @@ interface DocumentStoreState {
   fetchDocuments: () => Promise<void>;
   clearError: () => void;
   reset: () => void;
+  
+  // Vault actions
+  loadVaults: () => Promise<void>;
+  setCurrentVault: (vaultId: string) => void;
 }
 
 // No longer needed - filtering happens on the server
+
+// Local storage key for persisting vault selection
+const VAULT_STORAGE_KEY = 'mmt-selected-vault';
 
 export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   // State
@@ -93,6 +112,11 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   filters: { conditions: [], logic: 'AND' },
   sortBy: undefined,
   sortOrder: 'asc',
+  
+  // Vault state
+  vaults: [],
+  currentVaultId: localStorage.getItem(VAULT_STORAGE_KEY),
+  isLoadingVaults: false,
   
   // Actions
   setSearchQuery: (query: string) => set({ searchQuery: query }),
@@ -110,6 +134,12 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   },
   
   fetchDocuments: async () => {
+    const currentVaultId = get().currentVaultId;
+    if (!currentVaultId) {
+      // No vault selected, can't fetch documents
+      return;
+    }
+    
     set({ loading: true, error: null });
     
     try {
@@ -137,7 +167,8 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         params.append('filters', JSON.stringify(filters));
       }
       
-      const url = `/api/documents?${params.toString()}`;
+      // Use vault-aware endpoint
+      const url = `/api/vaults/${currentVaultId}/documents?${params.toString()}`;
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -171,5 +202,54 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     filters: { conditions: [], logic: 'AND' },
     sortBy: undefined,
     sortOrder: 'asc'
-  })
+  }),
+  
+  // Vault actions
+  loadVaults: async () => {
+    set({ isLoadingVaults: true });
+    
+    try {
+      const response = await fetch('/api/vaults');
+      if (!response.ok) {
+        throw new Error(`Failed to load vaults: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const vaults = data.vaults || [];
+      
+      set({ vaults, isLoadingVaults: false });
+      
+      // If no current vault is selected, select the first available one
+      const currentVaultId = get().currentVaultId;
+      if (!currentVaultId && vaults.length > 0) {
+        const firstReadyVault = vaults.find((v: Vault) => v.status === 'ready') || vaults[0];
+        get().setCurrentVault(firstReadyVault.id);
+      }
+    } catch (error) {
+      console.error('Failed to load vaults:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to load vaults',
+        isLoadingVaults: false 
+      });
+    }
+  },
+  
+  setCurrentVault: (vaultId: string) => {
+    // Save to localStorage
+    localStorage.setItem(VAULT_STORAGE_KEY, vaultId);
+    
+    // Update state and clear documents
+    set({ 
+      currentVaultId: vaultId,
+      documents: [],
+      filteredDocuments: [],
+      totalCount: 0,
+      vaultTotal: 0,
+      searchQuery: '',
+      filters: { conditions: [], logic: 'AND' }
+    });
+    
+    // Fetch documents for the new vault
+    get().fetchDocuments();
+  }
 }));
