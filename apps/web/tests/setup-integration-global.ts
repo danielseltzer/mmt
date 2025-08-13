@@ -4,8 +4,10 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 let apiServer: ChildProcess | null = null;
+let webServer: ChildProcess | null = null;
 let sharedTempDir: string;
 const TEST_API_PORT = 3001;
+const TEST_WEB_PORT = 3002;
 
 // Wait for server to be ready
 async function waitForServer(port: number, maxRetries = 30): Promise<boolean> {
@@ -46,7 +48,7 @@ vaults:
       enabled: true
       debounceMs: 50
 apiPort: ${TEST_API_PORT}
-webPort: 8002
+webPort: ${TEST_WEB_PORT}
 `);
   
   // Start API server once for all tests
@@ -69,14 +71,44 @@ webPort: 8002
     console.error(`[Shared API ERROR] ${data.toString().trim()}`);
   });
   
-  // Wait for server to be ready
-  const isReady = await waitForServer(TEST_API_PORT);
-  if (!isReady) {
+  // Wait for API server to be ready
+  const apiReady = await waitForServer(TEST_API_PORT);
+  if (!apiReady) {
     throw new Error('Shared API server failed to start');
   }
   
-  // Set environment variable for all tests
-  process.env.VITE_API_URL = `http://localhost:${TEST_API_PORT}`;
+  // Start web server with proxy to API
+  console.log(`Starting shared web server on port ${TEST_WEB_PORT}...`);
+  webServer = spawn('pnpm', [
+    '--filter', '@mmt/web',
+    'dev',
+    '--port', TEST_WEB_PORT.toString(),
+    '--strictPort'
+  ], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: { 
+      ...process.env, 
+      MMT_API_PORT: TEST_API_PORT.toString()  // Tell vite proxy where API server is
+    },
+  });
+  
+  webServer.stdout?.on('data', (data) => {
+    const output = data.toString().trim();
+    if (output.includes('ready in') || output.includes('Local:')) {
+      console.log('Shared web server is ready');
+    }
+    console.log(`[Shared Web] ${output}`);
+  });
+  
+  webServer.stderr?.on('data', (data) => {
+    console.error(`[Shared Web ERROR] ${data.toString().trim()}`);
+  });
+  
+  // Wait for web server to be ready (it won't have a /health endpoint, so check for process)
+  await new Promise(resolve => setTimeout(resolve, 5000)); // Give vite time to start
+  
+  // Tests will now use the real web server
+  process.env.TEST_WEB_URL = `http://localhost:${TEST_WEB_PORT}`;
   process.env.MMT_SHARED_VAULT = vaultPath;
   process.env.MMT_SHARED_INDEX = indexPath;
 }
@@ -84,12 +116,16 @@ webPort: 8002
 export async function teardown() {
   console.log('Cleaning up shared integration test environment...');
   
-  // Kill API server
+  // Kill both servers
+  if (webServer) {
+    webServer.kill();
+  }
   if (apiServer) {
     apiServer.kill();
-    // Wait a bit for server to shut down
-    await new Promise(resolve => setTimeout(resolve, 1000));
   }
+  
+  // Wait a bit for servers to shut down
+  await new Promise(resolve => setTimeout(resolve, 1000));
   
   // Clean up shared temp directory
   if (sharedTempDir) {
