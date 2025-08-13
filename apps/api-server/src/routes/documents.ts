@@ -404,13 +404,13 @@ export function documentsRouter(context: Context): Router {
           }
         }
         
-        // Get all documents first
-        let results = context.indexer.getAllDocuments();
+        // Get all documents first from the vault's indexer
+        let results = (req as any).vault.indexer.getAllDocuments();
         const vaultTotal = results.length; // Store total vault size before filtering
         
         // Apply search query if provided
         if (q) {
-          results = context.indexer.query({
+          results = (req as any).vault.indexer.query({
             conditions: [{
               field: 'content',
               operator: 'contains' as const,
@@ -432,7 +432,7 @@ export function documentsRouter(context: Context): Router {
         
         // Sort BEFORE pagination if requested
         if (sortBy) {
-          results.sort((a, b) => {
+          results.sort((a: any, b: any) => {
             let aVal: any;
             let bVal: any;
             
@@ -470,8 +470,9 @@ export function documentsRouter(context: Context): Router {
         
         // Format response
         const response = DocumentsResponseSchema.parse({
-          documents: paginatedDocs.map(doc => ({
-            path: doc.path,
+          documents: paginatedDocs.map((doc: any) => ({
+            path: doc.folderPath || '/', // Use folderPath for the path field (folder relative to vault root)
+            fullPath: doc.path, // Keep the full path for unique identification
             metadata: {
               name: doc.basename,
               modified: new Date(doc.mtime).toISOString(),
@@ -500,8 +501,8 @@ export function documentsRouter(context: Context): Router {
       const fullPath = req.path;
       const path = fullPath.substring('/by-path/'.length);
       
-      const documents = await context.indexer.getAllDocuments();
-      const document = documents.find(d => d.path === path || d.relativePath === path);
+      const documents = await (req as any).vault.indexer.getAllDocuments();
+      const document = documents.find((d: any) => d.path === path || d.relativePath === path);
       
       if (!document) {
         return res.status(404).json({ error: 'Document not found' });
@@ -531,7 +532,7 @@ export function documentsRouter(context: Context): Router {
         const { format, query, columns } = req.body;
         
         // Get documents
-        const results = await context.indexer.query(query || '');
+        const results = await (req as any).vault.indexer.query(query || '');
         
         let data: string;
         let mimeType: string;

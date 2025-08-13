@@ -9,7 +9,8 @@
 export interface PageMetadata {
   // File identification
   path: string; // Absolute path
-  relativePath: string; // Relative to vault root
+  relativePath: string; // Relative to vault root (includes filename)
+  folderPath: string; // Folder path relative to vault root (e.g., "/" for root, "/folder" for subfolder)
   basename: string; // Filename without extension
   
   // Content metadata

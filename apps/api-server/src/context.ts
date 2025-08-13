@@ -33,9 +33,9 @@ export async function createContext(config: Config): Promise<Context> {
     throw new Error('No vaults configured. At least one vault is required.');
   }
   
-  const vault = vaultRegistry.getVault(defaultVault.id);
+  const vault = vaultRegistry.getVault(defaultVault.name);
   if (!vault) {
-    throw new Error(`Default vault '${defaultVault.id}' not found in registry.`);
+    throw new Error(`Default vault '${defaultVault.name}' not found in registry.`);
   }
   
   const fileRelocator = new FileRelocator(fs, {

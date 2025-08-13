@@ -53,6 +53,7 @@ export class Vault implements IVault {
     try {
       // eslint-disable-next-line no-console
       console.log(`Initializing vault: ${this.id}`);
+      console.log(`[VAULT DEBUG] Vault ID: ${this.id}, Path: ${this.config.path}`);
       this.status = 'initializing';
 
       // Initialize indexer with vault configuration
@@ -63,6 +64,7 @@ export class Vault implements IVault {
         useCache: true,
         useWorkers: true
       });
+      console.log(`[VAULT DEBUG] Created indexer for ${this.id} with path: ${this.config.path}`);
 
       await indexer.initialize();
 

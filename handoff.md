@@ -1,6 +1,6 @@
 # MMT Handoff Document
 
-## Current Status (2025-08-11 - Latest Update)
+## Current Status (2025-08-13 - Latest Update)
 
 ### 🚀 V3 Implementation In Progress
 
@@ -14,149 +14,146 @@
   - Fixed circular dependency (FileWatcher → filesystem-access)
   - Added vault validation middleware
 - ✅ Issue #195: Add test coverage for vault package (PR #196 merged)
-  - Implemented comprehensive test suite with NO MOCKS
-  - Achieved 100% test coverage
-  - Fixed process.exit() anti-pattern (throw exceptions instead)
-  - All 45 tests passing
+  - Comprehensive test coverage for vault package
+  - Fixed all ESLint issues
+  - Replaced process.exit with proper exception handling
+- ✅ Issue #187: Missing web utility files (CLOSED - files existed)
+- ✅ Issue #198: Test failures in indexer/CLI (CLOSED - already fixed)
+- ✅ Issue #190: Vault initialization at startup (PR #199 merged)
+  - Fixed duplicate vault initialization in API server
+  - VaultRegistry is now single source of truth
+  - Modified `/apps/api-server/src/context.ts`
+- ✅ Issue #194: Remove backward compatibility code (PR #200 merged)
+  - Removed all legacy routes and filter conversion
+  - No more default vault fallbacks
 
-**IN PROGRESS - Issue #194: Remove backward compatibility code**
-- 🔧 **CURRENT WORK** - Removing unnecessary legacy code
-- Identified backward compatibility locations:
-  - Legacy routes in `/apps/api-server/src/app.ts` (lines 47-51)
-  - Legacy filter conversion in `/apps/api-server/src/routes/documents.ts`
-  - Default vault fallbacks using `context.config.vaults[0]`
-- Branch: `fix/194-remove-backward-compatibility`
-- **NEXT STEPS**:
-  1. Remove legacy routes from app.ts
-  2. Remove convertLegacyFilters function
-  3. Ensure all routes require explicit vault ID
-  4. Update any `context.config.vaults[0]` fallbacks
-  5. Update CLAUDE.md to emphasize no backward compatibility
+**NEXT PRIORITY - Issue #191: Add Vault Selector Component to Web UI**
+- 🎯 **Ready to implement** - All dependencies complete
+- Web UI currently assumes single vault
+- Need dropdown selector for multi-vault switching
+- See user story below for context
 
 **UPCOMING PRIORITIES**:
-- 📋 Issue #190: Initialize vaults at application startup (unblocked, next after #194)
-- 📋 Issue #191: Add vault selector to web UI
+- 📋 Issue #160: Original vault selector planning (duplicate of #191)
+- 📋 Issue #158: Per-tab state management
+- 📋 Issue #157: Tab bar component
 
-## 🎯 Critical Context for Issue #194
+## 🎯 User Story for Vault Selector (Issue #191)
 
-### NO BACKWARD COMPATIBILITY Policy
-The project has **ZERO TOLERANCE** for backward compatibility:
-- ❌ Never maintain old API versions
-- ❌ Never add aliases or legacy support
-- ❌ Never keep deprecated code paths
-- ✅ Direct breaking changes are fine (only one user)
-- ✅ Keep codebase clean and simple
+**As Sarah, a PhD researcher**, I manage three separate markdown collections:
+- **Personal Research**: Dissertation notes, private thoughts (2,341 docs)
+- **Lab Shared**: Collaborative notes with research lab (892 docs)
+- **Teaching Materials**: Lecture notes and course materials (156 docs)
 
-See CLAUDE.md for this critical policy.
+### The Experience with Vault Selector:
+1. **Morning**: Open MMT, sees "Personal Research" (remembered from yesterday)
+2. **Lab Work**: Click dropdown → Select "Lab Shared" → Document list refreshes
+3. **Teaching**: Quick switch to "Teaching Materials" for student request
+4. **Key Benefits**:
+   - Isolated search per vault (no mixing contexts)
+   - Mental model matches reality (separate collections)
+   - Security (no accidental exposure during screen sharing)
+   - Performance (only searches active vault)
 
-### Backward Compatibility Code to Remove
-1. **Legacy routes** in `/apps/api-server/src/app.ts`:
-   - Lines 47-51: Routes that use first vault as default
-   - These duplicate the vault-aware routes
+### Implementation Requirements for #191
 
-2. **Legacy filter conversion** in `/apps/api-server/src/routes/documents.ts`:
-   - `convertLegacyFilters` function (lines 152-230)
-   - Legacy filter handling in GET /documents route
+1. **Vault Selector Component** (`/apps/web/src/components/VaultSelector.tsx`)
+   - Dropdown in top navigation bar
+   - Shows vault name and status
+   - Lists all vaults from `GET /api/vaults`
 
-3. **Default vault fallbacks**:
-   - Uses of `context.config.vaults[0]` as fallback
-   - Found in documents.ts and similarity.ts
+2. **State Management** (`/apps/web/src/stores/document-store.ts`)
+   - Add `currentVaultId` and `vaults[]` to state
+   - Clear documents on vault switch
+   - Remember selection in localStorage
+
+3. **API Updates** (`/apps/web/src/services/`)
+   - Update all endpoints: `/api/documents` → `/api/vaults/${vaultId}/documents`
+   - Handle vault status responses
+
+4. **UI Behavior**:
+   - Show loading spinner during switch
+   - Display vault-specific document counts
+   - Handle error states (disconnected vaults)
 
 ## 📝 Next Session Instructions
 
-### Continue on Branch
+### Start on Branch
 ```bash
-# Already on: fix/194-remove-backward-compatibility
-git status
+git checkout main
+git pull origin main
+git checkout -b feat/191-vault-selector
 ```
 
-### Implementation Steps
-1. **Remove legacy routes** from `/apps/api-server/src/app.ts`:
-   ```typescript
-   // DELETE lines 47-51 (legacy routes)
-   ```
-
-2. **Remove legacy filter conversion** from documents router:
-   - Delete `convertLegacyFilters` function
-   - Update route handler to only accept new format
-
-3. **Remove default vault fallbacks**:
-   - Search for `context.config.vaults[0]`
-   - Ensure all routes require explicit vault ID
-
-4. **Update CLAUDE.md** to reinforce no backward compatibility
-
-5. **Test and verify**:
-   ```bash
-   pnpm build
-   pnpm test
-   pnpm lint
-   ```
+### Implementation Order
+1. **Check API**: Verify `/api/vaults` endpoint exists and works
+2. **Create Component**: Build VaultSelector.tsx with shadcn/ui Select
+3. **Update Store**: Add vault state to document-store.ts
+4. **Modify API Calls**: Update all endpoints to include vault ID
+5. **Add Persistence**: LocalStorage for selected vault
+6. **Test**: Single vault, multi-vault, error states
 
 ### Key Files to Modify
-- `/apps/api-server/src/app.ts` - Remove legacy routes
-- `/apps/api-server/src/routes/documents.ts` - Remove legacy filter code
-- `/apps/api-server/src/routes/similarity.ts` - Remove default vault
-- `/CLAUDE.md` - Emphasize no backward compatibility
-
-## Key Decisions from Previous Sessions
-
-1. **Vault architecture is sound** - No refactoring needed
-2. **Issue #195 completed** - 100% test coverage with NO MOCKS
-3. **Process.exit() removed** - Library code now throws exceptions
-4. **Issue #194 started** - Removing all backward compatibility code
+- `/apps/web/src/components/` - Add VaultSelector.tsx
+- `/apps/web/src/stores/document-store.ts` - Add vault state
+- `/apps/web/src/services/` - Update API endpoints
+- `/apps/web/src/App.tsx` or navigation - Add selector to UI
 
 ## Testing Commands
 
 ```bash
-# Run vault package tests
+# Start MMT services
+./bin/mmt start --config dev-config.yaml
+
+# Check status
+./bin/mmt status
+
+# Stop services
+./bin/mmt stop
+
+# Run full test suite
+pnpm clean && pnpm install && pnpm build && pnpm lint && pnpm test
+
+# Run web UI tests
+pnpm --filter @mmt/web test
+
+# Run specific package tests
 pnpm --filter @mmt/vault test
-
-# Run with coverage
-pnpm --filter @mmt/vault test:coverage
-
-# Run specific test file
-pnpm --filter @mmt/vault test vault.test.ts
-
-# Run all tests across monorepo
-pnpm test
 ```
 
-## Important Notes
-
-### What NOT to Do
-- ❌ Don't rename Vault or VaultProvider classes
-- ❌ Don't use any mocks, stubs, or test doubles
-- ❌ Don't skip test coverage - #190 is blocked until this is done
-- ❌ Don't create in-memory file system abstractions
+## Important Notes for #191
 
 ### What TO Do
-- ✅ Use real markdown files in OS temp directories
-- ✅ Follow the test plan exactly as documented
-- ✅ Add clear JSDoc comments to improve understanding
-- ✅ Test multi-vault scenarios thoroughly
-- ✅ Ensure proper resource cleanup in all tests
+- ✅ Check if `/api/vaults` endpoint already exists
+- ✅ Use shadcn/ui Select component if available
+- ✅ Store selected vault in localStorage
+- ✅ Clear document list when switching vaults
+- ✅ Show loading states during transitions
 
-## GitHub Context
+### What NOT to Do
+- ❌ Don't assume single vault - design for multi-vault from start
+- ❌ Don't forget error handling for unavailable vaults
+- ❌ Don't mix vault contexts in search/filter state
 
-### Current Branch
-- Branch: `fix/194-remove-backward-compatibility`
-- Status: In progress, removing legacy code
+## Environment Details
+- Working directory: `/Users/danielseltzer/code/mmt`
+- Current branch: `main` (ready for new feature branch)
+- Main branch up to date with all fixes
 
-### Issue #194 Details
-**Title**: Remove backward compatibility code  
-**Priority**: Medium  
-**Milestone**: 2.5 (Clean Up & Tech Debt)  
-**Labels**: `tech-debt`
+## Summary of Recent Work
 
-### Success Criteria for PR
-1. All legacy routes removed from app.ts
-2. Legacy filter conversion function deleted
-3. No default vault fallbacks remaining
-4. All routes require explicit vault ID
-5. Tests pass with no backward compatibility
-6. CLAUDE.md updated to emphasize policy
+1. **Completed Issue #190**: Fixed duplicate vault initialization
+   - Problem: API server creating indexers twice
+   - Solution: Use VaultRegistry as single source of truth
+   - PR #199 created and merged
+2. **Completed Issue #194**: Removed backward compatibility code
+   - Removed legacy routes and filter conversion
+   - PR #200 merged
+3. **Next Priority**: Issue #191 - Vault selector component for web UI
+   - All backend dependencies complete
+   - User story documented above
+   - Implementation plan ready
 
 ---
 
-*This handoff documents the completion of Issue #195 (vault test coverage) and the current progress on Issue #194 (removing backward compatibility). The next session should continue removing the identified legacy code.*
+*Handoff updated 2025-08-13. Ready to implement vault selector UI.*

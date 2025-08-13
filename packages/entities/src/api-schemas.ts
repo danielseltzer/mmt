@@ -24,6 +24,7 @@ export const DocumentsQuerySchema = z.object({
 export const DocumentsResponseSchema = z.object({
   documents: z.array(z.object({
     path: z.string(),
+    fullPath: z.string().optional(), // Full path for unique identification
     metadata: z.object({
       name: z.string(),
       modified: z.string(), // ISO date string
