@@ -38,13 +38,15 @@ export async function setup() {
   // Create shared test config
   const configPath = join(sharedTempDir, 'test.config.yaml');
   writeFileSync(configPath, `
-vaultPath: ${vaultPath}
-indexPath: ${indexPath}
+vaults:
+  - name: 'TestVault'
+    path: ${vaultPath}
+    indexPath: ${indexPath}
+    fileWatching:
+      enabled: true
+      debounceMs: 50
 apiPort: ${TEST_API_PORT}
 webPort: 8002
-fileWatching:
-  enabled: true
-  debounceMs: 50
 `);
   
   // Start API server once for all tests
