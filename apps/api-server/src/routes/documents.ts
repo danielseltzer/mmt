@@ -404,13 +404,17 @@ export function documentsRouter(context: Context): Router {
           }
         }
         
-        // Get all documents first
-        let results = context.indexer.getAllDocuments();
+        // Get all documents first from the vault's indexer
+        console.log('[DEBUG] Vault ID:', (req as any).vaultId);
+        console.log('[DEBUG] Vault name:', (req as any).vault?.config?.name);
+        console.log('[DEBUG] Vault path:', (req as any).vault?.config?.path);
+        let results = (req as any).vault.indexer.getAllDocuments();
         const vaultTotal = results.length; // Store total vault size before filtering
+        console.log('[DEBUG] Documents count:', vaultTotal);
         
         // Apply search query if provided
         if (q) {
-          results = context.indexer.query({
+          results = (req as any).vault.indexer.query({
             conditions: [{
               field: 'content',
               operator: 'contains' as const,
@@ -500,7 +504,7 @@ export function documentsRouter(context: Context): Router {
       const fullPath = req.path;
       const path = fullPath.substring('/by-path/'.length);
       
-      const documents = await context.indexer.getAllDocuments();
+      const documents = await (req as any).vault.indexer.getAllDocuments();
       const document = documents.find(d => d.path === path || d.relativePath === path);
       
       if (!document) {
@@ -531,7 +535,7 @@ export function documentsRouter(context: Context): Router {
         const { format, query, columns } = req.body;
         
         // Get documents
-        const results = await context.indexer.query(query || '');
+        const results = await (req as any).vault.indexer.query(query || '');
         
         let data: string;
         let mimeType: string;

@@ -12,11 +12,11 @@ export default defineConfig({
   },
   server: {
     strictPort: true, // Fail if port is already in use - no defaults allowed
-    proxy: process.env.MMT_API_PORT ? {
+    proxy: {
       '/api': {
-        target: `http://localhost:${process.env.MMT_API_PORT}`,
+        target: `http://localhost:${process.env.MMT_API_PORT || '3001'}`,
         changeOrigin: true,
       }
-    } : undefined
+    }
   }
 })

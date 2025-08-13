@@ -16,6 +16,7 @@ declare global {
 export function validateVault(context: Context) {
   return (req: Request, res: Response, next: NextFunction) => {
     const { vaultId } = req.params;
+    console.log('[MIDDLEWARE] Vault ID from params:', vaultId);
 
     if (!vaultId) {
       return res.status(400).json({
@@ -24,7 +25,9 @@ export function validateVault(context: Context) {
     }
 
     try {
+      console.log('[MIDDLEWARE] Getting vault from registry:', vaultId);
       const vault = context.vaultRegistry.getVault(vaultId);
+      console.log('[MIDDLEWARE] Got vault:', vault?.id, 'Path:', vault?.config?.path);
       
       if (!vault) {
         return res.status(404).json({
