@@ -86,12 +86,32 @@ program
 program
   .command('status')
   .description('Show status of MMT services')
-  .action(async () => {
-    if (MMTControlManager.isRunning()) {
+  .option('-v, --verbose', 'Show detailed status')
+  .action(async (options) => {
+    const isRunning = MMTControlManager.isRunning();
+    
+    if (isRunning) {
       console.log('✓ MMT is running');
-      // Could add more details like checking individual ports
     } else {
       console.log('✗ MMT is not running');
+    }
+    
+    if (options.verbose || isRunning) {
+      // Import DockerManager to check Qdrant status
+      const { DockerManager } = await import('./docker-manager.js');
+      
+      // Check Docker availability
+      if (DockerManager.isDockerAvailable()) {
+        const qdrantStatus = DockerManager.getContainerStatus('mmt-qdrant');
+        const qdrantHealth = qdrantStatus === 'running' 
+          ? await DockerManager.getQdrantHealth() 
+          : null;
+        
+        console.log('\nDocker Services:');
+        console.log(`  Qdrant: ${qdrantStatus}${qdrantHealth?.healthy ? ' (healthy)' : qdrantHealth ? ' (unhealthy)' : ''}`);
+      } else {
+        console.log('\nDocker: not available');
+      }
     }
   });
 

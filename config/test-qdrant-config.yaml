@@ -1,0 +1,19 @@
+vaults:
+  - id: test-vault
+    name: Test Vault
+    path: /tmp/test-vault
+    indexPath: /tmp/test-vault/.mmt
+
+apiPort: 3001
+webPort: 5173
+
+similarity:
+  enabled: true
+  provider: qdrant
+  ollamaUrl: http://localhost:11434
+  model: nomic-embed-text
+  
+  qdrant:
+    url: http://localhost:6333
+    collectionName: test-documents
+    onDisk: false

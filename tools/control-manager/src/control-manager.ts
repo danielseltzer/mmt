@@ -10,6 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import { DockerManager } from './docker-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,8 @@ interface MMTConfig {
   indexPath: string;
   apiPort: number;
   webPort: number;
+  requiresQdrant?: boolean;
+  qdrantPort?: number;
 }
 
 export interface ControlOptions {
@@ -42,9 +45,11 @@ export class MMTControlManager {
   private config: MMTConfig | null = null;
   private options: ControlOptions;
   private cleanupHandlers: (() => void)[] = [];
+  private dockerManager: DockerManager;
   
   constructor(options: ControlOptions) {
     this.options = options;
+    this.dockerManager = new DockerManager();
     
     // Ensure log directory exists
     if (!fs.existsSync(logDir)) {
@@ -208,11 +213,41 @@ export class MMTControlManager {
       throw new Error('Config must include apiPort and webPort');
     }
     
+    // Check if Qdrant is required (similarity enabled with qdrant provider)
+    const similarityMatch = configContent.match(/similarity:\s*\n((?:\s+.*\n)+)/);
+    let requiresQdrant = false;
+    let qdrantPort = 6333; // default
+    
+    if (similarityMatch) {
+      const similarityBlock = similarityMatch[1];
+      const enabledMatch = similarityBlock.match(/\s+enabled:\s*(true|false)/);
+      const providerMatch = similarityBlock.match(/\s+provider:\s*(\w+)/);
+      
+      if (enabledMatch && enabledMatch[1] === 'true') {
+        // Check if provider is qdrant (or not specified, defaulting to orama)
+        if (providerMatch && providerMatch[1] === 'qdrant') {
+          requiresQdrant = true;
+          
+          // Check for qdrant-specific config
+          const qdrantMatch = configContent.match(/\s+qdrant:\s*\n((?:\s+.*\n)+)/);
+          if (qdrantMatch) {
+            const qdrantBlock = qdrantMatch[1];
+            const portMatch = qdrantBlock.match(/\s+url:\s*.*:(\d+)/);
+            if (portMatch) {
+              qdrantPort = parseInt(portMatch[1], 10);
+            }
+          }
+        }
+      }
+    }
+    
     this.config = {
       vaultPath,
       indexPath,
       apiPort: parseInt(apiPortMatch[1], 10),
-      webPort: parseInt(webPortMatch[1], 10)
+      webPort: parseInt(webPortMatch[1], 10),
+      requiresQdrant,
+      qdrantPort
     };
   }
   
@@ -423,6 +458,20 @@ export class MMTControlManager {
     // Write PID file
     this.writePidFile();
     
+    // Start Qdrant if required
+    if (this.config?.requiresQdrant) {
+      this.log('Config requires Qdrant provider, starting Docker container...');
+      try {
+        await this.dockerManager.startQdrant({
+          enabled: true,
+          port: this.config.qdrantPort
+        });
+      } catch (error) {
+        this.log(`Warning: Failed to start Qdrant: ${error}`);
+        // Don't fail the whole startup, let the API handle the missing service
+      }
+    }
+    
     await this.startAPI();
     await this.startWeb();
     this.log('All servers started successfully!');
@@ -456,6 +505,15 @@ export class MMTControlManager {
     
     // Wait for all to complete, but don't fail if some error
     await Promise.allSettled(promises);
+    
+    // Stop Qdrant if it was started
+    if (this.config?.requiresQdrant) {
+      try {
+        await this.dockerManager.stopQdrant();
+      } catch (error) {
+        this.log(`Warning: Failed to stop Qdrant: ${error}`);
+      }
+    }
     
     // Force kill any remaining processes
     for (const [name, managed] of this.processes.entries()) {
