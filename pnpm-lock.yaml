@@ -550,6 +550,40 @@ importers:
         specifier: ^1.2.0
         version: 1.6.1(@types/node@20.19.6)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(lightningcss@1.30.1)
 
+  packages/similarity-provider-orama:
+    dependencies:
+      '@mmt/similarity-provider':
+        specifier: workspace:*
+        version: link:../similarity-provider
+      '@orama/orama':
+        specifier: ^2.0.3
+        version: 2.1.1
+      '@orama/plugin-data-persistence':
+        specifier: ^2.0.3
+        version: 2.1.1
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.30
+        version: 20.19.6
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^5.62.0
+        version: 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/parser':
+        specifier: ^5.62.0
+        version: 5.62.0(eslint@8.57.1)(typescript@5.8.3)
+      eslint:
+        specifier: ^8.57.0
+        version: 8.57.1
+      typescript:
+        specifier: ^5.3.3
+        version: 5.8.3
+      vitest:
+        specifier: ^1.2.0
+        version: 1.6.1(@types/node@20.19.6)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(lightningcss@1.30.1)
+
   packages/similarity-provider-qdrant:
     dependencies:
       '@mmt/similarity-provider':
@@ -1245,9 +1279,16 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
+  '@orama/orama@2.1.1':
+    resolution: {integrity: sha512-euTV/2kya290SNkl5m8e/H1na8iDygk74nNtl4E0YZNyYIrEMwE1JwamoroMKGZw2Uz+in/8gH3m1+2YfP0j1w==}
+    engines: {node: '>= 16.0.0'}
+
   '@orama/orama@3.1.11':
     resolution: {integrity: sha512-Szki0cgFiXE5F9RLx2lUyEtJllnuCSQ4B8RLDwIjXkVit6qZjoDAxH+xhJs29MjKLDz0tbPLdKFa6QrQ/qoGGA==}
     engines: {node: '>= 20.0.0'}
+
+  '@orama/plugin-data-persistence@2.1.1':
+    resolution: {integrity: sha512-JocJ7Q9mv/2+1jr6194mSiQUvbJ3/7WRZipzg5z8LI6kKcbCFMcYQgJ5RP65bIrXS8EeR36mt5hsRTJdEo+ZbA==}
 
   '@orama/plugin-data-persistence@3.1.11':
     resolution: {integrity: sha512-jmSOBDP1YPmTvJobU7sPNDBXAvLuxPb6IT4Ot3pUNcynLNCs11ztN0x/TmAo5CgcDn4jOR4zV7AN36nHTXyEaw==}
@@ -4991,7 +5032,15 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
+  '@orama/orama@2.1.1': {}
+
   '@orama/orama@3.1.11': {}
+
+  '@orama/plugin-data-persistence@2.1.1':
+    dependencies:
+      '@msgpack/msgpack': 2.8.0
+      '@orama/orama': 2.1.1
+      dpack: 0.6.22
 
   '@orama/plugin-data-persistence@3.1.11':
     dependencies:
