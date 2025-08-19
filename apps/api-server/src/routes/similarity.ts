@@ -135,8 +135,16 @@ export function similarityRouter(context: Context): Router {
           error: 'Vault not found in request'
         });
       }
-      context.similaritySearch!.indexDirectory(vault.config.path)
-        .catch(error => {
+      
+      // Get all documents from the indexer
+      const documents = await vault.indexer.getAllDocuments();
+      const docsWithContent = documents.map((doc: any) => ({
+        path: doc.path,
+        content: doc.content || ''
+      }));
+      
+      context.similaritySearch!.reindexAll(docsWithContent)
+        .catch((error: any) => {
           console.error('Reindexing failed:', error);
         });
       

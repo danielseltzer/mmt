@@ -123,7 +123,7 @@ export class OramaProvider extends BaseSimilarityProvider {
     };
   }
   
-  private async generateEmbedding(text: string): Promise<number[]> {
+  public async generateEmbedding(text: string): Promise<number[]> {
     if (!this.ollamaUrl || !this.model) {
       throw new Error('Ollama URL and model must be configured for embedding generation');
     }

@@ -1,6 +1,7 @@
 {
   "name": "@mmt/similarity-provider-qdrant",
   "version": "1.0.0",
+  "type": "module",
   "description": "Qdrant vector database provider for MMT similarity search",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

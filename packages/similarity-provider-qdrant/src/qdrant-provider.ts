@@ -83,8 +83,15 @@ export class QdrantProvider extends BaseSimilarityProvider {
         
         console.log(`Created Qdrant collection: ${this.collectionName}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error(`[QDRANT] Failed to ensure collection:`, {
+        error: message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        collectionName: this.collectionName,
+        operation: 'ensureCollection'
+      });
       this.lastError = `Failed to ensure collection: ${message}`;
       throw new Error(this.lastError);
     }
@@ -96,8 +103,13 @@ export class QdrantProvider extends BaseSimilarityProvider {
     try {
       const info = await this.client.getCollection(this.collectionName);
       this.documentCount = info.points_count || 0;
-    } catch (error) {
-      console.error('Failed to get document count:', error);
+    } catch (error: any) {
+      console.error(`[QDRANT] Failed to get document count:`, {
+        error: error.message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        collectionName: this.collectionName
+      });
       this.documentCount = 0;
     }
   }
@@ -111,7 +123,13 @@ export class QdrantProvider extends BaseSimilarityProvider {
       // Try to get collection info as health check
       await this.client.getCollection(this.collectionName);
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`[QDRANT] Health check failed:`, {
+        error: error.message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        collectionName: this.collectionName
+      });
       this.lastError = error instanceof Error ? error.message : String(error);
       return false;
     }
@@ -129,7 +147,20 @@ export class QdrantProvider extends BaseSimilarityProvider {
     };
   }
   
-  private async generateEmbedding(text: string): Promise<number[]> {
+  /**
+   * Convert MD5 hash to numeric ID for Qdrant compatibility
+   * Takes first 13 hex chars (52 bits) to stay within JS safe integer range
+   * This provides effectively 0% collision chance for typical vault sizes
+   */
+  private md5ToNumericId(md5: string): number {
+    // Take first 13 hex chars (52 bits) to stay within JS safe integer range
+    // Number.MAX_SAFE_INTEGER = 2^53 - 1
+    const truncated = md5.slice(0, 13);
+    const num = parseInt(truncated, 16);
+    return num % Number.MAX_SAFE_INTEGER;
+  }
+  
+  public async generateEmbedding(text: string): Promise<number[]> {
     if (!this.ollamaUrl || !this.model) {
       throw new Error('Ollama URL and model must be configured for embedding generation');
     }
@@ -156,7 +187,14 @@ export class QdrantProvider extends BaseSimilarityProvider {
       }
       
       return data.embedding as number[];
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`[QDRANT] Failed to generate embedding:`, {
+        error: error.message,
+        httpStatus: error.response?.status,
+        ollamaUrl: this.ollamaUrl,
+        model: this.model,
+        textLength: text.length
+      });
       if (error instanceof Error) {
         throw new Error(`Failed to generate embedding: ${error.message}`);
       }
@@ -169,18 +207,38 @@ export class QdrantProvider extends BaseSimilarityProvider {
       throw new Error('Qdrant client not initialized');
     }
     
+    // Check for empty content - skip with warning
+    if (!doc.content || doc.content.trim().length === 0) {
+      console.warn(`[QDRANT] Skipping empty file: ${doc.path}`);
+      return;  // Exit without error
+    }
+    
     try {
       // Generate embedding if not provided
       const embedding = doc.embedding || await this.generateEmbedding(doc.content);
       
-      // Prepare point for Qdrant
+      // Check if embedding generation failed
+      if (!embedding || embedding.length === 0) {
+        console.warn(`[QDRANT] Skipping document with no embedding: ${doc.path}`);
+        return;  // Exit without error
+      }
+      
+      // Convert MD5 ID to numeric format for Qdrant
+      const qdrantId = this.md5ToNumericId(doc.id);
+      
+      // Prepare point for Qdrant - NO CONTENT, only metadata
       const point = {
-        id: doc.id,
+        id: qdrantId,
         vector: embedding,
         payload: {
+          originalId: doc.id,  // Store original MD5 for reference
           path: doc.path,
-          content: doc.content,
-          ...doc.metadata
+          // Only include specific, small metadata fields
+          title: doc.metadata?.title,
+          tags: doc.metadata?.tags,
+          created: doc.metadata?.created,
+          modified: doc.metadata?.modified
+          // DO NOT spread all metadata - could include large content fields
         }
       };
       
@@ -191,10 +249,17 @@ export class QdrantProvider extends BaseSimilarityProvider {
       
       this.lastIndexedTime = new Date();
       this.documentCount++;
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error(`[QDRANT] Failed to index single document:`, {
+        error: message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        documentPath: doc.path,
+        documentId: doc.id,
+        collectionName: this.collectionName
+      });
       const errorMsg = `Failed to index document ${doc.path}: ${message}`;
-      console.error(errorMsg);
       throw new Error(errorMsg);
     }
   }
@@ -206,35 +271,61 @@ export class QdrantProvider extends BaseSimilarityProvider {
     
     const errors: IndexingResult['errors'] = [];
     let successful = 0;
+    let skipped = 0;
     const points = [];
     
     // Process documents and generate embeddings
     for (const doc of docs) {
       try {
+        // Check for empty content - skip with warning, not error
+        if (!doc.content || doc.content.trim().length === 0) {
+          console.warn(`[QDRANT] Skipping empty file: ${doc.path}`);
+          skipped++;
+          continue;  // Skip to next document
+        }
+        
         const embedding = doc.embedding || await this.generateEmbedding(doc.content);
         
+        // Check if embedding generation failed (empty vector)
+        if (!embedding || embedding.length === 0) {
+          console.warn(`[QDRANT] Skipping document with no embedding: ${doc.path}`);
+          skipped++;
+          continue;
+        }
+        
+        // Convert MD5 ID to numeric format for Qdrant
+        const qdrantId = this.md5ToNumericId(doc.id);
+        
         points.push({
-          id: doc.id,
+          id: qdrantId,
           vector: embedding,
           payload: {
+            originalId: doc.id,  // Store original MD5 for reference
             path: doc.path,
-            content: doc.content,
-            ...doc.metadata
+            // Only include specific, small metadata fields
+            title: doc.metadata?.title,
+            tags: doc.metadata?.tags,
+            created: doc.metadata?.created,
+            modified: doc.metadata?.modified
+            // DO NOT spread all metadata - could include large content fields
           }
         });
         
         successful++;
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(`[QDRANT] Failed to process document ${doc.path}: ${errorMsg}`);
         errors.push({
           documentId: doc.id,
           path: doc.path,
-          error: error instanceof Error ? error.message : String(error)
+          error: errorMsg
         });
       }
     }
     
     // Batch upsert successful points
     if (points.length > 0) {
+      console.log(`[QDRANT] Attempting to upsert batch of ${points.length} documents`);
       try {
         await this.client.upsert(this.collectionName, {
           points
@@ -242,28 +333,103 @@ export class QdrantProvider extends BaseSimilarityProvider {
         
         this.lastIndexedTime = new Date();
         this.documentCount += points.length;
-      } catch (error) {
-        // If batch fails, all points in batch are considered failed
+        console.log(`[QDRANT] Successfully upserted ${points.length} documents`);
+      } catch (error: any) {
+        // If batch fails, try indexing documents one by one to identify problematic ones
         const batchError = error instanceof Error ? error.message : String(error);
+        console.warn(`[QDRANT] Batch upsert failed, falling back to individual indexing for ${points.length} documents`);
+        console.warn(`[QDRANT] Batch error was:`, {
+          error: batchError,
+          httpStatus: error.response?.status,
+          qdrantError: error.response?.data
+        });
+        
+        // Try indexing each document individually
+        let individualSuccesses = 0;
+        const failedDocs: Array<{path: string, error: string, payload?: any}> = [];
+        
         for (const point of points) {
-          const doc = docs.find(d => d.id === point.id);
-          if (doc) {
+          const originalId = (point.payload as any).originalId;
+          const doc = docs.find(d => d.id === originalId);
+          
+          if (!doc) continue;
+          
+          try {
+            // Try to index this single document
+            await this.client.upsert(this.collectionName, {
+              points: [point]
+            });
+            individualSuccesses++;
+          } catch (individualError: any) {
+            const errorMsg = individualError instanceof Error ? individualError.message : String(individualError);
+            
+            // Log detailed error information for debugging
+            const errorDetails = {
+              path: doc.path,
+              error: errorMsg,
+              httpStatus: individualError.response?.status,
+              qdrantError: individualError.response?.data,
+              documentId: doc.id,
+              numericId: point.id,
+              payloadSize: JSON.stringify(point.payload).length,
+              vectorSize: point.vector.length
+            };
+            
+            console.error(`[QDRANT] Failed to index individual document:`, errorDetails);
+            
+            failedDocs.push({
+              path: doc.path,
+              error: `Individual indexing failed: ${errorMsg}`,
+              payload: point.payload
+            });
+            
             errors.push({
               documentId: doc.id,
               path: doc.path,
-              error: `Batch upsert failed: ${batchError}`
+              error: `Individual indexing failed: ${errorMsg}`
             });
           }
         }
-        successful = 0;
+        
+        if (individualSuccesses > 0) {
+          successful = individualSuccesses;
+          this.lastIndexedTime = new Date();
+          this.documentCount += individualSuccesses;
+          console.log(`[QDRANT] Successfully indexed ${individualSuccesses}/${points.length} documents individually`);
+        }
+        
+        if (failedDocs.length > 0) {
+          // Write failed documents to a file for analysis
+          const fs = await import('fs/promises');
+          const failedDocsPath = `/tmp/qdrant-failed-docs-${Date.now()}.json`;
+          await fs.writeFile(failedDocsPath, JSON.stringify(failedDocs, null, 2));
+          console.error(`[QDRANT] ${failedDocs.length} documents failed. Details saved to: ${failedDocsPath}`);
+        }
       }
     }
     
-    return {
+    const result = {
       successful,
       failed: errors.length,
       errors
     };
+    
+    // Report summary including skipped files
+    if (skipped > 0) {
+      console.info(`[QDRANT] Skipped ${skipped} empty/invalid files (warnings logged above)`);
+    }
+    
+    if (errors.length > 0) {
+      console.warn(`[QDRANT] Batch indexing completed with ${errors.length} errors`);
+      if (errors.length > 5) {
+        console.warn(`[QDRANT] First 5 errors:`);
+        errors.slice(0, 5).forEach(e => console.warn(`  - ${e.path}: ${e.error}`));
+      } else {
+        errors.forEach(e => console.warn(`  - ${e.path}: ${e.error}`));
+      }
+    }
+    
+    return result;
   }
   
   async removeDocument(id: string): Promise<void> {
@@ -272,13 +438,24 @@ export class QdrantProvider extends BaseSimilarityProvider {
     }
     
     try {
+      // Convert MD5 ID to numeric format for Qdrant
+      const qdrantId = this.md5ToNumericId(id);
+      
       await this.client.delete(this.collectionName, {
-        points: [id]
+        points: [qdrantId]
       });
       
       this.documentCount = Math.max(0, this.documentCount - 1);
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error(`[QDRANT] Failed to remove document:`, {
+        error: message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        documentId: id,
+        qdrantId: this.md5ToNumericId(id),
+        collectionName: this.collectionName
+      });
       throw new Error(`Failed to remove document ${id}: ${message}`);
     }
   }
@@ -295,8 +472,15 @@ export class QdrantProvider extends BaseSimilarityProvider {
       
       this.documentCount = 0;
       this.lastIndexedTime = undefined;
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error(`[QDRANT] Failed to clear index:`, {
+        error: message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        collectionName: this.collectionName,
+        operation: 'clearIndex'
+      });
       throw new Error(`Failed to clear index: ${message}`);
     }
   }
@@ -310,8 +494,16 @@ export class QdrantProvider extends BaseSimilarityProvider {
       // Generate query embedding
       const embedding = await this.generateEmbedding(query);
       return await this.searchByVector(embedding, options);
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error(`[QDRANT] Search query failed:`, {
+        error: message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        query: query.slice(0, 100),
+        collectionName: this.collectionName,
+        options
+      });
       throw new Error(`Search failed: ${message}`);
     }
   }
@@ -333,14 +525,23 @@ export class QdrantProvider extends BaseSimilarityProvider {
       });
       
       return searchResult.map(hit => ({
-        id: String(hit.id),
+        id: hit.payload?.originalId as string || String(hit.id),  // Return original MD5 ID
         path: hit.payload?.path as string || '',
         score: hit.score || 0,
-        content: hit.payload?.content as string,
+        content: '',  // Content not stored in Qdrant
         metadata: hit.payload as Record<string, any>
       }));
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error(`[QDRANT] Vector search failed:`, {
+        error: message,
+        httpStatus: error.response?.status,
+        qdrantError: error.response?.data,
+        vectorDimensions: vector.length,
+        collectionName: this.collectionName,
+        limit,
+        threshold
+      });
       throw new Error(`Vector search failed: ${message}`);
     }
   }

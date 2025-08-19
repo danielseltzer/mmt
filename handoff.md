@@ -1,344 +1,257 @@
-# MMT Project Handoff
-
-## Current State (2025-08-13)
-
-### ✅ Recently Completed Features
-
-#### Multi-Vault Support (V3 - COMPLETE)
-- **Issue #156**: Multi-vault configuration schema (PR #188 merged)
-- **Issue #186**: Vault context architecture (PR #192 merged)
-- **Issue #190**: Vault initialization with VaultRegistry (PR #196 merged)
-- **Issue #191**: Vault selector UI component (PR #200 merged)
-  - Dropdown selector in navigation bar
-  - Vault isolation working correctly
-  - Path display shows relative paths
-  - Table sorting fixed (bidirectional)
-  - Checkbox selection fixed (unique row IDs)
-
-### 🚀 Working Features
-
-1. **Multi-Vault Management**
-   - Switch between multiple vaults via UI dropdown
-   - Each vault maintains separate index
-   - Vault state persisted in localStorage
-   - API routes are vault-aware (`/api/vaults/:vaultId/...`)
-
-2. **Document Management**
-   - View documents with relative path display (e.g., "/" for root)
-   - Filter by name, content, folders, tags, metadata, date, size
-   - Sort by name, path, modified date, size (click to toggle asc/desc)
-   - Export to CSV/JSON
-   - Individual checkbox selection works correctly
-
-3. **File Operations** 
-   - Rename files (updates links automatically)
-   - Move files (updates links automatically)
-   - Delete files
-   - All operations maintain referential integrity
-
-4. **Search & Query**
-   - Full-text search across documents
-   - Natural language date filters (e.g., "last 30 days")
-   - Complex filter combinations with AND/OR logic
-   - Server-side filtering for performance
-
-### 📁 Project Structure
-
-```
-mmt/
-├── apps/
-│   ├── api-server/     # Express API server
-│   ├── cli/            # CLI entry point
-│   └── web/            # React web UI (with VaultSelector)
-├── packages/
-│   ├── config/         # Configuration management
-│   ├── document-operations/  # File operations
-│   ├── entities/       # Shared types & Zod schemas
-│   ├── file-relocator/ # Link updating logic
-│   ├── filesystem-access/  # File system abstraction
-│   ├── indexer/        # Document indexing (with folderPath)
-│   ├── query-parser/   # Query language parser
-│   ├── scripting/      # Operation pipelines
-│   ├── table-view/     # React table (with sorting fixes)
-│   └── vault/          # Vault management & registry
-├── config/
-│   └── multi-vault.yaml  # Example multi-vault configuration
-└── docs/               # Extensive documentation
-```
-
-### 🔧 Configuration
-
-The app requires a YAML configuration file. Example multi-vault setup:
-
-```yaml
-# config/multi-vault.yaml
-vaults:
-  - name: 'Personal'
-    path: /Users/yourname/Notes/Personal
-    fileWatching:
-      enabled: true
-      debounceMs: 500
-      ignorePatterns:
-        - '**/.git/**'
-        - '**/.obsidian/**'
-  
-  - name: 'Work'
-    path: /Users/yourname/Notes/Work
-    fileWatching:
-      enabled: true
-      debounceMs: 500
-
-  - name: 'Projects'
-    path: /Users/yourname/Notes/Projects
-    fileWatching:
-      enabled: false
-
-apiPort: 3001
-webPort: 5173
-```
-
-### 🚀 Running the Application
-
-```bash
-# Install dependencies
-pnpm install
+Date: 2025-01-19Status: BLOCKED - Qdrant "Bad Request" ErrorPriority: HIGH - Core
+functionality non-working
 
-# Build all packages
-pnpm build
+Executive Summary
 
-# Start with configuration
-./bin/mmt start --config config/multi-vault.yaml
+MMT's similarity search implementation has gone through multiple iterations:
+- Orama Provider: Implemented but abandoned due to significant issues (details
+  lost)
+- Qdrant Provider: Implemented with Docker integration, but experiencing "Bad
+  Request" errors during document indexing
+- Current Blocker: Documents cannot be indexed into Qdrant - fails with "Bad
+  Request" on upsert operations
+- Root Cause: Likely metadata payload issues, specifically the use of
+  ...doc.metadata spreading potentially large fields
 
-# Or run in development mode
-pnpm dev -- --config config/multi-vault.yaml
-```
+Implementation History
 
-Access points:
-- Web UI: http://localhost:5173
-- API: http://localhost:3001
-- Vault selector: Top navigation bar dropdown
+Orama Provider (Abandoned)
 
-### 🧪 Testing
+- Package: packages/similarity-provider-orama/
+- Status: Implemented but lost confidence due to significant issues
+- Current: Wrapper exists but not actively used
 
-```bash
-# Run all tests
-pnpm test
+Qdrant Provider (Current - Broken)
 
-# Run specific package tests
-pnpm --filter @mmt/vault test
-pnpm --filter @mmt/indexer test
+- Package: packages/similarity-provider-qdrant/
+- Docker Integration: Added Qdrant management to MMT CLI
+- Status: Implemented but experiencing "Bad Request" errors
+- Issue: Cannot index documents at any scale (even single documents fail)
 
-# Key test files for recent features
-pnpm --filter @mmt/vault test vault-isolation.test.ts
-pnpm --filter @mmt/indexer test vault-relative-paths.test.ts
-```
+Recent Changes Made
 
-### 📝 API Endpoints
+File: packages/similarity-provider-qdrant/src/qdrant-provider.ts
+
+Changes implemented (broader than requested):
+1. MD5-to-UUID Conversion (lines 136-146): Added conversion method (NOT needed per
+   research)
+2. Content Removal (lines 195, 243): Removed content from payload to reduce size
+3. Original ID Tracking: Added originalId field to maintain reference to MD5 hash
+4. Enhanced Logging: Added more console.log statements for debugging
+5. Made embedding method public: Changed generateEmbedding visibility
+
+CRITICAL ISSUE: The core problem was NOT fixed:
+- Lines 195 and 243 still use ...doc.metadata
+- This spreads ALL metadata fields, potentially including large content or
+  unexpected data
+- This is the most likely cause of "Bad Request" errors
 
-#### Vault Management
-- `GET /api/vaults` - List all configured vaults
-- `GET /api/vaults/:vaultId/status` - Get vault status
+Current Architecture
 
-#### Document Operations (Vault-Aware)
-- `GET /api/vaults/:vaultId/documents` - List documents
-- `GET /api/vaults/:vaultId/documents/by-path/*` - Get document by path
-- `POST /api/vaults/:vaultId/operations/rename` - Rename document
-- `POST /api/vaults/:vaultId/operations/move` - Move document
-- `POST /api/vaults/:vaultId/operations/delete` - Delete document
-- `POST /api/vaults/:vaultId/export` - Export documents
+Provider Interface
 
-### 🐛 Known Issues & Limitations
+- Base class: BaseSimilarityProvider in packages/similarity-provider/
+- Pluggable system supporting multiple vector databases
+- Zod schemas for data validation
+- Clean separation between providers
 
-1. **YAML Parsing Errors**: Some markdown files with invalid frontmatter cause parsing errors
-   - Non-breaking, just logged to console
-   - Common in files with template variables like `{{DATE}}`
-
-2. **Performance**: Large vaults (5000+ files) take 1-2 seconds to index initially
-   - Subsequent loads use cache for faster startup
-
-3. **No Hot Reload**: File changes update index but don't refresh UI automatically
-   - Manual refresh required to see changes
-
-4. **Limited Export**: Export only includes metadata, not full content
-
-5. **No Similarity Search**: Infrastructure exists but not integrated (#155)
-
-### 🎯 Next Development Areas
-
-#### Immediate Priorities
-1. **Auto-refresh UI** when file changes detected
-2. **Fix YAML parsing** - handle template variables gracefully
-3. **Performance optimization** for large vaults
-4. **Search improvements** - highlight matches, relevance ranking
-
-#### V3 Remaining Work
-- Issue #158: Per-tab vault state (frontend work)
-- Issue #157: Tab bar component for vault switching
-- Issue #162: Vault-specific settings
-
-#### Future Features
-1. **Similarity search** using embeddings (#155)
-2. **Saved views** - persist filter/sort configurations
-3. **Bulk operations** - apply operations to multiple files
-4. **Content preview** in table or sidebar
-5. **Plugin system** for custom operations
-
-### 💡 Development Tips
-
-1. **No Mocks Policy**: Always test with real files in temp directories
-2. **Schema-First**: All data contracts defined in `@mmt/entities`
-3. **TDD Approach**: Write tests first, especially for bug fixes
-4. **Explicit Config**: No defaults, always require --config flag
-5. **Clean Commits**: Use conventional commits (feat:, fix:, docs:, etc.)
-
-### 🔍 Debugging
-
-Enable debug logging:
-```bash
-DEBUG=mmt:* ./bin/mmt start --config config/multi-vault.yaml
-```
-
-Check vault status:
-```bash
-curl http://localhost:3001/api/vaults | jq
-```
-
-Test vault-specific documents:
-```bash
-# List documents from a specific vault
-curl "http://localhost:3001/api/vaults/Personal/documents?limit=5" | jq
-
-# Check fullPath is included (for unique row IDs)
-curl "http://localhost:3001/api/vaults/Personal/documents?limit=1" | jq '.documents[0].fullPath'
-```
-
-### 📚 Key Documentation
-
-- `/docs/planning/PRD-v3.md` - V3 product requirements
-- `/docs/adr/006-vault-as-container-architecture.md` - Vault architecture decisions
-- `/docs/building/testing-strategy.md` - Testing approach (NO MOCKS!)
-- `/docs/building/principles.md` - Development principles
-- `/CLAUDE.md` - AI assistant instructions
-- `/ROADMAP.md` - Project roadmap
-
-### 🔄 Recent Changes (2025-08-13 Session - Part 1)
-
-1. **Vault Isolation Fix**
-   - Changed from `context.indexer` to `req.vault.indexer` in documents route
-   - Each vault now returns only its own documents
-
-2. **Path Display Fix**
-   - Added `folderPath` property to PageMetadata
-   - Files at root show "/" instead of full path
-   - Subdirectory files show relative paths like "/folder"
-
-3. **Table Sorting Fix**
-   - Added synchronization between external and internal sort state
-   - Bidirectional sorting works on all columns
-   - Disabled sorting on checkbox column
-
-4. **Checkbox Selection Fix**
-   - Added `fullPath` field to API response
-   - Changed table row ID from `path` to `fullPath`
-   - Each document now has unique identifier
-
-### 🔄 Recent Changes (2025-08-13 Session - Part 2)
-
-#### GitHub Issue Reorganization
-- Closed 51 → 47 open issues (4 completed/obsolete closed)
-- Created 5 new focused milestones:
-  - Bug Fixes & Performance (6 issues)
-  - Tech Debt & Infrastructure (7 issues)  
-  - Documentation & Developer Experience (4 issues)
-  - Future Enhancements (8 issues)
-  - V3 Core Features (25 issues)
-- Closed 10 legacy milestones
-
-#### Bug Fixes Completed
-1. **#152 (P0)**: Web server not starting with control manager - FIXED
-   - Updated `waitForWebReady` to properly check port availability
-   - Added better diagnostics and initialization delays
-
-2. **#86 (P1)**: Flaky file watcher test - FIXED
-   - Added initialization delay for file watcher
-   - Increased timeouts and polling frequency
-   - Tests now pass consistently (10/10 runs)
-
-3. **#138/#122**: Table-view tests - CLOSED as intentional
-   - Tests explicitly skipped during rapid UI development
-   - Component working correctly in production
-
-4. **#141 (P1)**: Integration test architecture - PARTIALLY FIXED
-   - Fixed config format to use new `vaults` array
-   - Updated test setup to start BOTH API and web servers
-   - Tests now run against real full stack (API on 3001, Web on 3002)
-   - Architecture now consistent between dev and test
-
-### ⚠️ Integration Tests - Remaining Work
-
-**Current Status**: 
-- Infrastructure is correct - both servers start properly
-- Architecture is consistent - no environment variable hacks
-- But tests still fail because they're using happy-dom instead of real browser
-
-**Root Problem**:
-The integration tests are trying to render React components in happy-dom and make API calls, but happy-dom doesn't actually load the web server's pages. The tests need to be rewritten to use a real browser.
-
-**Next Steps to Complete #141**:
-1. **Option A: Convert to E2E tests with Playwright**
-   ```bash
-   pnpm add -D @playwright/test
-   ```
-   - Rewrite integration tests to use Playwright
-   - Navigate to `http://localhost:3002` 
-   - Test through real browser automation
-   - This is the correct approach for integration testing
-
-2. **Option B: Keep component tests separate**
-   - Move current tests to unit tests (without API calls)
-   - Mock the fetch calls (violates NO MOCKS policy though)
-   - Create separate E2E tests for full stack
-
-**Recommended Approach**: Option A - Use Playwright for true integration tests
-
-Example test structure needed:
-```typescript
-// tests/integration/document-table.test.ts
-import { test, expect } from '@playwright/test';
-
-test('displays documents from vault', async ({ page }) => {
-  await page.goto('http://localhost:3002');
-  await page.waitForSelector('[data-testid="document-table"]');
-  // ... rest of test
+Integration Points
+
+- API Routes: apps/api-server/src/routes/similarity.ts
+- Service Layer: apps/api-server/src/services/similarity-search-provider.ts
+- Configuration: Schema in packages/entities/src/config.schema.ts
+
+Qdrant Setup
+
+- Uses @qdrant/js-client-rest client
+- Collection: 768-dimensional vectors (nomic-embed-text model)
+- Embedding: Generated via Ollama integration
+- Docker: Managed through MMT CLI commands
+
+Root Cause Analysis
+
+Research Conducted
+
+1. Qdrant ID Format: Verified UUIDs are acceptable (both numeric and string
+   formats)
+   - Hyphenated UUID format is documented as supported
+   - MD5-to-UUID conversion is NOT the issue
+2. Payload Investigation: Identified metadata spreading as likely culprit
+   - ...doc.metadata could include unexpected large fields
+   - Qdrant may have payload size or field restrictions
+3. Error Handling: Current error logging doesn't capture Qdrant's specific error
+   response
+
+Known NOT the Problem
+
+- UUID format (confirmed acceptable per Qdrant docs)
+- Embedding dimensions (768 is correct)
+- Collection configuration
+- Qdrant Docker setup
+
+Most Likely Problem
+
+Metadata Spreading at lines 195 and 243:
+payload: {
+originalId: doc.id,
+path: doc.path,
+...doc.metadata  // <-- PROBLEM: Could include large/unexpected fields
+}
+
+Current Code Issues
+
+CRITICAL - Unfixed Issues
+
+1. Metadata Spreading (lines 195, 243): Still uses ...doc.metadata - the likely
+   root cause
+2. Missing Detailed Error Logging: Don't capture Qdrant's actual error response
+3. No Payload Validation: No size or structure validation before sending to Qdrant
+
+Recent Modifications Made
+
+- ✅ Content removed from payload (good for size reduction)
+- ✅ UUID conversion added (unnecessary but harmless)
+- ✅ Basic logging improved
+- ❌ Critical metadata spreading issue NOT fixed
+- ❌ Detailed error capture NOT implemented
+
+Current File States (Git Status)
+
+Modified Files:
+
+- apps/api-server/package.json
+- apps/api-server/src/context.ts
+- apps/api-server/src/routes/similarity.ts
+- packages/entities/src/config.schema.ts
+- packages/similarity-provider-orama/package.json
+- packages/similarity-provider-orama/src/orama-provider.ts
+- packages/similarity-provider-qdrant/package.json
+- packages/similarity-provider-qdrant/src/qdrant-provider.ts (main file with
+  issues)
+- packages/similarity-provider/package.json
+- packages/similarity-provider/src/index.ts
+- pnpm-lock.yaml
+
+New Files Created:
+
+- apps/api-server/src/services/similarity-search-provider.ts
+- config/personal-vault-qdrant.yaml
+- test-qdrant-debug.js
+- test-qdrant-direct.js
+- qdrant_storage/collections/ (Docker volume)
+
+Test Environment
+
+Qdrant Docker
+
+- Service running on localhost:6333
+- Collections API accessible
+- Storage volume: qdrant_storage/collections/
+
+Configuration
+
+- File: config/personal-vault-qdrant.yaml
+- Includes Qdrant and Ollama endpoints
+- Similarity search enabled in vault config
+
+Test Scripts (Created but not executed)
+
+- test-qdrant-debug.js: Direct Qdrant API testing
+- test-qdrant-direct.js: Provider testing script
+
+Immediate Next Steps Required
+
+1. Fix Critical Metadata Spreading (URGENT)
+
+File: packages/similarity-provider-qdrant/src/qdrant-provider.tsLines: 195, 243
+
+Replace:
+...doc.metadata  // Spreads ALL fields - problematic
+
+With:
+// Only include specific, small metadata fields
+title: doc.metadata?.title,
+tags: doc.metadata?.tags,
+created: doc.metadata?.created,
+modified: doc.metadata?.modified
+// DO NOT spread all metadata - could include large content fields
+
+2. Improve Error Logging (HIGH)
+
+File: packages/similarity-provider-qdrant/src/qdrant-provider.tsLines: 268-285
+
+Add detailed error capture to see Qdrant's actual error response:
+} catch (error: any) {
+console.error(`[QDRANT] CRITICAL: Batch upsert failed:`, {
+error: error.message,
+httpStatus: error.response?.status,
+qdrantError: error.response?.data,
+samplePayload: JSON.stringify(points[0], null, 2).slice(0, 500)
 });
-```
 
-### 📞 Contact & Support
+3. Test Single Document (IMMEDIATE)
 
-- Repository: https://github.com/danielseltzer/mmt
-- Issues: https://github.com/danielseltzer/mmt/issues
-- Latest commits: Bug fixes pushed directly to main
+- Fix metadata spreading first
+- Test with one document only
+- Capture exact error messages
+- Verify payload structure
 
-## Quick Start for Next Session
+4. Gradual Scale Testing
 
-1. **Pull latest changes**: 
-   ```bash
-   git pull origin main
-   ```
+- Start with 1 document (verify works)
+- Scale to 10, then 50, then 100
+- Monitor for payload size issues
+- Identify bottlenecks before scaling to 6k
 
-2. **Install & build**:
-   ```bash
-   pnpm install
-   pnpm build
-   ```
+Technical Configuration
 
-3. **Start application**:
-   ```bash
-   ./bin/mmt start --config config/multi-vault.yaml
-   ```
+Current Provider Configuration
 
-4. **Open browser**: http://localhost:5173
+# config/personal-vault-qdrant.yaml
+similarity:
+provider: "qdrant"
+qdrant:
+url: "http://localhost:6333"
+ollama:
+url: "http://localhost:11434"
+model: "nomic-embed-text"
 
-5. **Test vault switching**: Use the dropdown in the top navigation bar
+Qdrant Collection Setup
 
-The multi-vault feature is fully functional. All major bugs have been fixed. The application is ready for daily use with multiple vaults.
+- Dimensions: 768 (nomic-embed-text)
+- Distance: Cosine similarity
+- Collection name: Based on vault configuration
+
+Success Criteria
+
+Phase 1: Fix and Test
+
+- Metadata spreading fixed (explicit field selection)
+- Enhanced error logging implemented
+- Single document indexing succeeds
+- Detailed error messages captured (if issues persist)
+
+Phase 2: Scale Testing
+
+- 10 documents index successfully
+- 100 documents index successfully
+- 1000 documents index successfully
+- Performance metrics documented
+
+Phase 3: Production Ready
+
+- Full 6k document vault indexes successfully
+- Search queries return relevant results
+- Performance meets requirements (<5 seconds for indexing)
+
+Key Learnings for Next Developer
+
+1. Don't change UUID format - Research confirmed it's acceptable
+2. Focus on metadata payload - This is the most likely root cause
+3. Start small - Test single document before scaling
+4. Capture detailed errors - Need Qdrant's specific error responses
+5. The architecture is sound - Just implementation details need fixing
+
+The similarity search functionality is close to working. The main blocker is likely
+the metadata spreading issue that sends unexpected large fields to Qdrant. Fix
+this first, then test systematically at increasing scales.

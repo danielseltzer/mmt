@@ -1,6 +1,7 @@
 {
   "name": "@mmt/similarity-provider",
   "version": "1.0.0",
+  "type": "module",
   "description": "Pluggable similarity search provider interface for MMT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -2,7 +2,7 @@
 export * from './types';
 
 // Export interface and base class
-export { SimilarityProvider, BaseSimilarityProvider } from './interface';
+export * from './interface';
 
 // Export factory
 export { SimilarityProviderFactory } from './factory';
