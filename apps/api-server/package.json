@@ -20,6 +20,7 @@
     "@mmt/file-relocator": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
+    "@mmt/logger": "workspace:*",
     "@mmt/similarity-provider": "workspace:*",
     "@mmt/similarity-provider-orama": "workspace:*",
     "@mmt/similarity-provider-qdrant": "workspace:*",

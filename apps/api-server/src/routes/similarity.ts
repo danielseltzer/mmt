@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import type { Context } from '../context.js';
+import { Loggers, type Logger } from '@mmt/logger';
+
+const logger: Logger = Loggers.api();
 
 export function similarityRouter(context: Context): Router {
   const router = Router();
@@ -138,14 +141,34 @@ export function similarityRouter(context: Context): Router {
       
       // Get all documents from the indexer
       const documents = await vault.indexer.getAllDocuments();
-      const docsWithContent = documents.map((doc: any) => ({
-        path: doc.path,
-        content: doc.content || ''
-      }));
+      const docsWithContent = await Promise.all(
+        documents.map(async (doc: any) => {
+          try {
+            const content = await context.fs.readFile(doc.path);
+            return {
+              path: doc.path,
+              content: content
+            };
+          } catch (error) {
+            logger.warn(`Failed to read file ${doc.path} during reindex:`, {
+              error: error instanceof Error ? error.message : String(error),
+              path: doc.path
+            });
+            return {
+              path: doc.path,
+              content: ''
+            };
+          }
+        })
+      );
       
       context.similaritySearch!.reindexAll(docsWithContent)
         .catch((error: any) => {
-          console.error('Reindexing failed:', error);
+          logger.error('Background reindexing failed', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            documentCount: docsWithContent.length
+          });
         });
       
       res.json({

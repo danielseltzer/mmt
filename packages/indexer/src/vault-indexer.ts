@@ -15,6 +15,7 @@ import { MetadataCache } from './metadata-cache.js';
 import { WorkerPool } from './worker-pool.js';
 import { FileWatcher } from '@mmt/filesystem-access';
 import { join, relative } from 'path';
+import { Loggers, type Logger } from '@mmt/logger';
 
 export class VaultIndexer {
   private storage: IndexStorage;
@@ -25,12 +26,14 @@ export class VaultIndexer {
   private workers?: WorkerPool;
   private watcher?: FileWatcher;
   private errorCount = 0;
+  private logger: Logger;
   
   constructor(private options: IndexerOptions) {
     this.storage = new IndexStorage();
     this.extractor = new MetadataExtractor(options.vaultPath, options.fileSystem);
     this.linkExtractor = new LinkExtractor(options.vaultPath);
     this.queryExecutor = new QueryExecutor(this.storage);
+    this.logger = Loggers.indexer();
     
     if (options.useCache) {
       this.cache = new MetadataCache(options.cacheDir ?? join(options.vaultPath, '.mmt-cache'));
@@ -45,7 +48,7 @@ export class VaultIndexer {
    * Initialize the indexer by scanning the vault
    */
   async initialize(): Promise<void> {
-    console.log(`Initializing indexer for vault: ${this.options.vaultPath}`);
+    this.logger.info(`Initializing indexer for vault: ${this.options.vaultPath}`);
     
     const startTime = Date.now();
     this.errorCount = 0; // Reset error count
@@ -57,7 +60,7 @@ export class VaultIndexer {
     
     // Scan vault for markdown files
     const files = await this.findMarkdownFiles();
-    console.log(`Found ${files.length.toString()} markdown files`);
+    this.logger.info(`Found ${files.length.toString()} markdown files`);
     
     // Update link extractor with file list for resolution
     this.linkExtractor.updateFileLookup(files);
@@ -74,12 +77,12 @@ export class VaultIndexer {
     const totalTime = Date.now() - startTime;
     
     // Display timing information
-    console.log(`\n✓ Indexing completed in ${(indexingTime / 1000).toFixed(2)}s`);
-    console.log(`  Successfully indexed: ${String(files.length - this.errorCount)} files`);
+    this.logger.info(`✓ Indexing completed in ${(indexingTime / 1000).toFixed(2)}s`);
+    this.logger.info(`  Successfully indexed: ${String(files.length - this.errorCount)} files`);
     if (this.errorCount > 0) {
-      console.warn(`  ⚠️  Skipped ${String(this.errorCount)} files due to errors`);
+      this.logger.warn(`  ⚠️  Skipped ${String(this.errorCount)} files due to errors`);
     }
-    console.log(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
+    this.logger.info(`  Total initialization time: ${(totalTime / 1000).toFixed(2)}s`);
     
     // Start file watching
     if (this.options.fileWatching?.enabled ?? this.options.useCache) {
@@ -269,9 +272,9 @@ export class VaultIndexer {
       // Handle YAML parsing errors with user-friendly messages
       if (error !== null && typeof error === 'object' && 'name' in error && error.name === 'YAMLException') {
         const relativePath = relative(this.options.vaultPath, fullPath);
-        console.error(`\n⚠️  YAML Parsing Error in: ${relativePath}`);
+        this.logger.error(`⚠️  YAML Parsing Error in: ${relativePath}`);
         if ('reason' in error && typeof error.reason === 'string') {
-          console.error(`   ${error.reason}`);
+          this.logger.error(`   ${error.reason}`);
         }
         
         // Extract the problematic line from the error
@@ -280,17 +283,17 @@ export class VaultIndexer {
             typeof (error.mark as {line: unknown}).line === 'number' &&
             typeof (error.mark as {column: unknown}).column === 'number') {
           const mark = error.mark as { line: number; column: number };
-          console.error(`   At line ${String(mark.line + 1)}, column ${String(mark.column + 1)}`);
-          console.error(`\n   This often happens with:`);
-          console.error(`   - Template files containing variables like {{DATE}}`);
-          console.error(`   - Missing quotes around values with colons`);
-          console.error(`   - Incorrect indentation in YAML frontmatter\n`);
+          this.logger.error(`   At line ${String(mark.line + 1)}, column ${String(mark.column + 1)}`);
+          this.logger.error(`   This often happens with:`);
+          this.logger.error(`   - Template files containing variables like {{DATE}}`);
+          this.logger.error(`   - Missing quotes around values with colons`);
+          this.logger.error(`   - Incorrect indentation in YAML frontmatter`);
         }
       } else {
         // Other errors - show simplified message
         const relativePath = relative(this.options.vaultPath, fullPath);
-        console.error(`\n⚠️  Failed to index: ${relativePath}`);
-        console.error(`   ${error instanceof Error ? error.message : String(error)}\n`);
+        this.logger.error(`⚠️  Failed to index: ${relativePath}`);
+        this.logger.error(`   ${error instanceof Error ? error.message : String(error)}`);
       }
       this.errorCount++;
     }
@@ -312,9 +315,9 @@ export class VaultIndexer {
         }
       }
       
-      console.log(`Loaded ${String(entries.size)} documents from cache`);
+      this.logger.info(`Loaded ${String(entries.size)} documents from cache`);
     } catch (error) {
-      console.warn('Failed to load cache:', error);
+      this.logger.warn('Failed to load cache', { error });
     }
   }
   
@@ -346,12 +349,12 @@ export class VaultIndexer {
             break;
         }
       } catch (error) {
-        console.error(`Error handling file ${event.type}:`, error);
+        this.logger.error(`Error handling file ${event.type}`, { error });
       }
     });
     
     this.watcher.start().catch((error: unknown) => {
-      console.error('Failed to start file watcher:', error);
+      this.logger.error('Failed to start file watcher', { error });
     });
   }
   

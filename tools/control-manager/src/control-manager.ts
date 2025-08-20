@@ -11,6 +11,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { DockerManager } from './docker-manager.js';
+import { Loggers, type Logger } from '@mmt/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,10 +47,12 @@ export class MMTControlManager {
   private options: ControlOptions;
   private cleanupHandlers: (() => void)[] = [];
   private dockerManager: DockerManager;
+  private logger: Logger;
   
   constructor(options: ControlOptions) {
     this.options = options;
     this.dockerManager = new DockerManager();
+    this.logger = Loggers.control();
     
     // Ensure log directory exists
     if (!fs.existsSync(logDir)) {
@@ -72,7 +75,7 @@ export class MMTControlManager {
     try {
       fs.writeFileSync(pidFile, process.pid.toString());
     } catch (err) {
-      this.log(`Warning: Could not write PID file: ${err}`);
+      this.logger.warn(`Could not write PID file: ${err}`);
     }
   }
   
@@ -326,12 +329,12 @@ export class MMTControlManager {
     
     // Handle process errors
     apiProcess.on('error', (err) => {
-      console.error('[API Error] Failed to start:', err);
+      this.logger.error('API Failed to start', { error: err });
     });
     
     apiProcess.on('exit', (code) => {
       if (code !== 0 && code !== null) {
-        console.error(`[API Error] Process exited with code ${code}`);
+        this.logger.error(`API Process exited with code ${code}`);
       }
       this.processes.delete('api');
     });
@@ -415,13 +418,13 @@ export class MMTControlManager {
     
     // Handle process errors
     webProcess.on('error', (err) => {
-      console.error('[Web Error] Failed to start:', err);
+      this.logger.error('Web Failed to start', { error: err });
     });
     
     webProcess.on('exit', (code, signal) => {
       this.log(`[WEB] Process exited with code ${code}, signal ${signal}`);
       if (code !== 0 && code !== null) {
-        console.error(`[Web Error] Process exited unexpectedly with code ${code}`);
+        this.logger.error(`Web Process exited unexpectedly with code ${code}`);
         // Log additional diagnostic info
         const managed = this.processes.get('web');
         this.log(`[WEB] Exit diagnostic: PID was ${webProcess.pid}, uptime was ${Date.now() - (managed?.startTime || Date.now())}ms`);
@@ -684,12 +687,12 @@ export class MMTControlManager {
       fs.appendFileSync(logFile, logMessage + '\n');
     } catch (err) {
       // If we can't write to log file, at least print to console
-      console.error('Failed to write to log file:', err);
+      this.logger.error('Failed to write to log file', { error: err });
     }
     
     // Also write to console unless silent
     if (!this.options.silent) {
-      console.log(`[MMT Control] ${message}`);
+      this.logger.info(message);
     }
   }
   

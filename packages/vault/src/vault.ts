@@ -2,6 +2,7 @@ import type { VaultConfig } from '@mmt/entities';
 import { VaultIndexer } from '@mmt/indexer';
 import { NodeFileSystem, type FileSystemAccess } from '@mmt/filesystem-access';
 import type { Vault as IVault, VaultStatus, VaultServices } from './types.js';
+import { Loggers, type Logger } from '@mmt/logger';
 
 /**
  * Represents a single vault containing markdown files with associated indexing capabilities.
@@ -31,12 +32,16 @@ export class Vault implements IVault {
   public services?: VaultServices;
   public error?: Error;
   private fileSystem: FileSystemAccess;
+  private logger: Logger;
+  private vaultDebugLogger: Logger;
 
   constructor(id: string, config: VaultConfig) {
     this.id = id;
     this.config = config;
     this.status = 'initializing';
     this.fileSystem = new NodeFileSystem();
+    this.logger = Loggers.vault();
+    this.vaultDebugLogger = Loggers.vaultDebug();
   }
 
   /**
@@ -52,8 +57,8 @@ export class Vault implements IVault {
   async initialize(): Promise<void> {
     try {
       // eslint-disable-next-line no-console
-      console.log(`Initializing vault: ${this.id}`);
-      console.log(`[VAULT DEBUG] Vault ID: ${this.id}, Path: ${this.config.path}`);
+      this.logger.info(`Initializing vault: ${this.id}`);
+      this.vaultDebugLogger.debug(`Vault ID: ${this.id}, Path: ${this.config.path}`);
       this.status = 'initializing';
 
       // Initialize indexer with vault configuration
@@ -64,7 +69,7 @@ export class Vault implements IVault {
         useCache: true,
         useWorkers: true
       });
-      console.log(`[VAULT DEBUG] Created indexer for ${this.id} with path: ${this.config.path}`);
+      this.vaultDebugLogger.debug(`Created indexer for ${this.id} with path: ${this.config.path}`);
 
       await indexer.initialize();
 
@@ -75,11 +80,11 @@ export class Vault implements IVault {
 
       this.status = 'ready';
       // eslint-disable-next-line no-console
-      console.log(`Vault ${this.id} initialized successfully`);
+      this.logger.info(`Vault ${this.id} initialized successfully`);
     } catch (error) {
       this.status = 'error';
       this.error = error instanceof Error ? error : new Error(String(error));
-      console.error(`Failed to initialize vault ${this.id}:`, error);
+      this.logger.error(`Failed to initialize vault ${this.id}`, { error });
       throw error; // Re-throw to allow fail-fast behavior
     }
   }
@@ -114,7 +119,7 @@ export class Vault implements IVault {
    */
   shutdown(): void {
     // eslint-disable-next-line no-console
-    console.log(`Shutting down vault: ${this.id}`);
+    this.logger.info(`Shutting down vault: ${this.id}`);
     
     // Indexer will handle its own cleanup including file watcher
     // Additional cleanup can be added here as needed

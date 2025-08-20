@@ -1,5 +1,6 @@
 import type { Config } from '@mmt/entities';
 import { Vault } from './vault.js';
+import { Loggers, type Logger } from '@mmt/logger';
 
 /**
  * Singleton registry for managing multiple vault instances across the application.
@@ -30,9 +31,11 @@ export class VaultRegistry {
   private static instance: VaultRegistry;
   private vaults = new Map<string, Vault>();
   private initializationPromise?: Promise<void>;
+  private logger: Logger;
 
   private constructor() {
     // Private constructor for singleton pattern
+    this.logger = Loggers.vault();
   }
 
   static getInstance(): VaultRegistry {
@@ -70,8 +73,7 @@ export class VaultRegistry {
 
   private async doInitializeVaults(config: Config): Promise<void> {
     // Log for debugging purposes
-    // eslint-disable-next-line no-console
-    console.log(`Initializing ${String(config.vaults.length)} vault(s)`);
+    this.logger.info(`Initializing ${String(config.vaults.length)} vault(s)`);
 
     // Clear any existing vaults
     for (const vault of this.vaults.values()) {
@@ -92,7 +94,7 @@ export class VaultRegistry {
       this.vaults.set(defaultVault.id, defaultVault);
     } catch (error) {
       const message = `Failed to initialize default vault ${defaultVault.id}: ${error instanceof Error ? error.message : String(error)}`;
-      console.error(message);
+      this.logger.error(message);
       throw new Error(message);
     }
 
@@ -106,7 +108,7 @@ export class VaultRegistry {
           this.vaults.set(vault.id, vault);
         } catch (error) {
           // Additional vaults fail gracefully
-          console.error(`Failed to initialize vault ${vault.id}:`, error);
+          this.logger.error(`Failed to initialize vault ${vault.id}`, { error });
           vault.status = 'error';
           vault.error = error instanceof Error ? error : new Error(String(error));
           this.vaults.set(vault.id, vault);
@@ -208,7 +210,7 @@ export class VaultRegistry {
       try {
         vault.shutdown();
       } catch (error: unknown) {
-        console.error(`Error shutting down vault ${vault.id}:`, error);
+        this.logger.error(`Error shutting down vault ${vault.id}`, { error });
       }
     });
     this.vaults.clear();

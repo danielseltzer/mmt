@@ -16,6 +16,7 @@ import { OramaProvider } from '@mmt/similarity-provider-orama';
 import { QdrantProvider } from '@mmt/similarity-provider-qdrant';
 import crypto from 'crypto';
 import path from 'path';
+import { Loggers, formatError, type Logger } from '@mmt/logger';
 
 // Register providers with the factory
 SimilarityProviderFactory.register('orama', () => new OramaProvider());
@@ -78,6 +79,7 @@ export class SimilaritySearchService extends EventEmitter {
   private isShuttingDown = false;
   private documentCount = 0;
   private lastIndexedTime?: Date;
+  private logger: Logger = Loggers.similarity();
 
   constructor(config: Config, vaultId: string, vaultPath: string) {
     super();
@@ -101,13 +103,13 @@ export class SimilaritySearchService extends EventEmitter {
         if (!ollamaHealthy) {
           this.indexStatus = 'error';
           this.lastError = 'Ollama is not running or not accessible';
-          console.warn(`Similarity search disabled: ${this.lastError}`);
+          this.logger.warn(`Similarity search disabled: ${this.lastError}`);
           return;
         }
       }
 
       // Create and initialize the provider
-      console.log(`Initializing similarity provider: ${providerName}`);
+      this.logger.info(`Initializing similarity provider: ${providerName}`);
       this.provider = await SimilarityProviderFactory.create(providerName, {
         config: {
           ...this.config.similarity,
@@ -121,9 +123,14 @@ export class SimilaritySearchService extends EventEmitter {
       if (this.provider.load) {
         try {
           await this.provider.load();
-          console.log('Loaded existing similarity index');
+          this.logger.info('Loaded existing similarity index');
         } catch (error) {
-          console.log('No existing index found, will create new one');
+          // Log the actual error for debugging, but continue
+          this.logger.warn('Could not load existing index', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          this.logger.info('Will create new index');
         }
       }
 
@@ -133,11 +140,11 @@ export class SimilaritySearchService extends EventEmitter {
       this.lastIndexedTime = status.lastIndexed;
       this.indexStatus = status.ready ? 'ready' : 'error';
       
-      console.log(`Similarity search initialized with ${providerName} provider (${this.documentCount} documents)`);
+      this.logger.info(`Similarity search initialized with ${providerName} provider (${this.documentCount} documents)`);
     } catch (error) {
       this.indexStatus = 'error';
       this.lastError = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Failed to initialize similarity search:', error);
+      this.logger.error('Failed to initialize similarity search', formatError(error));
     }
   }
 
@@ -147,7 +154,12 @@ export class SimilaritySearchService extends EventEmitter {
     try {
       const response = await fetch(`${this.config.similarity.ollamaUrl}/api/tags`);
       return response.ok;
-    } catch {
+    } catch (error) {
+      this.logger.error('Ollama health check failed', {
+        error: error instanceof Error ? error.message : String(error),
+        ollamaUrl: this.config.similarity.ollamaUrl,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return false;
     }
   }
@@ -215,10 +227,14 @@ export class SimilaritySearchService extends EventEmitter {
       this.documentCount++;
       this.lastIndexedTime = new Date();
       
-      console.log(`Indexed ${filePath}`);
+      this.logger.debug(`Indexed ${filePath}`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed to index ${filePath}: ${errorMsg}`);
+      this.logger.error(`Failed to index single file`, {
+        path: filePath,
+        error: errorMsg,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       // Don't throw - continue with other files
     }
   }
@@ -270,12 +286,17 @@ export class SimilaritySearchService extends EventEmitter {
         this.emit('indexing-progress', this.indexingProgress);
 
         // Index the batch
-        console.log(`[SIMILARITY] Processing batch ${i / batchSize + 1} (${batch.length} documents)`);
+        this.logger.info(`Processing batch ${i / batchSize + 1} (${batch.length} documents)`);
         const result = await this.provider.indexBatch(batch);
         successCount += result.successful;
         
         if (result.failed > 0) {
-          console.error(`[SIMILARITY] Batch failed: ${result.failed}/${batch.length} documents failed`);
+          this.logger.error(`Batch indexing had failures`, {
+            failed: result.failed,
+            total: batch.length,
+            batchNumber: i / batchSize + 1,
+            firstError: result.errors[0]
+          });
         }
         
         // Collect errors
@@ -285,8 +306,12 @@ export class SimilaritySearchService extends EventEmitter {
         
         // CRITICAL: If entire batch failed, we should stop!
         if (result.successful === 0 && batch.length > 0) {
-          console.error(`[SIMILARITY] CRITICAL: Entire batch failed, stopping indexing`);
-          console.error(`[SIMILARITY] First error: ${result.errors[0]?.error}`);
+          this.logger.error('CRITICAL: Entire batch failed, stopping indexing', {
+            batchNumber: i / batchSize + 1,
+            batchSize: batch.length,
+            firstError: result.errors[0],
+            allErrors: result.errors.slice(0, 5) // Log first 5 errors for debugging
+          });
           break;
         }
 
@@ -315,17 +340,22 @@ export class SimilaritySearchService extends EventEmitter {
         errors
       };
       
-      console.log(`[SIMILARITY] Indexing complete:`);
-      console.log(`[SIMILARITY]   Total documents: ${finalResult.totalDocuments}`);
-      console.log(`[SIMILARITY]   Successfully indexed: ${finalResult.successfullyIndexed}`);
-      console.log(`[SIMILARITY]   Failed: ${finalResult.failed}`);
+      this.logger.info('Indexing complete', {
+        totalDocuments: finalResult.totalDocuments,
+        successfullyIndexed: finalResult.successfullyIndexed,
+        failed: finalResult.failed
+      });
       
       if (errors.length > 0 && errors.length <= 10) {
-        console.error(`[SIMILARITY] Errors:`);
-        errors.forEach(e => console.error(`  - ${e.path}: ${e.error}`));
+        this.logger.error('Indexing errors', {
+          count: errors.length,
+          errors: errors
+        });
       } else if (errors.length > 10) {
-        console.error(`[SIMILARITY] First 10 errors (${errors.length} total):`);
-        errors.slice(0, 10).forEach(e => console.error(`  - ${e.path}: ${e.error}`));
+        this.logger.error('Indexing errors (showing first 10)', {
+          count: errors.length,
+          errors: errors.slice(0, 10)
+        });
       }
       
       return finalResult;
@@ -359,7 +389,12 @@ export class SimilaritySearchService extends EventEmitter {
           : undefined
       }));
     } catch (error) {
-      console.error('Search failed:', error);
+      this.logger.error('Search failed', {
+        query: query.slice(0, 100), // Log first 100 chars of query
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        options
+      });
       return [];
     }
   }
@@ -393,7 +428,7 @@ export class SimilaritySearchService extends EventEmitter {
       throw new Error('Provider not initialized');
     }
 
-    console.log(`Starting reindex of ${documents.length} documents...`);
+    this.logger.info(`Starting reindex of ${documents.length} documents`);
     
     // Clear existing index
     await this.provider.clearIndex();
@@ -412,7 +447,10 @@ export class SimilaritySearchService extends EventEmitter {
         try {
           await this.provider.persist();
         } catch (error) {
-          console.error('Failed to persist on shutdown:', error);
+          this.logger.error('Failed to persist on shutdown', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
         }
       }
       

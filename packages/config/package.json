@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@mmt/entities": "workspace:*",
+    "@mmt/logger": "workspace:*",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {

@@ -3,6 +3,7 @@ import { isAbsolute } from 'node:path';
 import { load as loadYaml } from 'js-yaml';
 import { ConfigSchema, type Config } from '@mmt/entities';
 import { z } from 'zod';
+import { Loggers, type Logger } from '@mmt/logger';
 
 /**
  * Service for loading and validating MMT configuration.
@@ -17,6 +18,12 @@ import { z } from 'zod';
  * The service follows MMT's fail-fast principle with clear error messages.
  */
 export class ConfigService {
+  private logger: Logger;
+
+  constructor() {
+    this.logger = Loggers.default();
+  }
+
   /**
    * Load and validate configuration from a YAML file.
    * 
@@ -126,7 +133,7 @@ export class ConfigService {
    * @param message - Error message to display
    */
   private exitWithError(message: string): never {
-    console.error(`\nError: ${message}\n`);
+    this.logger.error(message);
     process.exit(1);
   }
 }

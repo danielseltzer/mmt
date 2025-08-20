@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { Config } from '@mmt/entities';
 import { EventEmitter } from 'events';
+import { Loggers, type Logger } from '@mmt/logger';
 
 export interface SimilaritySearchResult {
   path: string;
@@ -66,6 +67,7 @@ export class SimilaritySearchService extends EventEmitter {
   private lastError: string | null = null;
   private isShuttingDown = false;
   private indexingErrors = new Map<string, string>();
+  private logger: Logger = Loggers.similarity();
 
   constructor(config: Config) {
     super();
@@ -105,7 +107,7 @@ export class SimilaritySearchService extends EventEmitter {
         
         // Verify loaded data
         const verifyCount = await search(this.db, { term: '', limit: 1 });
-        console.log(`Loaded existing similarity index with ${verifyCount.count} documents`);
+        this.logger.info(`Loaded existing similarity index with ${verifyCount.count} documents`);
       } catch (error) {
         // Create new index
         this.db = await create({
@@ -119,7 +121,7 @@ export class SimilaritySearchService extends EventEmitter {
           }
         });
         this.indexStatus = 'ready';
-        console.log('Created new similarity index');
+        this.logger.info('Created new similarity index');
       }
     } catch (error) {
       this.indexStatus = 'error';

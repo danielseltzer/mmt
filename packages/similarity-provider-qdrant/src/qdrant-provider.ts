@@ -8,6 +8,7 @@ import {
   SimilarityStatus,
   ProviderInitOptions
 } from '@mmt/similarity-provider';
+import { Loggers, formatError, type Logger } from '@mmt/logger';
 
 /**
  * Qdrant vector database provider implementation
@@ -21,6 +22,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
   private documentCount: number = 0;
   private lastIndexedTime?: Date;
   private lastError?: string;
+  private logger: Logger = Loggers.qdrant();
   
   protected async doInitialize(options: ProviderInitOptions): Promise<void> {
     const { config } = options;
@@ -81,11 +83,11 @@ export class QdrantProvider extends BaseSimilarityProvider {
           replication_factor: 1
         });
         
-        console.log(`Created Qdrant collection: ${this.collectionName}`);
+        this.logger.info(`Created Qdrant collection: ${this.collectionName}`);
       }
     } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[QDRANT] Failed to ensure collection:`, {
+      this.logger.error('Failed to ensure collection', {
         error: message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,
@@ -104,7 +106,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       const info = await this.client.getCollection(this.collectionName);
       this.documentCount = info.points_count || 0;
     } catch (error: any) {
-      console.error(`[QDRANT] Failed to get document count:`, {
+      this.logger.error('Failed to get document count', {
         error: error.message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,
@@ -124,7 +126,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       await this.client.getCollection(this.collectionName);
       return true;
     } catch (error: any) {
-      console.error(`[QDRANT] Health check failed:`, {
+      this.logger.error('Health check failed', {
         error: error.message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,
@@ -188,7 +190,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       
       return data.embedding as number[];
     } catch (error: any) {
-      console.error(`[QDRANT] Failed to generate embedding:`, {
+      this.logger.error('Failed to generate embedding', {
         error: error.message,
         httpStatus: error.response?.status,
         ollamaUrl: this.ollamaUrl,
@@ -209,7 +211,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
     
     // Check for empty content - skip with warning
     if (!doc.content || doc.content.trim().length === 0) {
-      console.warn(`[QDRANT] Skipping empty file: ${doc.path}`);
+      this.logger.warn(`Skipping empty file: ${doc.path}`);
       return;  // Exit without error
     }
     
@@ -219,7 +221,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       
       // Check if embedding generation failed
       if (!embedding || embedding.length === 0) {
-        console.warn(`[QDRANT] Skipping document with no embedding: ${doc.path}`);
+        this.logger.warn(`Skipping document with no embedding: ${doc.path}`);
         return;  // Exit without error
       }
       
@@ -251,7 +253,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       this.documentCount++;
     } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[QDRANT] Failed to index single document:`, {
+      this.logger.error('Failed to index single document', {
         error: message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,
@@ -279,7 +281,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       try {
         // Check for empty content - skip with warning, not error
         if (!doc.content || doc.content.trim().length === 0) {
-          console.warn(`[QDRANT] Skipping empty file: ${doc.path}`);
+          this.logger.warn(`Skipping empty file: ${doc.path}`);
           skipped++;
           continue;  // Skip to next document
         }
@@ -288,7 +290,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
         
         // Check if embedding generation failed (empty vector)
         if (!embedding || embedding.length === 0) {
-          console.warn(`[QDRANT] Skipping document with no embedding: ${doc.path}`);
+          this.logger.warn(`Skipping document with no embedding: ${doc.path}`);
           skipped++;
           continue;
         }
@@ -314,7 +316,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
         successful++;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        console.error(`[QDRANT] Failed to process document ${doc.path}: ${errorMsg}`);
+        this.logger.error(`Failed to process document ${doc.path}: ${errorMsg}`);
         errors.push({
           documentId: doc.id,
           path: doc.path,
@@ -325,7 +327,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
     
     // Batch upsert successful points
     if (points.length > 0) {
-      console.log(`[QDRANT] Attempting to upsert batch of ${points.length} documents`);
+      this.logger.info(`Attempting to upsert batch of ${points.length} documents`);
       try {
         await this.client.upsert(this.collectionName, {
           points
@@ -333,12 +335,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
         
         this.lastIndexedTime = new Date();
         this.documentCount += points.length;
-        console.log(`[QDRANT] Successfully upserted ${points.length} documents`);
+        this.logger.info(`Successfully upserted ${points.length} documents`);
       } catch (error: any) {
         // If batch fails, try indexing documents one by one to identify problematic ones
         const batchError = error instanceof Error ? error.message : String(error);
-        console.warn(`[QDRANT] Batch upsert failed, falling back to individual indexing for ${points.length} documents`);
-        console.warn(`[QDRANT] Batch error was:`, {
+        this.logger.warn(`Batch upsert failed, falling back to individual indexing for ${points.length} documents`);
+        this.logger.warn('Batch error was:', {
           error: batchError,
           httpStatus: error.response?.status,
           qdrantError: error.response?.data
@@ -375,7 +377,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
               vectorSize: point.vector.length
             };
             
-            console.error(`[QDRANT] Failed to index individual document:`, errorDetails);
+            this.logger.error('Failed to index individual document', errorDetails);
             
             failedDocs.push({
               path: doc.path,
@@ -395,7 +397,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
           successful = individualSuccesses;
           this.lastIndexedTime = new Date();
           this.documentCount += individualSuccesses;
-          console.log(`[QDRANT] Successfully indexed ${individualSuccesses}/${points.length} documents individually`);
+          this.logger.info(`Successfully indexed ${individualSuccesses}/${points.length} documents individually`);
         }
         
         if (failedDocs.length > 0) {
@@ -403,29 +405,30 @@ export class QdrantProvider extends BaseSimilarityProvider {
           const fs = await import('fs/promises');
           const failedDocsPath = `/tmp/qdrant-failed-docs-${Date.now()}.json`;
           await fs.writeFile(failedDocsPath, JSON.stringify(failedDocs, null, 2));
-          console.error(`[QDRANT] ${failedDocs.length} documents failed. Details saved to: ${failedDocsPath}`);
+          this.logger.error(`${failedDocs.length} documents failed. Details saved to: ${failedDocsPath}`);
         }
       }
     }
     
+    // Count skipped files as successful since they were handled correctly (empty content is valid)
     const result = {
-      successful,
+      successful: successful + skipped,
       failed: errors.length,
       errors
     };
     
     // Report summary including skipped files
     if (skipped > 0) {
-      console.info(`[QDRANT] Skipped ${skipped} empty/invalid files (warnings logged above)`);
+      this.logger.info(`Skipped ${skipped} empty/invalid files (warnings logged above)`);
     }
     
     if (errors.length > 0) {
-      console.warn(`[QDRANT] Batch indexing completed with ${errors.length} errors`);
+      this.logger.warn(`Batch indexing completed with ${errors.length} errors`);
       if (errors.length > 5) {
-        console.warn(`[QDRANT] First 5 errors:`);
-        errors.slice(0, 5).forEach(e => console.warn(`  - ${e.path}: ${e.error}`));
+        this.logger.warn(`First 5 errors:`);
+        errors.slice(0, 5).forEach(e => this.logger.warn(`  - ${e.path}: ${e.error}`));
       } else {
-        errors.forEach(e => console.warn(`  - ${e.path}: ${e.error}`));
+        errors.forEach(e => this.logger.warn(`  - ${e.path}: ${e.error}`));
       }
     }
     
@@ -448,7 +451,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       this.documentCount = Math.max(0, this.documentCount - 1);
     } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[QDRANT] Failed to remove document:`, {
+      this.logger.error('Failed to remove document', {
         error: message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,
@@ -474,7 +477,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       this.lastIndexedTime = undefined;
     } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[QDRANT] Failed to clear index:`, {
+      this.logger.error('Failed to clear index', {
         error: message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,
@@ -496,7 +499,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       return await this.searchByVector(embedding, options);
     } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[QDRANT] Search query failed:`, {
+      this.logger.error('Search query failed', {
         error: message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,
@@ -533,7 +536,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
       }));
     } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[QDRANT] Vector search failed:`, {
+      this.logger.error('Vector search failed', {
         error: message,
         httpStatus: error.response?.status,
         qdrantError: error.response?.data,

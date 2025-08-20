@@ -11,6 +11,7 @@ import {
   SimilarityStatus,
   ProviderInitOptions
 } from '@mmt/similarity-provider';
+import { Loggers, type Logger } from '@mmt/logger';
 
 /**
  * Orama vector database provider implementation
@@ -27,6 +28,7 @@ export class OramaProvider extends BaseSimilarityProvider {
   private lastError?: string;
   private embeddingCache = new Map<string, number[]>();
   private maxCacheSize = 1000;
+  private logger: Logger = Loggers.similarity();
   
   protected async doInitialize(options: ProviderInitOptions): Promise<void> {
     const { config, vaultPath } = options;
@@ -57,8 +59,13 @@ export class OramaProvider extends BaseSimilarityProvider {
         const verifyCount = await search(this.db, { term: '', limit: 1 });
         this.documentCount = verifyCount.count || 0;
         
-        console.log(`Loaded existing Orama index with ${this.documentCount} documents`);
+        this.logger.info(`Loaded existing Orama index with ${this.documentCount} documents`);
       } catch (error) {
+        // Log the error but continue to create new index
+        this.logger.warn('Could not restore existing index, creating new one', {
+          error: error instanceof Error ? error.message : String(error),
+          indexPath: this.indexPath
+        });
         // Create new index
         this.db = await create({
           schema: {
@@ -71,7 +78,7 @@ export class OramaProvider extends BaseSimilarityProvider {
           }
         });
         this.documentCount = 0;
-        console.log('Created new Orama index');
+        this.logger.info('Created new Orama index');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -86,7 +93,11 @@ export class OramaProvider extends BaseSimilarityProvider {
       try {
         await this.persist();
       } catch (error) {
-        console.error('Failed to persist on shutdown:', error);
+        this.logger.error('Failed to persist on shutdown', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          indexPath: this.indexPath
+        });
       }
     }
     
@@ -107,6 +118,10 @@ export class OramaProvider extends BaseSimilarityProvider {
       return true;
     } catch (error) {
       this.lastError = error instanceof Error ? error.message : String(error);
+      this.logger.error('Health check failed', {
+        error: this.lastError,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return false;
     }
   }
@@ -168,6 +183,13 @@ export class OramaProvider extends BaseSimilarityProvider {
       
       return data.embedding as number[];
     } catch (error) {
+      this.logger.error('Failed to generate embedding', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        ollamaUrl: this.ollamaUrl,
+        model: this.model,
+        textLength: text.length
+      });
       if (error instanceof Error) {
         throw new Error(`Failed to generate embedding: ${error.message}`);
       }
@@ -211,8 +233,15 @@ export class OramaProvider extends BaseSimilarityProvider {
           // Remove existing document
           await remove(this.db, id);
         }
-      } catch {
-        // Document doesn't exist, continue
+      } catch (searchError) {
+        // Document doesn't exist, continue - but log unexpected errors
+        if (searchError instanceof Error && !searchError.message.includes('not found')) {
+          this.logger.warn('Error checking existing document', {
+            error: searchError.message,
+            documentId: id,
+            path: doc.path
+          });
+        }
       }
       
       // Insert the document
@@ -232,7 +261,12 @@ export class OramaProvider extends BaseSimilarityProvider {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const errorMsg = `Failed to index document ${doc.path}: ${message}`;
-      console.error(errorMsg);
+      this.logger.error('Failed to index document', {
+        error: message,
+        stack: error instanceof Error ? error.stack : undefined,
+        path: doc.path,
+        documentId: crypto.createHash('md5').update(doc.path).digest('hex')
+      });
       
       // Check if this is the "Too deep objects" error
       if (message.includes('Too deep objects')) {
@@ -276,6 +310,12 @@ export class OramaProvider extends BaseSimilarityProvider {
         
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        this.logger.error('Failed to process document in batch', {
+          error: message,
+          stack: error instanceof Error ? error.stack : undefined,
+          path: doc.path,
+          documentId: doc.id
+        });
         errors.push({
           documentId: doc.id,
           path: doc.path,
@@ -284,7 +324,10 @@ export class OramaProvider extends BaseSimilarityProvider {
         
         // Check for the depth error
         if (message.includes('Too deep objects')) {
-          console.error(`CRITICAL: Orama depth limit hit at document ${doc.path}`);
+          this.logger.error('CRITICAL: Orama depth limit hit', {
+            path: doc.path,
+            documentId: doc.id
+          });
           // Stop processing further documents
           break;
         }
@@ -300,6 +343,11 @@ export class OramaProvider extends BaseSimilarityProvider {
         this.documentCount += successful;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        this.logger.error('Batch insert failed', {
+          error: message,
+          stack: error instanceof Error ? error.stack : undefined,
+          batchSize: oramaDocs.length
+        });
         
         // If batch fails, report all as failed
         for (const oramaDoc of oramaDocs) {
@@ -336,6 +384,11 @@ export class OramaProvider extends BaseSimilarityProvider {
       this.documentCount = Math.max(0, this.documentCount - 1);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to remove document', {
+        error: message,
+        stack: error instanceof Error ? error.stack : undefined,
+        documentId: id
+      });
       throw new Error(`Failed to remove document ${id}: ${message}`);
     }
   }
@@ -363,6 +416,10 @@ export class OramaProvider extends BaseSimilarityProvider {
       this.embeddingCache.clear();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to clear index', {
+        error: message,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw new Error(`Failed to clear index: ${message}`);
     }
   }
@@ -378,6 +435,11 @@ export class OramaProvider extends BaseSimilarityProvider {
       return await this.searchByVector(embedding, options);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Search query failed', {
+        error: message,
+        stack: error instanceof Error ? error.stack : undefined,
+        query: query.slice(0, 100) // Log first 100 chars of query
+      });
       throw new Error(`Search failed: ${message}`);
     }
   }
@@ -417,6 +479,13 @@ export class OramaProvider extends BaseSimilarityProvider {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Vector search failed', {
+        error: message,
+        stack: error instanceof Error ? error.stack : undefined,
+        vectorDimensions: vector.length,
+        limit,
+        threshold
+      });
       throw new Error(`Vector search failed: ${message}`);
     }
   }
@@ -431,9 +500,14 @@ export class OramaProvider extends BaseSimilarityProvider {
     
     try {
       await persistToFile(this.db, 'binary', this.indexPath);
-      console.log(`Persisted Orama index to ${this.indexPath}`);
+      this.logger.info(`Persisted Orama index to ${this.indexPath}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to persist index', {
+        error: message,
+        stack: error instanceof Error ? error.stack : undefined,
+        indexPath: this.indexPath
+      });
       throw new Error(`Failed to persist index: ${message}`);
     }
   }
@@ -457,9 +531,14 @@ export class OramaProvider extends BaseSimilarityProvider {
       const verifyCount = await search(this.db, { term: '', limit: 1 });
       this.documentCount = verifyCount.count || 0;
       
-      console.log(`Loaded Orama index with ${this.documentCount} documents`);
+      this.logger.info(`Loaded Orama index with ${this.documentCount} documents`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to load index', {
+        error: message,
+        stack: error instanceof Error ? error.stack : undefined,
+        indexPath: this.indexPath
+      });
       throw new Error(`Failed to load index: ${message}`);
     }
   }

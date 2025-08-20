@@ -28,7 +28,8 @@
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
-    "@mmt/file-relocator": "workspace:*"
+    "@mmt/file-relocator": "workspace:*",
+    "@mmt/logger": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
