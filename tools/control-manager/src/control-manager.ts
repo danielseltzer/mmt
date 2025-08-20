@@ -10,6 +10,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import { DockerManager } from './docker-manager.js';
+import { Loggers, type Logger } from '@mmt/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +32,8 @@ interface MMTConfig {
   indexPath: string;
   apiPort: number;
   webPort: number;
+  requiresQdrant?: boolean;
+  qdrantPort?: number;
 }
 
 export interface ControlOptions {
@@ -42,9 +46,13 @@ export class MMTControlManager {
   private config: MMTConfig | null = null;
   private options: ControlOptions;
   private cleanupHandlers: (() => void)[] = [];
+  private dockerManager: DockerManager;
+  private logger: Logger;
   
   constructor(options: ControlOptions) {
     this.options = options;
+    this.dockerManager = new DockerManager();
+    this.logger = Loggers.control();
     
     // Ensure log directory exists
     if (!fs.existsSync(logDir)) {
@@ -67,7 +75,7 @@ export class MMTControlManager {
     try {
       fs.writeFileSync(pidFile, process.pid.toString());
     } catch (err) {
-      this.log(`Warning: Could not write PID file: ${err}`);
+      this.logger.warn(`Could not write PID file: ${err}`);
     }
   }
   
@@ -208,11 +216,41 @@ export class MMTControlManager {
       throw new Error('Config must include apiPort and webPort');
     }
     
+    // Check if Qdrant is required (similarity enabled with qdrant provider)
+    const similarityMatch = configContent.match(/similarity:\s*\n((?:\s+.*\n)+)/);
+    let requiresQdrant = false;
+    let qdrantPort = 6333; // default
+    
+    if (similarityMatch) {
+      const similarityBlock = similarityMatch[1];
+      const enabledMatch = similarityBlock.match(/\s+enabled:\s*(true|false)/);
+      const providerMatch = similarityBlock.match(/\s+provider:\s*(\w+)/);
+      
+      if (enabledMatch && enabledMatch[1] === 'true') {
+        // Check if provider is qdrant (or not specified, defaulting to orama)
+        if (providerMatch && providerMatch[1] === 'qdrant') {
+          requiresQdrant = true;
+          
+          // Check for qdrant-specific config
+          const qdrantMatch = configContent.match(/\s+qdrant:\s*\n((?:\s+.*\n)+)/);
+          if (qdrantMatch) {
+            const qdrantBlock = qdrantMatch[1];
+            const portMatch = qdrantBlock.match(/\s+url:\s*.*:(\d+)/);
+            if (portMatch) {
+              qdrantPort = parseInt(portMatch[1], 10);
+            }
+          }
+        }
+      }
+    }
+    
     this.config = {
       vaultPath,
       indexPath,
       apiPort: parseInt(apiPortMatch[1], 10),
-      webPort: parseInt(webPortMatch[1], 10)
+      webPort: parseInt(webPortMatch[1], 10),
+      requiresQdrant,
+      qdrantPort
     };
   }
   
@@ -291,12 +329,12 @@ export class MMTControlManager {
     
     // Handle process errors
     apiProcess.on('error', (err) => {
-      console.error('[API Error] Failed to start:', err);
+      this.logger.error('API Failed to start', { error: err });
     });
     
     apiProcess.on('exit', (code) => {
       if (code !== 0 && code !== null) {
-        console.error(`[API Error] Process exited with code ${code}`);
+        this.logger.error(`API Process exited with code ${code}`);
       }
       this.processes.delete('api');
     });
@@ -380,13 +418,13 @@ export class MMTControlManager {
     
     // Handle process errors
     webProcess.on('error', (err) => {
-      console.error('[Web Error] Failed to start:', err);
+      this.logger.error('Web Failed to start', { error: err });
     });
     
     webProcess.on('exit', (code, signal) => {
       this.log(`[WEB] Process exited with code ${code}, signal ${signal}`);
       if (code !== 0 && code !== null) {
-        console.error(`[Web Error] Process exited unexpectedly with code ${code}`);
+        this.logger.error(`Web Process exited unexpectedly with code ${code}`);
         // Log additional diagnostic info
         const managed = this.processes.get('web');
         this.log(`[WEB] Exit diagnostic: PID was ${webProcess.pid}, uptime was ${Date.now() - (managed?.startTime || Date.now())}ms`);
@@ -423,6 +461,20 @@ export class MMTControlManager {
     // Write PID file
     this.writePidFile();
     
+    // Start Qdrant if required
+    if (this.config?.requiresQdrant) {
+      this.log('Config requires Qdrant provider, starting Docker container...');
+      try {
+        await this.dockerManager.startQdrant({
+          enabled: true,
+          port: this.config.qdrantPort
+        });
+      } catch (error) {
+        this.log(`Warning: Failed to start Qdrant: ${error}`);
+        // Don't fail the whole startup, let the API handle the missing service
+      }
+    }
+    
     await this.startAPI();
     await this.startWeb();
     this.log('All servers started successfully!');
@@ -456,6 +508,15 @@ export class MMTControlManager {
     
     // Wait for all to complete, but don't fail if some error
     await Promise.allSettled(promises);
+    
+    // Stop Qdrant if it was started
+    if (this.config?.requiresQdrant) {
+      try {
+        await this.dockerManager.stopQdrant();
+      } catch (error) {
+        this.log(`Warning: Failed to stop Qdrant: ${error}`);
+      }
+    }
     
     // Force kill any remaining processes
     for (const [name, managed] of this.processes.entries()) {
@@ -626,12 +687,12 @@ export class MMTControlManager {
       fs.appendFileSync(logFile, logMessage + '\n');
     } catch (err) {
       // If we can't write to log file, at least print to console
-      console.error('Failed to write to log file:', err);
+      this.logger.error('Failed to write to log file', { error: err });
     }
     
     // Also write to console unless silent
     if (!this.options.silent) {
-      console.log(`[MMT Control] ${message}`);
+      this.logger.info(message);
     }
   }
   

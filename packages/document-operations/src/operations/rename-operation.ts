@@ -1,6 +1,7 @@
 import { join, dirname, basename } from 'path';
 import { rename, copyFile } from 'fs/promises';
 import type { Document } from '@mmt/entities';
+import { Loggers, type Logger } from '@mmt/logger';
 import type { 
   DocumentOperation, 
   OperationContext, 
@@ -17,6 +18,7 @@ export interface RenameOperationOptions {
 export class RenameOperation implements DocumentOperation {
   readonly type = 'rename' as const;
   private newName: string;
+  private logger: Logger = Loggers.operations();
 
   constructor(private options: RenameOperationOptions) {
     // Normalize the new name
@@ -112,7 +114,11 @@ export class RenameOperation implements DocumentOperation {
         }
         
       } catch (error) {
-        console.warn('Failed to find linking documents:', error);
+        this.logger.warn('Failed to find linking documents', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          sourcePath: doc.path
+        });
       }
     }
     
@@ -210,7 +216,12 @@ export class RenameOperation implements DocumentOperation {
             }
           }
         } catch (error) {
-          console.error('Failed to update links:', error);
+          this.logger.error('Failed to update links during rename operation', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            sourcePath: doc.path,
+            targetPath: targetPath
+          });
           // Continue with rename even if link update fails
         }
       }

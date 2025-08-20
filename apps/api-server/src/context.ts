@@ -5,7 +5,7 @@ import { ConfigService } from '@mmt/config';
 import type { Config } from '@mmt/entities';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { vaultRegistry } from '@mmt/vault';
-import { SimilaritySearchService } from './services/similarity-search.js';
+import { SimilaritySearchService } from './services/similarity-search-provider.js';
 
 export interface Context {
   config: Config;
@@ -49,7 +49,8 @@ export async function createContext(config: Config): Promise<Context> {
   // Initialize similarity search if enabled
   let similaritySearch: SimilaritySearchService | undefined;
   if (config.similarity?.enabled) {
-    similaritySearch = new SimilaritySearchService(config);
+    // Use the default vault for similarity search (for now)
+    similaritySearch = new SimilaritySearchService(config, defaultVault.name, defaultVault.path);
     await similaritySearch.initialize();
   }
   

@@ -2,6 +2,7 @@ import { dirname, isAbsolute, basename } from 'path';
 import { rename, copyFile } from 'fs/promises';
 import type { Document } from '@mmt/entities';
 import { FileRelocator } from '@mmt/file-relocator';
+import { Loggers, type Logger } from '@mmt/logger';
 import type { 
   DocumentOperation, 
   OperationContext, 
@@ -17,6 +18,7 @@ export interface MoveOperationOptions {
 
 export class MoveOperation implements DocumentOperation {
   readonly type = 'move' as const;
+  private logger: Logger = Loggers.operations();
 
   constructor(private options: MoveOperationOptions) {
     if (!options.targetPath) {
@@ -113,7 +115,11 @@ export class MoveOperation implements DocumentOperation {
         }
       } catch (error) {
         // If finding references fails, continue without link updates
-        console.warn('Failed to find linking documents:', error);
+        this.logger.warn('Failed to find linking documents', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          sourcePath: doc.path
+        });
       }
     }
     
@@ -170,7 +176,12 @@ export class MoveOperation implements DocumentOperation {
           const relocator = new FileRelocator(fs);
           await relocator.updateReferences(doc.path, targetPath, context.vault.path);
         } catch (error) {
-          console.error('Failed to update links:', error);
+          this.logger.error('Failed to update links during move operation', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            sourcePath: doc.path,
+            targetPath: targetPath
+          });
           // Continue with move even if link update fails
         }
       }

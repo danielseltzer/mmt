@@ -12,6 +12,7 @@ import { OperationRegistry } from '@mmt/document-operations';
 import type { OperationContext } from '@mmt/document-operations';
 import { basename, join } from 'path';
 import { PreviewGenerator } from './preview-generator.js';
+import { Loggers, type Logger } from '@mmt/logger';
 
 export interface PipelineExecutionResult {
   success: boolean;
@@ -65,6 +66,7 @@ export class PipelineExecutor {
   private readonly context: Context;
   private readonly operationRegistry: OperationRegistry;
   private readonly previewGenerator: PreviewGenerator;
+  private readonly logger: Logger = Loggers.api();
 
   constructor(context: Context) {
     this.context = context;
@@ -467,7 +469,7 @@ export class PipelineExecutor {
         // Note: created date is not available in the current document schema
         // For now, treat created filters as always false
         if (dateFilter.field === 'created') {
-          console.warn('Created date filtering is not supported - document metadata does not include creation date');
+          this.logger.warn('Created date filtering is not supported - document metadata does not include creation date');
           return false;
         }
         const docDate = doc.metadata.modified;

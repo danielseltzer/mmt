@@ -1,0 +1,25 @@
+# Configuration for personal vault with Qdrant similarity search
+vaults:
+  - name: 'Personal'
+    path: /Users/danielseltzer/Notes/Personal-sync
+    indexPath: /Users/danielseltzer/code/mmt/.index-personal
+    # Enable file watching for automatic updates
+    fileWatching:
+      enabled: true
+      debounceMs: 200
+
+# Required port settings
+apiPort: 3001
+webPort: 5173
+
+# Similarity search configuration
+similarity:
+  enabled: true
+  provider: qdrant
+  ollamaUrl: http://localhost:11434
+  model: nomic-embed-text
+  
+  qdrant:
+    url: http://localhost:6333
+    collectionName: personal-documents
+    onDisk: false
