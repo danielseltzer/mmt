@@ -13,6 +13,7 @@ interface Document {
     links?: string[];
     backlinks?: string[];
   };
+  similarityScore?: number; // Score from similarity search (0-1)
 }
 
 interface FilterCondition {
@@ -78,6 +79,11 @@ interface DocumentStoreState {
   sortBy?: string;
   sortOrder: 'asc' | 'desc';
   
+  // Similarity search state
+  searchMode: 'text' | 'similarity';
+  similarityResults: Document[];
+  loadingSimilarity: boolean;
+  
   // Vault state
   vaults: Vault[];
   currentVaultId: string | null;
@@ -90,6 +96,11 @@ interface DocumentStoreState {
   fetchDocuments: () => Promise<void>;
   clearError: () => void;
   reset: () => void;
+  
+  // Similarity search actions
+  setSearchMode: (mode: 'text' | 'similarity') => void;
+  performSimilaritySearch: (query: string) => Promise<void>;
+  findSimilarDocuments: (documentPath: string) => Promise<void>;
   
   // Vault actions
   loadVaults: () => Promise<void>;
@@ -113,6 +124,11 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   filters: { conditions: [], logic: 'AND' },
   sortBy: undefined,
   sortOrder: 'asc',
+  
+  // Similarity search state
+  searchMode: 'text',
+  similarityResults: [],
+  loadingSimilarity: false,
   
   // Vault state
   vaults: [],
@@ -202,8 +218,136 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     searchQuery: '',
     filters: { conditions: [], logic: 'AND' },
     sortBy: undefined,
-    sortOrder: 'asc'
+    sortOrder: 'asc',
+    searchMode: 'text',
+    similarityResults: [],
+    loadingSimilarity: false
   }),
+  
+  // Similarity search actions
+  setSearchMode: (mode: 'text' | 'similarity') => {
+    set({ searchMode: mode });
+    // Clear results when switching modes
+    if (mode === 'text') {
+      set({ similarityResults: [] });
+      get().fetchDocuments();
+    } else {
+      // If switching to similarity mode and we have a query, perform search
+      const query = get().searchQuery;
+      if (query) {
+        get().performSimilaritySearch(query);
+      }
+    }
+  },
+  
+  performSimilaritySearch: async (query: string) => {
+    const currentVaultId = get().currentVaultId;
+    if (!currentVaultId) {
+      return;
+    }
+    
+    set({ loadingSimilarity: true, error: null });
+    
+    try {
+      const response = await fetch(`/api/vaults/${currentVaultId}/similarity/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          query,
+          limit: 20 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Similarity search failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform results to include similarity scores
+      const documentsWithScores = data.results.map((result: any) => ({
+        path: result.path,
+        fullPath: result.path,
+        metadata: {
+          name: result.path.split('/').pop() || result.path,
+          modified: '',
+          size: 0,
+        },
+        similarityScore: result.score,
+      }));
+      
+      set({ 
+        similarityResults: documentsWithScores,
+        filteredDocuments: documentsWithScores,
+        totalCount: documentsWithScores.length,
+        loadingSimilarity: false,
+        loading: false
+      });
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Similarity search failed',
+        loadingSimilarity: false,
+        loading: false
+      });
+    }
+  },
+  
+  findSimilarDocuments: async (documentPath: string) => {
+    const currentVaultId = get().currentVaultId;
+    if (!currentVaultId) {
+      return;
+    }
+    
+    set({ loadingSimilarity: true, error: null, searchMode: 'similarity' });
+    
+    try {
+      const response = await fetch(`/api/vaults/${currentVaultId}/similarity/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          documentPath,
+          limit: 10 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Find similar failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform results to include similarity scores
+      const documentsWithScores = data.results.map((result: any) => ({
+        path: result.path,
+        fullPath: result.path,
+        metadata: {
+          name: result.path.split('/').pop() || result.path,
+          modified: '',
+          size: 0,
+        },
+        similarityScore: result.score,
+      }));
+      
+      set({ 
+        similarityResults: documentsWithScores,
+        filteredDocuments: documentsWithScores,
+        totalCount: documentsWithScores.length,
+        loadingSimilarity: false,
+        loading: false,
+        searchQuery: `Similar to: ${documentPath.split('/').pop()}`
+      });
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Find similar failed',
+        loadingSimilarity: false,
+        loading: false
+      });
+    }
+  },
   
   // Vault actions
   loadVaults: async () => {
