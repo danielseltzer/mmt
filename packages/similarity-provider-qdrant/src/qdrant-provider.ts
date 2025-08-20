@@ -239,7 +239,8 @@ export class QdrantProvider extends BaseSimilarityProvider {
           title: doc.metadata?.title,
           tags: doc.metadata?.tags,
           created: doc.metadata?.created,
-          modified: doc.metadata?.modified
+          modified: doc.metadata?.modified,
+          size: doc.metadata?.size
           // DO NOT spread all metadata - could include large content fields
         }
       };
@@ -308,7 +309,8 @@ export class QdrantProvider extends BaseSimilarityProvider {
             title: doc.metadata?.title,
             tags: doc.metadata?.tags,
             created: doc.metadata?.created,
-            modified: doc.metadata?.modified
+            modified: doc.metadata?.modified,
+            size: doc.metadata?.size
             // DO NOT spread all metadata - could include large content fields
           }
         });

@@ -146,8 +146,15 @@ export function similarityRouter(context: Context): Router {
           try {
             const content = await context.fs.readFile(doc.path);
             return {
-              path: doc.path,
-              content: content
+              path: doc.path,  // Use the absolute path
+              content: content,
+              // Include metadata from the indexed document (PageMetadata structure)
+              metadata: {
+                title: doc.title || doc.basename,
+                modified: doc.mtime ? new Date(doc.mtime).toISOString() : undefined,
+                size: doc.size,
+                tags: doc.tags || []
+              }
             };
           } catch (error) {
             logger.warn(`Failed to read file ${doc.path} during reindex:`, {
@@ -155,8 +162,14 @@ export function similarityRouter(context: Context): Router {
               path: doc.path
             });
             return {
-              path: doc.path,
-              content: ''
+              path: doc.path,  // Use the absolute path
+              content: '',
+              metadata: {
+                title: doc.title || doc.basename,
+                modified: doc.mtime ? new Date(doc.mtime).toISOString() : undefined,
+                size: doc.size,
+                tags: doc.tags || []
+              }
             };
           }
         })

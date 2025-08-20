@@ -5,7 +5,7 @@ import { ConfigService } from '@mmt/config';
 import type { Config } from '@mmt/entities';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { vaultRegistry } from '@mmt/vault';
-import { SimilaritySearchService } from './services/similarity-search-provider.js';
+import { SimilaritySearchService } from './services/similarity-search.js';
 
 export interface Context {
   config: Config;
