@@ -96,3 +96,4 @@ personal-vault-config.yaml
 .yarnrc.yml
 package-lock.json
 yarn.lockqdrant_storage/
+qdrant_storage/
