@@ -1,26 +1,38 @@
-import { create, insert, insertMultiple, search, remove, save, load, AnyOrama, RawData } from '@orama/orama';
-import { persistToFile, restoreFromFile } from '@orama/plugin-data-persistence/server';
-import crypto from 'crypto';
-import fs from 'fs/promises';
-import path from 'path';
-import type { Config } from '@mmt/entities';
+/**
+ * Provider-based Similarity Search Service
+ * Uses the pluggable provider interface to support multiple vector databases
+ */
+
 import { EventEmitter } from 'events';
-import { Loggers, type Logger } from '@mmt/logger';
+import type { Config } from '@mmt/entities';
+import { 
+  SimilarityProviderFactory,
+  SimilarityProvider,
+  DocumentToIndex,
+  SearchResult,
+  IndexingResult as ProviderIndexingResult
+} from '@mmt/similarity-provider';
+import { OramaProvider } from '@mmt/similarity-provider-orama';
+import { QdrantProvider } from '@mmt/similarity-provider-qdrant';
+import crypto from 'crypto';
+import path from 'path';
+import { Loggers, formatError, type Logger } from '@mmt/logger';
+
+// Register providers with the factory
+SimilarityProviderFactory.register('orama', () => new OramaProvider());
+SimilarityProviderFactory.register('qdrant', () => new QdrantProvider());
 
 export interface SimilaritySearchResult {
   path: string;
   content: string;
   score: number;
+  // Include metadata for UI display
+  modified?: string;
+  size?: number;
+  title?: string;
+  tags?: string[];
+  metadata?: Record<string, any>;
   excerpt?: string;
-}
-
-interface IndexedDocument {
-  id: string;
-  path: string;
-  content: string;
-  embedding: number[];
-  contentHash: string;
-  lastModified: number;
 }
 
 export type IndexStatus = 'not_started' | 'indexing' | 'ready' | 'error';
@@ -56,28 +68,30 @@ export interface IndexingResult {
   errorLogPath?: string;
 }
 
+interface OllamaHealthStatus {
+  healthy: boolean;
+  modelAvailable?: boolean;
+  error?: string;
+}
+
 export class SimilaritySearchService extends EventEmitter {
-  private db: AnyOrama | null = null;
-  private embeddingCache = new Map<string, number[]>();
+  private provider?: SimilarityProvider;
   private config: Config;
-  private indexPath: string;
-  private maxCacheSize = 1000;
+  private vaultPath: string;
+  private vaultId: string;
   private indexStatus: IndexStatus = 'not_started';
   private indexingProgress: IndexingProgress | null = null;
   private lastError: string | null = null;
   private isShuttingDown = false;
-  private indexingErrors = new Map<string, string>();
+  private documentCount = 0;
+  private lastIndexedTime?: Date;
   private logger: Logger = Loggers.similarity();
 
-  constructor(config: Config) {
+  constructor(config: Config, vaultId: string, vaultPath: string) {
     super();
     this.config = config;
-    // For Phase 1: Use first vault's index path
-    const defaultVault = config.vaults[0];
-    this.indexPath = path.join(
-      defaultVault.indexPath,
-      config.similarity?.indexFilename || 'similarity-index.msp'
-    );
+    this.vaultId = vaultId;
+    this.vaultPath = vaultPath;
   }
 
   async initialize(): Promise<void> {
@@ -86,185 +100,276 @@ export class SimilaritySearchService extends EventEmitter {
     }
 
     try {
-      // Check Ollama health first
-      const ollamaHealthy = await this.checkOllamaHealth();
-      if (!ollamaHealthy) {
-        this.indexStatus = 'error';
-        this.lastError = 'Ollama is not running or not accessible';
-        return;
+      // Check Ollama health first if needed
+      const providerName = (this.config.similarity as any).provider || 'orama';
+      
+      // Only check Ollama if not using pre-computed embeddings
+      if (this.config.similarity.ollamaUrl) {
+        const ollamaHealthy = await this.checkOllamaHealth();
+        if (!ollamaHealthy) {
+          this.indexStatus = 'error';
+          this.lastError = 'Ollama is not running or not accessible';
+          this.logger.warn(`Similarity search disabled: ${this.lastError}`);
+          return;
+        }
       }
 
-      // Try to load existing index
-      try {
-        // restoreFromFile returns the database directly
-        this.db = await restoreFromFile('binary', this.indexPath) as AnyOrama;
-        
-        if (!this.db) {
-          throw new Error('Loaded database is null or undefined');
+      // Create and initialize the provider
+      this.logger.info(`Initializing similarity provider: ${providerName}`);
+      this.provider = await SimilarityProviderFactory.create(providerName, {
+        config: {
+          ...this.config.similarity,
+          provider: providerName
+        },
+        vaultPath: this.vaultPath,
+        vaultId: this.vaultId
+      });
+
+      // Load existing index if available
+      if (this.provider.load) {
+        try {
+          await this.provider.load();
+          this.logger.info('Loaded existing similarity index');
+        } catch (error) {
+          // Log the actual error for debugging, but continue
+          this.logger.warn('Could not load existing index', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          this.logger.info('Will create new index');
         }
-        
-        this.indexStatus = 'ready';
-        
-        // Verify loaded data
-        const verifyCount = await search(this.db, { term: '', limit: 1 });
-        this.logger.info(`Loaded existing similarity index with ${verifyCount.count} documents`);
-      } catch (error) {
-        // Create new index
-        this.db = await create({
-          schema: {
-            id: 'string',
-            path: 'string',
-            content: 'string',
-            embedding: 'vector[768]',
-            contentHash: 'string',
-            lastModified: 'number'
-          }
-        });
-        this.indexStatus = 'ready';
-        this.logger.info('Created new similarity index');
       }
+
+      // Get initial status
+      const status = await this.provider.getStatus();
+      this.documentCount = status.documentCount;
+      this.lastIndexedTime = status.lastIndexed;
+      this.indexStatus = status.ready ? 'ready' : 'error';
+      
+      this.logger.info(`Similarity search initialized with ${providerName} provider (${this.documentCount} documents)`);
     } catch (error) {
       this.indexStatus = 'error';
       this.lastError = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Failed to initialize similarity search:', error);
+      this.logger.error('Failed to initialize similarity search', formatError(error));
     }
   }
 
   private async checkOllamaHealth(): Promise<boolean> {
-    if (!this.config.similarity?.enabled) return false;
+    if (!this.config.similarity?.ollamaUrl) return false;
     
     try {
       const response = await fetch(`${this.config.similarity.ollamaUrl}/api/tags`);
       return response.ok;
-    } catch {
+    } catch (error) {
+      this.logger.error('Ollama health check failed', {
+        error: error instanceof Error ? error.message : String(error),
+        ollamaUrl: this.config.similarity.ollamaUrl,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return false;
     }
   }
 
-  private async generateEmbedding(text: string): Promise<number[]> {
-    const cacheKey = crypto.createHash('md5').update(text).digest('hex');
-    
-    if (this.embeddingCache.has(cacheKey)) {
-      return this.embeddingCache.get(cacheKey)!;
+  async checkHealth(): Promise<OllamaHealthStatus> {
+    if (!this.config.similarity?.enabled) {
+      return { healthy: false, error: 'Similarity search not enabled' };
     }
-    
-    // Manage cache size
-    if (this.embeddingCache.size > this.maxCacheSize) {
-      const firstKey = this.embeddingCache.keys().next().value;
-      if (firstKey) {
-        this.embeddingCache.delete(firstKey);
-      }
+
+    if (!this.config.similarity.ollamaUrl) {
+      // If no Ollama URL, assume pre-computed embeddings
+      return { healthy: true, modelAvailable: true };
     }
-    
+
     try {
-      const ollamaUrl = this.config.similarity?.ollamaUrl || 'http://localhost:11434';
-      const model = this.config.similarity?.model || 'nomic-embed-text';
-      
-      const response = await fetch(`${ollamaUrl}/api/embeddings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: model,
-          prompt: text.slice(0, 8192) // Respect context length
-        })
+      // Check if Ollama is running
+      const response = await fetch(`${this.config.similarity.ollamaUrl}/api/tags`, {
+        signal: AbortSignal.timeout(5000)
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Ollama embedding failed: ${response.statusText}`);
+        return { 
+          healthy: false, 
+          error: `Ollama returned status ${response.status}` 
+        };
       }
+
+      const data = await response.json() as { models?: Array<{ name: string }> };
+      const modelName = this.config.similarity.model || 'nomic-embed-text';
       
-      const data = await response.json() as { embedding: number[] };
-      
-      // Validate the response
-      if (!data.embedding || !Array.isArray(data.embedding)) {
-        throw new Error('Invalid response: missing embedding array');
-      }
-      
-      if (data.embedding.length === 0) {
-        throw new Error('Received empty embedding array');
-      }
-      
-      this.embeddingCache.set(cacheKey, data.embedding);
-      
-      return data.embedding;
+      // Check if the required model is available
+      const modelAvailable = data.models?.some((m) => 
+        m.name === modelName || m.name === `${modelName}:latest`
+      );
+
+      return {
+        healthy: true,
+        modelAvailable,
+        error: modelAvailable ? undefined : `Model ${modelName} not found`
+      };
     } catch (error) {
-      console.error('Embedding generation failed:', error);
-      throw error;
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          return { healthy: false, error: 'Connection timeout' };
+        }
+        return { healthy: false, error: error.message };
+      }
+      return { healthy: false, error: 'Unknown error' };
     }
   }
 
   async indexFile(filePath: string, content?: string): Promise<void> {
-    if (!this.db || !this.config.similarity?.enabled) return;
+    if (!this.provider || !this.config.similarity?.enabled) return;
     
     try {
-      // Read content if not provided
-      if (!content) {
-        content = await fs.readFile(filePath, 'utf-8');
-      }
-      
-      // Skip empty documents
-      if (!content.trim()) {
-        console.error(`ERROR: Skipping empty document: ${filePath}`);
-        this.indexingErrors.set(filePath, 'Empty document');
-        return;
-      }
-      
-      const contentHash = crypto.createHash('md5').update(content).digest('hex');
+      // Create document for indexing
       const id = crypto.createHash('md5').update(filePath).digest('hex');
-      
-      // Check if document exists and needs update
-      try {
-        const existing = await search(this.db, {
-          term: id,
-          properties: ['id'],
-          exact: true,
-          limit: 1
-        });
-        
-        if (existing.hits.length > 0 && 
-            existing.hits[0].document.contentHash === contentHash) {
-          console.log(`Skipping ${filePath} - content unchanged`);
-          return;
-        }
-        
-        // Remove existing document
-        await remove(this.db, id);
-      } catch (error) {
-        // Document doesn't exist, continue
-      }
-      
-      console.log(`Indexing ${filePath}...`);
-      
-      // Generate embedding with error handling
-      let embedding: number[];
-      try {
-        embedding = await this.generateEmbedding(content);
-        
-        // Validate embedding dimensions
-        if (!embedding || embedding.length !== 768) {
-          throw new Error(`Invalid embedding: got ${embedding?.length || 0} dimensions, expected 768`);
-        }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`ERROR: Failed to generate embedding for ${filePath}: ${errorMsg}`);
-        this.indexingErrors.set(filePath, `Embedding generation failed: ${errorMsg}`);
-        return; // Skip this file but continue indexing
-      }
-      
-      const doc = {
+      const doc: DocumentToIndex = {
         id,
         path: filePath,
-        content,
-        embedding,
-        contentHash,
-        lastModified: Date.now()
+        content: content || '' // Provider will handle reading if needed
       };
-      await insert(this.db, doc);
+
+      await this.provider.indexDocument(doc);
+      this.documentCount++;
+      this.lastIndexedTime = new Date();
+      
+      this.logger.debug(`Indexed ${filePath}`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`ERROR: Failed to index ${filePath}: ${errorMsg}`);
-      this.indexingErrors.set(filePath, errorMsg);
+      this.logger.error(`Failed to index single file`, {
+        path: filePath,
+        error: errorMsg,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       // Don't throw - continue with other files
+    }
+  }
+
+  async indexBatch(documents: Array<{ path: string; content: string; metadata?: Record<string, any> }>): Promise<IndexingResult> {
+    if (!this.provider || !this.config.similarity?.enabled) {
+      return {
+        totalDocuments: documents.length,
+        successfullyIndexed: 0,
+        failed: documents.length,
+        errors: documents.map(d => ({ path: d.path, error: 'Similarity search not available' }))
+      };
+    }
+
+    this.indexStatus = 'indexing';
+    this.indexingProgress = {
+      current: 0,
+      total: documents.length,
+      percentage: 0,
+      startedAt: new Date()
+    };
+
+    try {
+      // Convert to provider format
+      const docsToIndex: DocumentToIndex[] = documents.map(doc => ({
+        id: crypto.createHash('md5').update(doc.path).digest('hex'),
+        path: doc.path,
+        content: doc.content,
+        metadata: doc.metadata
+      }));
+
+      // Index ONE document at a time for debugging
+      // Batch indexing is failing with "Bad Request" 
+      const batchSize = 1;
+      const errors: Array<{ path: string; error: string }> = [];
+      let successCount = 0;
+
+      for (let i = 0; i < docsToIndex.length; i += batchSize) {
+        if (this.isShuttingDown) break;
+
+        const batch = docsToIndex.slice(i, Math.min(i + batchSize, docsToIndex.length));
+        
+        // Update progress
+        this.indexingProgress.current = i;
+        this.indexingProgress.percentage = Math.round((i / documents.length) * 100);
+        this.indexingProgress.currentFile = batch[0].path;
+        this.indexingProgress.elapsedSeconds = 
+          (Date.now() - this.indexingProgress.startedAt!.getTime()) / 1000;
+        
+        this.emit('indexing-progress', this.indexingProgress);
+
+        // Index the batch
+        this.logger.info(`Processing batch ${i / batchSize + 1} (${batch.length} documents)`);
+        const result = await this.provider.indexBatch(batch);
+        successCount += result.successful;
+        
+        if (result.failed > 0) {
+          this.logger.error(`Batch indexing had failures`, {
+            failed: result.failed,
+            total: batch.length,
+            batchNumber: i / batchSize + 1,
+            firstError: result.errors[0]
+          });
+        }
+        
+        // Collect errors
+        for (const error of result.errors) {
+          errors.push({ path: error.path, error: error.error });
+        }
+        
+        // CRITICAL: If entire batch failed, we should stop!
+        if (result.successful === 0 && batch.length > 0) {
+          this.logger.error('CRITICAL: Entire batch failed, stopping indexing', {
+            batchNumber: i / batchSize + 1,
+            batchSize: batch.length,
+            firstError: result.errors[0],
+            allErrors: result.errors.slice(0, 5) // Log first 5 errors for debugging
+          });
+          break;
+        }
+
+        // Persist periodically if supported
+        if (this.provider && this.provider.persist && i % 500 === 0) {
+          await this.provider.persist();
+        }
+      }
+
+      // Final persist
+      if (this.provider.persist) {
+        await this.provider.persist();
+      }
+
+      // Update status
+      const status = await this.provider.getStatus();
+      this.documentCount = status.documentCount;
+      this.lastIndexedTime = status.lastIndexed;
+      this.indexStatus = 'ready';
+      this.indexingProgress = null;
+
+      const finalResult = {
+        totalDocuments: documents.length,
+        successfullyIndexed: successCount,
+        failed: errors.length,
+        errors
+      };
+      
+      this.logger.info('Indexing complete', {
+        totalDocuments: finalResult.totalDocuments,
+        successfullyIndexed: finalResult.successfullyIndexed,
+        failed: finalResult.failed
+      });
+      
+      if (errors.length > 0 && errors.length <= 10) {
+        this.logger.error('Indexing errors', {
+          count: errors.length,
+          errors: errors
+        });
+      } else if (errors.length > 10) {
+        this.logger.error('Indexing errors (showing first 10)', {
+          count: errors.length,
+          errors: errors.slice(0, 10)
+        });
+      }
+      
+      return finalResult;
+    } catch (error) {
+      this.indexStatus = 'error';
+      this.lastError = error instanceof Error ? error.message : 'Unknown error';
+      throw error;
     }
   }
 
@@ -272,294 +377,105 @@ export class SimilaritySearchService extends EventEmitter {
     limit?: number;
     includeExcerpt?: boolean;
   }): Promise<SimilaritySearchResult[]> {
-    if (!this.db || !this.config.similarity?.enabled) {
+    if (!this.provider || !this.config.similarity?.enabled) {
       return [];
     }
     
-    const limit = options?.limit ?? 10;
-    
-    const queryEmbedding = await this.generateEmbedding(query);
-    
-    const results = await search(this.db, {
-      mode: 'vector',
-      vector: {
-        value: queryEmbedding,
-        property: 'embedding'
-      },
-      similarity: 0.2,  // Lower threshold for better recall with Ollama embeddings
-      limit,
-      includeVectors: false
-    });
-    
-    return results.hits.map(hit => {
-      const doc = hit.document as any;
-      const result: SimilaritySearchResult = {
-        path: doc.path,
-        content: doc.content,
-        score: hit.score ?? 0
-      };
-      
-      if (options?.includeExcerpt) {
-        result.excerpt = this.generateExcerpt(doc.content, query);
-      }
-      
-      return result;
-    });
-  }
-
-  private generateExcerpt(content: string, query: string, maxLength = 200): string {
-    const words = query.toLowerCase().split(/\s+/);
-    const contentLower = content.toLowerCase();
-    
-    // Find best matching position
-    let bestPosition = 0;
-    let maxMatches = 0;
-    
-    for (let i = 0; i < content.length - maxLength; i++) {
-      const segment = contentLower.slice(i, i + maxLength);
-      const matches = words.filter(word => segment.includes(word)).length;
-      if (matches > maxMatches) {
-        maxMatches = matches;
-        bestPosition = i;
-      }
-    }
-    
-    const excerpt = content.slice(bestPosition, bestPosition + maxLength);
-    return excerpt + (bestPosition + maxLength < content.length ? '...' : '');
-  }
-
-  async persist(): Promise<void> {
-    if (!this.db || !this.config.similarity?.enabled) return;
-    
-    await persistToFile(this.db, 'binary', this.indexPath);
-    console.log('Similarity index persisted to disk');
-  }
-
-  async reindexFile(filePath: string, content?: string): Promise<void> {
-    await this.indexFile(filePath, content);
-    await this.persist();
-  }
-
-  async removeFile(filePath: string): Promise<void> {
-    if (!this.db || !this.config.similarity?.enabled) return;
-    
-    const id = crypto.createHash('md5').update(filePath).digest('hex');
     try {
-      await remove(this.db, id);
-      await this.persist();
-      console.log(`Removed ${filePath} from similarity index`);
+      const results = await this.provider.search(query, {
+        limit: options?.limit ?? 10,
+        threshold: 0.2
+      });
+
+      return results.map(result => ({
+        path: result.path,
+        content: result.content || '',
+        score: result.score,
+        // Include metadata for UI display
+        modified: result.metadata?.modified,
+        size: result.metadata?.size,
+        title: result.metadata?.title,
+        tags: result.metadata?.tags,
+        metadata: result.metadata,
+        excerpt: options?.includeExcerpt && result.content 
+          ? this.generateExcerpt(result.content, 200)
+          : undefined
+      }));
     } catch (error) {
-      console.error(`Failed to remove ${filePath}:`, error);
+      this.logger.error('Search failed', {
+        query: query.slice(0, 100), // Log first 100 chars of query
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        options
+      });
+      return [];
     }
+  }
+
+  private generateExcerpt(content: string, maxLength: number): string {
+    const cleaned = content.replace(/^#+ .*$/gm, '').trim();
+    if (cleaned.length <= maxLength) return cleaned;
+    return cleaned.substring(0, maxLength) + '...';
   }
 
   async getStatus(): Promise<SimilarityStatus> {
-    const ollamaHealthy = await this.checkOllamaHealth();
-    let stats = {
-      documentsIndexed: 0,
-      indexSize: 0,
-      lastUpdated: undefined as Date | undefined
-    };
-
-    if (this.db) {
-      // Get document count by searching for all documents
-      const allDocs = await search(this.db, {
-        term: '',
-        limit: 999999
-      });
-      stats.documentsIndexed = allDocs.count;
-      
-      try {
-        const stat = await fs.stat(this.indexPath);
-        stats.indexSize = stat.size;
-        stats.lastUpdated = stat.mtime;
-      } catch {
-        // Index file doesn't exist yet
-      }
-    }
-
+    const ollamaHealth = await this.checkHealth();
+    
     return {
-      available: this.config.similarity?.enabled ?? false,
-      ollamaHealthy,
+      available: this.provider !== undefined && this.indexStatus !== 'error',
+      ollamaHealthy: ollamaHealth.healthy,
       indexStatus: this.indexStatus,
-      stats,
+      stats: {
+        documentsIndexed: this.documentCount,
+        indexSize: this.documentCount, // For compatibility
+        lastUpdated: this.lastIndexedTime
+      },
       progress: this.indexingProgress || undefined,
-      error: this.lastError || undefined,
+      error: this.lastError || ollamaHealth.error || undefined,
       generatedAt: new Date()
     };
   }
 
-  async indexDirectory(directory: string, pattern = '**/*.md'): Promise<IndexingResult> {
-    // Check Ollama health before any other checks
-    const ollamaHealthy = await this.checkOllamaHealth();
-    if (!ollamaHealthy) {
-      throw new Error('Ollama is not available. Please ensure Ollama is running before indexing.');
-    }
-    
-    if (!this.db || !this.config.similarity?.enabled) {
-      return {
-        totalDocuments: 0,
-        successfullyIndexed: 0,
-        failed: 0,
-        errors: [],
-        errorLogPath: undefined
-      };
+  async reindexAll(documents: Array<{ path: string; content: string; metadata?: Record<string, any> }>): Promise<IndexingResult> {
+    if (!this.provider) {
+      throw new Error('Provider not initialized');
     }
 
-    // Clear previous errors
-    this.clearIndexingErrors();
+    this.logger.info(`Starting reindex of ${documents.length} documents`);
     
-    this.indexStatus = 'indexing';
-    this.indexingProgress = {
-      current: 0,
-      total: 0,
-      percentage: 0,
-      startedAt: new Date()
-    };
-    this.emit('status-changed', { previousStatus: 'ready', newStatus: 'indexing' });
-
-    try {
-      const { glob } = await import('glob');
-      const files = await glob(pattern, { cwd: directory });
-      
-      this.indexingProgress.total = files.length;
-      console.log(`Found ${files.length} files to index`);
-      
-      let successCount = 0;
-      let errorCount = 0;
-      
-      for (const file of files) {
-        if (this.isShuttingDown) break;
-        
-        const filePath = path.join(directory, file);
-        this.indexingProgress.current++;
-        this.indexingProgress.percentage = 
-          (this.indexingProgress.current / this.indexingProgress.total) * 100;
-        this.indexingProgress.currentFile = filePath;
-        this.indexingProgress.elapsedSeconds = 
-          (Date.now() - this.indexingProgress.startedAt!.getTime()) / 1000;
-        
-        this.emit('progress', this.indexingProgress);
-        
-        // Index file - errors are handled internally
-        await this.indexFile(filePath);
-        
-        // Check if there was an error for this file
-        if (this.indexingErrors.has(filePath)) {
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      }
-      
-      await this.persist();
-      
-      // Create result object
-      const result: IndexingResult = {
-        totalDocuments: files.length,
-        successfullyIndexed: successCount,
-        failed: errorCount,
-        errors: this.getIndexingErrors()
-      };
-      
-      // Write error log if there were failures
-      if (errorCount > 0) {
-        const errorLogPath = await this.writeErrorLog(result);
-        result.errorLogPath = errorLogPath;
-      }
-      
-      // Log summary
-      console.log(`\nIndexing completed:`);
-      console.log(`  Success: ${successCount} files`);
-      console.log(`  Errors: ${errorCount} files`);
-      
-      if (errorCount > 0) {
-        const errors = this.getIndexingErrors();
-        console.error(`\nIndexing errors summary:`);
-        const errorTypes = new Map<string, number>();
-        errors.forEach(({ error }) => {
-          const type = error.split(':')[0];
-          errorTypes.set(type, (errorTypes.get(type) || 0) + 1);
-        });
-        errorTypes.forEach((count, type) => {
-          console.error(`  ${type}: ${count} files`);
-        });
-      }
-      
-      this.indexStatus = 'ready';
-      this.emit('status-changed', { previousStatus: 'indexing', newStatus: 'ready' });
-      
-      return result;
-    } catch (error) {
-      this.indexStatus = 'error';
-      this.lastError = error instanceof Error ? error.message : 'Unknown error';
-      this.emit('status-changed', { previousStatus: 'indexing', newStatus: 'error' });
-      
-      // Still return a result even on error
-      const result: IndexingResult = {
-        totalDocuments: 0,
-        successfullyIndexed: 0,
-        failed: 0,
-        errors: this.getIndexingErrors()
-      };
-      
-      // For system errors, throw after creating result
-      throw error;
-    } finally {
-      this.indexingProgress = null;
-    }
+    // Clear existing index
+    await this.provider.clearIndex();
+    this.documentCount = 0;
+    
+    // Index all documents
+    return this.indexBatch(documents);
   }
 
   async shutdown(): Promise<void> {
     this.isShuttingDown = true;
-    if (this.db && this.config.similarity?.enabled) {
-      await this.persist();
-    }
-  }
-
-  /**
-   * Get all indexing errors that occurred
-   */
-  getIndexingErrors(): { path: string; error: string }[] {
-    return Array.from(this.indexingErrors.entries()).map(([path, error]) => ({ path, error }));
-  }
-
-  /**
-   * Clear indexing errors
-   */
-  clearIndexingErrors(): void {
-    this.indexingErrors.clear();
-  }
-  
-  /**
-   * Write error log to file in project root
-   */
-  private async writeErrorLog(result: IndexingResult): Promise<string> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const date = timestamp.slice(0, 10);
-    const time = timestamp.slice(11).replace(/-/g, '');
-    const filename = `similarity-errors-${date}-${time}.log`;
     
-    // Write to project root (where the bin/mmt command runs from)
-    const errorLogPath = path.join(process.cwd(), filename);
-    
-    let logContent = `SIMILARITY SEARCH INDEXING REPORT\n`;
-    logContent += `Generated at: ${new Date().toISOString()}\n`;
-    logContent += `\n`;
-    logContent += `Total documents: ${result.totalDocuments}\n`;
-    logContent += `Successfully indexed: ${result.successfullyIndexed}\n`;
-    logContent += `Failed: ${result.failed}\n`;
-    logContent += `Success rate: ${((result.successfullyIndexed / result.totalDocuments) * 100).toFixed(2)}%\n`;
-    
-    if (result.errors.length > 0) {
-      logContent += `\nERRORS:\n`;
-      for (const error of result.errors) {
-        logContent += `[${new Date().toISOString()}] ${error.path}: ${error.error}\n`;
+    if (this.provider) {
+      // Persist before shutdown
+      if (this.provider.persist) {
+        try {
+          await this.provider.persist();
+        } catch (error) {
+          this.logger.error('Failed to persist on shutdown', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+        }
       }
+      
+      // Shutdown provider
+      await this.provider.shutdown();
     }
     
-    await fs.writeFile(errorLogPath, logContent, 'utf-8');
-    
-    return errorLogPath;
+    // Cleanup factory
+    await SimilarityProviderFactory.shutdownAll();
+  }
+
+  onProgress(callback: (progress: IndexingProgress) => void): void {
+    this.on('indexing-progress', callback);
   }
 }
