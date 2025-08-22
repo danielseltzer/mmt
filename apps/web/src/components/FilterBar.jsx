@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useDocumentStore } from '../stores/document-store';
+import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
@@ -7,7 +7,11 @@ import { MetadataFilter } from './MetadataFilter';
 import { parseDateExpression, parseSizeExpression } from '../utils/filter-utils';
 
 export function FilterBar() {
-  const { documents, filteredDocuments, vaultTotal, setFilters } = useDocumentStore();
+  const currentTab = useCurrentTab();
+  const { setFilters } = useDocumentStore();
+  const documents = currentTab?.documents || [];
+  const filteredDocuments = currentTab?.filteredDocuments || [];
+  const vaultTotal = currentTab?.vaultTotal || 0;
   // Store individual filter values for the UI
   const [filterValues, setFilterValues] = useState({
     name: '',

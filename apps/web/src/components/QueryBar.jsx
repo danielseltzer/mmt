@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useDocumentStore } from '../stores/document-store';
+import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { PipelinePanels } from './PipelinePanels';
 import { SearchModeToggle } from './SearchModeToggle';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
 export function QueryBar() {
-  const [query, setQuery] = useState('');
-  const { setSearchQuery, fetchDocuments, searchMode, performSimilaritySearch } = useDocumentStore();
+  const currentTab = useCurrentTab();
+  const [query, setQuery] = useState(currentTab?.searchQuery || '');
+  const { setSearchQuery, fetchDocuments, performSimilaritySearch } = useDocumentStore();
+  const searchMode = currentTab?.searchMode || 'text';
+  
+  // Update local query when tab changes
+  useEffect(() => {
+    setQuery(currentTab?.searchQuery || '');
+  }, [currentTab?.tabId, currentTab?.searchQuery]);
   
   useEffect(() => {
     // Debounce search

@@ -3,11 +3,10 @@ import { FilterBar } from './FilterBar';
 import { TransformPanel } from './TransformPanel';
 import { OutputPanel } from './OutputPanel';
 import { PreviewModal } from './PreviewModal';
-import { VaultSelector } from './VaultSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput, Eye } from 'lucide-react';
-import { useDocumentStore } from '../stores/document-store';
+import { useDocumentStore, useCurrentTab, useActiveFilters, useActiveTotalCount } from '../stores/document-store';
 
 // eslint-disable-next-line no-unused-vars
 function PanelHeader({ icon: Icon, title, summary, isOpen }) {
@@ -35,9 +34,10 @@ export function PipelinePanels({ searchBar }) {
   const [outputFormat, setOutputFormat] = useState('json');
   const [showPreview, setShowPreview] = useState(false);
   const [transformJustOpened, setTransformJustOpened] = useState(false);
-  const filters = useDocumentStore(state => state.filters);
-  const documents = useDocumentStore(state => state.documents);
-  const totalCount = useDocumentStore(state => state.totalCount);
+  const currentTab = useCurrentTab();
+  const filters = currentTab?.filters || { conditions: [], logic: 'AND' };
+  const documents = currentTab?.documents || [];
+  const totalCount = currentTab?.totalCount || 0;
   
   // Generate filter summary from the active filters
   const getFilterSummary = () => {
@@ -180,9 +180,6 @@ export function PipelinePanels({ searchBar }) {
             </CollapsibleTrigger>
           </Collapsible>
         ))}
-        
-        {/* Vault selector */}
-        <VaultSelector />
         
         {/* Search bar on the same line */}
         {searchBar}

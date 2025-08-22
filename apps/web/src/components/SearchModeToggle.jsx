@@ -1,10 +1,12 @@
-import { useDocumentStore } from '../stores/document-store';
+import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { Button } from '@/components/ui/button';
 import { Search, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function SearchModeToggle() {
-  const { searchMode, setSearchMode } = useDocumentStore();
+  const currentTab = useCurrentTab();
+  const { setSearchMode } = useDocumentStore();
+  const searchMode = currentTab?.searchMode || 'text';
   
   return (
     <div className="flex items-center gap-1 p-1 bg-muted rounded-md">
