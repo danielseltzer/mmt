@@ -561,6 +561,53 @@ export function TableView({
             <>
               <button
                 className="w-full px-4 py-2 text-left hover:bg-muted"
+                onClick={() => {
+                  // Get the selected document IDs (which are actually paths)
+                  const selectedPaths = Object.keys(rowSelection).filter((key) => rowSelection[key]);
+                  if (selectedPaths.length === 1) {
+                    // Find the document by path (rowSelection keys are document paths)
+                    const doc = documents.find(d => d.path === selectedPaths[0]);
+                    if (doc) {
+                      // The vault name in Obsidian is "Personal-sync"
+                      const vaultName = 'Personal-sync';
+                      
+                      // Get the document's full path
+                      const fullPath = doc.fullPath || doc.path;
+                      
+                      // Extract the path relative to the vault
+                      // The fullPath is like: /Users/danielseltzer/Notes/Personal-sync/Making/Code/file.md
+                      // We want: /Making/Code/file.md
+                      let filePath = fullPath;
+                      
+                      // Remove everything up to and including "Personal-sync/"
+                      const vaultMarker = '/Personal-sync/';
+                      const vaultIndex = filePath.indexOf(vaultMarker);
+                      if (vaultIndex !== -1) {
+                        filePath = '/' + filePath.substring(vaultIndex + vaultMarker.length);
+                      } else if (filePath.includes('/Notes/')) {
+                        // Fallback: remove up to /Notes/
+                        filePath = filePath.substring(filePath.indexOf('/Notes/') + 7);
+                        // Remove Personal-sync/ if it's at the beginning
+                        if (filePath.startsWith('Personal-sync/')) {
+                          filePath = '/' + filePath.substring('Personal-sync/'.length);
+                        }
+                      }
+                      
+                      // Build Obsidian URI
+                      const obsidianUri = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+                      console.log('Opening in Obsidian:', obsidianUri);
+                      
+                      // Open in Obsidian
+                      window.open(obsidianUri, '_blank');
+                    }
+                  }
+                  setContextMenu({ x: 0, y: 0, type: null });
+                }}
+              >
+                Open in Obsidian
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-muted"
                 onClick={() => handleOperation('move')}
               >
                 Move selected

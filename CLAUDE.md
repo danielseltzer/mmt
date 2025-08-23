@@ -8,14 +8,8 @@ MMT (Markdown Management Toolkit) is a desktop application for managing large co
 
 ## Common Development Commands
 
-Since the project has no code yet, you'll need to bootstrap it first:
-
 ```bash
-# Initialize monorepo (first time setup)
-pnpm init
-pnpm add -D turbo typescript @types/node
-
-# After packages are created:
+# Core commands
 pnpm install              # Install all dependencies
 pnpm dev                  # Start development mode
 pnpm build               # Build all packages
@@ -28,8 +22,37 @@ pnpm --filter @mmt/indexer test
 pnpm --filter @mmt/indexer dev
 
 # Start app with config
-pnpm dev -- --config test-config.yaml
+./bin/mmt start --config multi-vault-test-config.yaml
+./bin/mmt stop           # Stop running instance
+
+# IMPORTANT: Verify UI loads without errors
+node tools/check-browser-health.js http://localhost:5173
+# Returns exit code 0 if healthy, 1 if errors found
 ```
+
+## Browser Health Check Tool
+
+**Location**: `/tools/check-browser-health.js`
+
+**Purpose**: Automated verification that the web UI loads without JavaScript errors.
+
+**Usage**:
+```bash
+# Basic health check
+node tools/check-browser-health.js
+
+# Verbose mode (shows all console logs)
+node tools/check-browser-health.js http://localhost:5173 --verbose
+```
+
+**What it checks**:
+- Console errors (filters out expected 501s for unconfigured features)
+- JavaScript exceptions and runtime errors
+- Failed network requests
+- React error boundaries
+- App mounting verification
+
+**ALWAYS RUN THIS** after making UI changes to ensure the page loads properly. Don't just check if the server starts - verify the browser works!
 
 ## High-Level Architecture
 

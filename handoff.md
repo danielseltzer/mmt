@@ -1,201 +1,167 @@
+# Handoff Document - MMT Project Status
 
-## ✅ RESOLVED: Content Reading Bug Fixed
+## Last Updated: 2024-12-22 (Session 4)
 
-### Current Status: UNBLOCKED (Fixed: 2025-08-20)
-The critical bug preventing document indexing into Qdrant has been **fixed**. The similarity reindex route now correctly reads file contents from disk.
+## Current Status: V3 TAB FEATURE COMPLETE
 
-### The Fix Applied
-Updated `/apps/api-server/src/routes/similarity.ts` (lines 144-162) to properly read file contents:
+### Session Summary
+- **Major Achievement**: Implemented V3 multi-vault tab interface (Issues #157, #158)
+- Fixed critical build blockers (missing utility files)
+- Tested and verified multi-vault functionality
+- Note: Vault-aware API endpoints were already implemented (Issue #189 in earlier commit)
 
-```typescript
-// FIXED: Now reading actual file contents
-const docsWithContent = await Promise.all(
-  documents.map(async (doc: any) => {
-    try {
-      const content = await context.fs.readFile(doc.path);
-      return {
-        path: doc.path,
-        content: content
-      };
-    } catch (error) {
-      logger.warn(`Failed to read file ${doc.path} during reindex:`, {
-        error: error instanceof Error ? error.message : String(error),
-        path: doc.path
-      });
-      return {
-        path: doc.path,
-        content: ''
-      };
-    }
-  })
-);
-```
+## Recently Completed Work
 
-### Improvements Made
-- ✅ **Reads actual file contents** using `context.fs.readFile()`
-- ✅ **Error handling** for individual file read failures
-- ✅ **Proper logging** using Logger service instead of console
-- ✅ **Graceful degradation** - continues indexing even if some files fail
-- ✅ **Parallel processing** with Promise.all for performance
+### V3 Multi-Vault Tab Interface (Issues #157, #158) ✅ 
+- **TabBar Component**: Smart tab management that auto-hides for single vault
+- **Per-Tab State**: Independent search, filters, and documents per tab
+- **localStorage Persistence**: Tabs survive page refresh
+- **Test Configuration**: `multi-vault-test-config.yaml` for development
+- **Utility Files**: Created missing filter-utils.js and template-utils.js
 
-### Ready for Testing
-- ✅ **6001 documents** ready to be indexed into Qdrant
-- ✅ **Build system** working correctly
-- ✅ **Docker integration** functioning
-- ✅ **API server** starts without errors
-- ✅ **Search functionality** ready for validation
+### Qdrant Similarity Search (PRs #211, #212) ✅
+- **Fully functional** similarity search with Qdrant vector database
+- **Visual UI** with search mode toggle and similarity scoring
+- **Bug fixes** resolved (indexing regression, text search filtering)
+- **Performance** is excellent (sub-second searches, 5990/6002 docs indexed)
 
-### Next Steps (Priority Order)
+### Issues Closed This Session
+- **#157**: Implement tab bar component - COMPLETED
+- **#158**: Create per-tab state management - COMPLETED  
+- **#206**: Similarity indexing regression - FIXED in PR #211
+- **#207**: Text search filtering bug - FIXED 
+- **#209**: Error logging improvements - IMPLEMENTED
 
-### 1. Test Vector Indexing (IMMEDIATE)
-Validate that documents are now properly indexed into Qdrant with their content.
+## Priority Work Items for Next Session
 
-### 2. Search Quality Testing (After Fix)
-Test semantic search with real-world queries:
-```typescript
-// Example test queries
-"wood plane"        // Should find woodworking documents
-"typescript error"  // Should find TypeScript troubleshooting notes
-"project planning"  // Should find project management documents
-```
+### 🥇 Priority 1: Documentation (Quick Win)
+**Issue #213: Document Qdrant Similarity Search AND Tab Feature**
+- Create user documentation for the completed Qdrant feature
+- Document the new multi-vault tab interface
+- Include configuration examples for multi-vault setup
+- Document search modes and UI features
+- Add troubleshooting guide
+- **Estimated effort**: 1-2 hours
 
-### 3. Performance Optimization
-- Implement batch size limits (currently processes all documents at once)
-- Add progress reporting during indexing
-- Consider parallel embedding generation with rate limiting
-- Optimize embedding cache size and management
+### 🥈 Priority 2: Continue V3 Features
+The tab foundation is complete. Next V3 priorities from the roadmap:
 
-### 4. UI Integration
-- Add similarity search panel to web interface
-- Display similarity scores alongside results
-- Implement "Find Similar" button for each document
-- Add visual indicators for search relevance
+**Performance & UX Improvements**
+- Issue #208: Fix document paths showing as "/" (UX bug)
+- Optimize tab switching performance
+- Add keyboard shortcuts for tab navigation
 
-### 5. Advanced Features
-- Document re-indexing on content changes
-- Metadata filtering in vector searches
-- Hybrid search (combine text search with vector similarity)
-- Search result explanations (why documents matched)
+### 🥉 Priority 3: Test Coverage (Lower Priority)
+**Issue #204: Test Case for "Too Deep Objects" Error**
+- Create reproducible test case for Orama indexing error
+- Identify and capture problematic file as test fixture
+- **Estimated effort**: 1-2 hours
 
-## Test Infrastructure
+**Issue #203: Integration Test for Partial Indexing**
+- Test similarity search with partially indexed documents
+- Verify UI handles connection failures gracefully
+- **Estimated effort**: 1-2 hours
 
-### E2E Validation Test
-Created comprehensive test suite at `tests/e2e/validate-qdrant-integration.ts`:
+## Other Open Issues (Future Work)
 
+### High Value Items
+- **#19**: End-to-End Testing with Playwright (P0 but deferred)
+- **#154**: Convert logging to Winston (P1)
+- **#208**: Fix document paths showing as "/" (UX bug)
+- **#210**: Add similarity search E2E tests
+
+### V3 Related Issues (Completed)
+- ✅ **#156**: Multi-vault configuration schema - DONE
+- ✅ **#157**: Tab bar component - DONE  
+- ✅ **#158**: Per-tab state management - DONE
+- ✅ **#159**: Vault-aware API endpoints - DONE (earlier commit)
+- ✅ **#160**: Vault selector component - DONE (earlier commit)
+- ✅ **#189**: Vault-aware API routes - DONE
+- ✅ **#190**: Vault initialization - DONE
+- ✅ **#191**: Vault selector - DONE
+
+## Technical Context for Next Session
+
+### Running the System
 ```bash
-# Run full validation
-tsx tests/e2e/validate-qdrant-integration.ts
+# Test multi-vault tabs
+./bin/mmt start --config multi-vault-test-config.yaml
 
-# Test phases:
-# 1. Build and lint all packages
-# 2. Start services with monitoring
-# 3. Wait for indexing completion
-# 4. Validate search functionality
-# 5. Check UI for console errors
-# 6. Generate detailed report
-```
-
-### Manual Testing Commands
-```bash
-# Start Qdrant container
-docker run -p 6333:6333 qdrant/qdrant
-
-# Start MMT with Qdrant configuration
+# Or with Qdrant similarity search
 ./bin/mmt start --config config/personal-vault-qdrant.yaml
 
-# Check Qdrant dashboard
-open http://localhost:6333/dashboard
+# Ensure Docker is running Qdrant (for similarity)
+docker run -p 6333:6333 qdrant/qdrant
+
+# Ensure Ollama is running for embeddings (for similarity)
+ollama serve
 ```
 
-## Technical Notes
+### Key Configuration Files
+- `multi-vault-test-config.yaml` - Multi-vault test configuration (NEW)
+- `config/personal-vault-qdrant.yaml` - Working Qdrant config
+- `dev-config.yaml` - Development configuration
+- `personal-vault-config.yaml` - Alternative personal config
 
-### Docker Integration
-- Qdrant container managed by MMT CLI
-- Auto-starts with `mmt start` command
-- Data persists in `qdrant_storage/` directory
-- Dashboard available at http://localhost:6333
+### Recent Code Changes
+- **NEW**: TabBar component in `/apps/web/src/components/TabBar.tsx`
+- **NEW**: Per-tab state in `/apps/web/src/stores/document-store.ts`
+- **NEW**: Utility files in `/apps/web/src/utils/`
+- Similarity search UI components in `/apps/web/src/components/`
+- Qdrant provider in `/packages/similarity-provider-qdrant/`
+- Vault-aware API routes in `/apps/api-server/src/routes/`
 
-### Error Recovery Strategy
-1. Attempt batch indexing for performance
-2. Fall back to individual indexing on batch failure
-3. Log detailed errors with document paths
-4. Write failed documents to temp file for debugging
-5. Continue indexing remaining documents
+## Recommended Next Session Plan
 
-### Embedding Configuration
-- **Model**: nomic-embed-text (via Ollama)
-- **Dimensions**: 768
-- **Context Window**: 8192 characters
-- **Truncation**: Automatic for oversized documents
-- **Caching**: In-memory cache for frequently used embeddings
+### Recommended Next Actions
+1. **Documentation** (#213) - Document both Qdrant and Tab features - 1 hour
+2. **Bug Fix** (#208) - Fix document paths showing as "/" - 30 min
+3. **Testing** - Add tests for tab functionality - 1 hour
+4. **Performance** - Optimize tab switching and state persistence - 1 hour
 
-## Implementation Files
+## Notes for Next Session
 
-### Core Provider
-- `packages/similarity-provider-qdrant/src/qdrant-provider.ts` - Main implementation
-- `packages/similarity-provider/src/index.ts` - Base provider interface
-- `apps/api-server/src/services/similarity-search-provider.ts` - Service wrapper
+### What's Working Well
+- **V3 Tab Interface is COMPLETE and functional**
+- Multi-vault support is fully operational
+- Qdrant similarity search is stable and performant
+- Text search is functioning correctly
+- Vault-aware API endpoints are working
+- Per-tab state management with localStorage persistence
+- Error logging has been improved
+- Core functionality is solid
 
-### Configuration
-- `config/personal-vault-qdrant.yaml` - Working configuration
-- `packages/entities/src/config.schema.ts` - Schema definitions
+### What Needs Attention
+- Documentation needed for tab and Qdrant features (#213)
+- Document path display bug (#208)
+- Test coverage for new tab functionality
+- Performance optimization opportunities
 
-### Tests
-- `tests/e2e/validate-qdrant-integration.ts` - Comprehensive E2E test
+### Project Health
+- No critical bugs blocking usage
+- V3 foundation is now in place (multi-vault tabs)
+- Performance targets being met (5000+ files indexed quickly)
+- Ready for documentation and polish phase
+- Technical debt is minimal
 
-## Current System Status
+## Commands Reference
+```bash
+# Development
+pnpm dev                    # Start development mode
+pnpm build                  # Build all packages
+pnpm test                   # Run tests
+pnpm lint                   # Run linting
 
-### ✅ What's Working
-- **Regular Indexing**: 99.83% success rate (6001/6002 documents)
-- **Build System**: All packages compile successfully
-- **Docker Integration**: Automatic Qdrant container management
-- **API Server**: Starts without errors, all endpoints respond
-- **Provider Architecture**: Qdrant provider loads and initializes correctly
-- **Configuration**: YAML config parsing and validation working
+# Testing specific packages
+pnpm --filter @mmt/indexer test
+pnpm --filter @mmt/similarity-provider-qdrant test
 
-### ❌ What's Broken
-- **Vector Indexing**: 0 documents indexed due to content reading bug
-- **Search Functionality**: Returns empty results (no vectors to search against)
-- **Similarity API**: `/api/similarity/search` endpoint non-functional
-
-## Critical Issues
-
-### 🚨 BLOCKING: Content Reading Bug
-- **Location**: `/apps/api-server/src/routes/similarity.ts:144-147`
-- **Issue**: Accessing non-existent `content` property on `PageMetadata` objects
-- **Impact**: Zero documents indexed into Qdrant despite successful setup
-- **Status**: Requires immediate fix before any testing can proceed
-
-### Technical Details of the Fix
-
-**Current Broken Code:**
-```typescript
-// Line 143-147 in similarity.ts
-const documents = await vault.indexer.getAllDocuments();
-const docsWithContent = documents.map((doc: any) => ({
-  path: doc.path,
-  content: doc.content || ''  // ❌ BROKEN: doc.content doesn't exist
-}));
+# Git operations
+git status                  # Check current changes
+git pull                    # Get latest changes
+gh issue list --state open  # View open issues
+gh pr list                  # View open PRs
 ```
 
-**Required Fix:**
-```typescript
-// Read actual file contents from disk
-const documents = await vault.indexer.getAllDocuments();
-const docsWithContent = await Promise.all(
-  documents.map(async (doc: PageMetadata) => ({
-    path: doc.path,
-    content: await context.fs.readFile(doc.path)
-  }))
-);
-```
-
-**Why This Happened:**
-- `PageMetadata` interface (defined in `packages/indexer/src/types.ts`) only contains metadata
-- No `content` field exists in the schema - it only has `path`, `title`, `tags`, etc.
-- The indexer intentionally separates metadata from content for memory efficiency
-- The reindex route incorrectly assumed content would be included in metadata objects
-
-## Contact
-
-For questions or issues, reference this handoff document and the test results in the git commit history.
+## Session Handoff Complete
+The project has reached a major milestone with the V3 multi-vault tab interface now fully implemented! Both the Qdrant similarity search and tab features are working excellently. The foundation for the V3 vision is in place. The next session should focus on documentation (#213) and polishing the user experience.

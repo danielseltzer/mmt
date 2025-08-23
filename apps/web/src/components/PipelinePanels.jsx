@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FilterBar } from './FilterBar';
 import { TransformPanel } from './TransformPanel';
 import { OutputPanel } from './OutputPanel';
@@ -28,7 +28,7 @@ function PanelHeader({ icon: Icon, title, summary, isOpen }) {
   );
 }
 
-export function PipelinePanels({ searchBar }) {
+export function PipelinePanels({ searchBar, onCloseCallbackChange }) {
   const [openPanel, setOpenPanel] = useState('select'); // Only one panel open at a time
   const [operations, setOperations] = useState([]);
   const [outputFormat, setOutputFormat] = useState('json');
@@ -38,6 +38,19 @@ export function PipelinePanels({ searchBar }) {
   const filters = currentTab?.filters || { conditions: [], logic: 'AND' };
   const documents = currentTab?.documents || [];
   const totalCount = currentTab?.totalCount || 0;
+  const searchMode = currentTab?.searchMode || 'text';
+  
+  // Close panels when search mode changes
+  useEffect(() => {
+    setOpenPanel(null);
+  }, [searchMode]);
+  
+  // Register close callback for search input focus
+  useEffect(() => {
+    if (onCloseCallbackChange) {
+      onCloseCallbackChange(() => () => setOpenPanel(null));
+    }
+  }, [onCloseCallbackChange]);
   
   // Generate filter summary from the active filters
   const getFilterSummary = () => {
