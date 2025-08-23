@@ -11,8 +11,8 @@ export function similarityRouter(context: Context): Router {
   router.use((req, res, next) => {
     if (!context.similaritySearch) {
       return res.status(501).json({
-        error: 'Similarity search is not enabled',
-        message: 'Enable similarity search in your configuration file'
+        error: 'Similarity search is not configured',
+        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
       });
     }
     next();

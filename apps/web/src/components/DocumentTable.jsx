@@ -1,21 +1,21 @@
 import { TableView } from '@mmt/table-view';
 import { EnhancedDocumentTable } from './EnhancedDocumentTable';
-import { useDocumentStore } from '../stores/document-store';
+import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Sparkles } from 'lucide-react';
 
 export function DocumentTable() {
-  const { 
-    filteredDocuments, 
-    loading, 
-    error, 
-    sortBy, 
-    sortOrder, 
-    setSort, 
-    searchMode,
-    searchQuery
-  } = useDocumentStore();
+  const currentTab = useCurrentTab();
+  const { setSort } = useDocumentStore();
+  
+  const filteredDocuments = currentTab?.filteredDocuments || [];
+  const loading = currentTab?.loading || false;
+  const error = currentTab?.error || null;
+  const sortBy = currentTab?.sortBy;
+  const sortOrder = currentTab?.sortOrder || 'asc';
+  const searchMode = currentTab?.searchMode || 'text';
+  const searchQuery = currentTab?.searchQuery || '';
   
   if (loading) {
     return (

@@ -1,0 +1,16 @@
+# Configuration for testing multi-vault tab feature
+vaults:
+  - name: 'Personal'
+    path: /Users/danielseltzer/Notes
+    indexPath: /Users/danielseltzer/code/mmt/.index-personal
+    fileWatching:
+      enabled: true
+      debounceMs: 200
+  
+  - name: 'Test Notes'
+    path: /Users/danielseltzer/code/mmt/test-notes
+    indexPath: /Users/danielseltzer/code/mmt/.index-test
+
+# Required port settings
+apiPort: 3001
+webPort: 5173
