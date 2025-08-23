@@ -36,6 +36,7 @@ interface ContextMenuState {
   y: number;
   type: 'column' | 'row' | null;
   columnId?: string;
+  rowId?: string;
 }
 
 
@@ -423,9 +424,9 @@ export function TableView({
     setContextMenu({ x: e.clientX, y: e.clientY, type: 'column', columnId });
   }, []);
 
-  const handleRowContextMenu = useCallback((e: React.MouseEvent) => {
+  const handleRowContextMenu = useCallback((e: React.MouseEvent, rowId: string) => {
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, type: 'row' });
+    setContextMenu({ x: e.clientX, y: e.clientY, type: 'row', rowId });
   }, []);
 
   const handleHideColumn = useCallback(() => {
@@ -525,7 +526,7 @@ export function TableView({
                     handleRowClick(index, e.shiftKey);
                   }
                 }}
-                onContextMenu={handleRowContextMenu}
+                onContextMenu={(e) => handleRowContextMenu(e, row.id)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td 
@@ -562,11 +563,11 @@ export function TableView({
               <button
                 className="w-full px-4 py-2 text-left hover:bg-muted"
                 onClick={() => {
-                  // Get the selected document IDs (which are actually paths)
-                  const selectedPaths = Object.keys(rowSelection).filter((key) => rowSelection[key]);
-                  if (selectedPaths.length === 1) {
-                    // Find the document by path (rowSelection keys are document paths)
-                    const doc = documents.find(d => d.path === selectedPaths[0]);
+                  // Use the row that was right-clicked (from context menu)
+                  const targetRowId = contextMenu.rowId;
+                  if (targetRowId) {
+                    // Find the document by matching the ID (which is fullPath or path)
+                    const doc = documents.find(d => (d.fullPath || d.path) === targetRowId);
                     if (doc) {
                       // The vault name in Obsidian is "Personal-sync"
                       const vaultName = 'Personal-sync';
