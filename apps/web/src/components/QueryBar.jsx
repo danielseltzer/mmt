@@ -8,6 +8,7 @@ import { Search } from 'lucide-react';
 export function QueryBar() {
   const currentTab = useCurrentTab();
   const [query, setQuery] = useState(currentTab?.searchQuery || '');
+  const [panelCloseCallback, setPanelCloseCallback] = useState(null);
   const { setSearchQuery, fetchDocuments, performSimilaritySearch } = useDocumentStore();
   const searchMode = currentTab?.searchMode || 'text';
   
@@ -41,6 +42,11 @@ export function QueryBar() {
           placeholder={searchMode === 'similarity' ? "Enter semantic search query..." : "Search all fields..."}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => {
+            if (panelCloseCallback) {
+              panelCloseCallback();
+            }
+          }}
           className="pl-10 h-9 text-sm"
         />
       </div>
@@ -50,7 +56,7 @@ export function QueryBar() {
   
   return (
     <div className="mb-2">
-      <PipelinePanels searchBar={searchBar} />
+      <PipelinePanels searchBar={searchBar} onCloseCallbackChange={setPanelCloseCallback} />
     </div>
   );
 }

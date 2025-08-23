@@ -470,18 +470,46 @@ export function documentsRouter(context: Context): Router {
         
         // Format response
         const response = DocumentsResponseSchema.parse({
-          documents: paginatedDocs.map((doc: any) => ({
-            path: doc.relativePath || '/', // Use relativePath for the path field (file path relative to vault root)
-            fullPath: doc.path, // Keep the full path for unique identification
-            metadata: {
-              name: doc.basename,
-              modified: new Date(doc.mtime).toISOString(),
-              size: doc.size,
-              frontmatter: doc.frontmatter || {},
-              tags: doc.tags || [],
-              links: [], // TODO: get links from indexer
-            },
-          })),
+          documents: paginatedDocs.map((doc: any) => {
+            // Process path to show "/" for root files and remove common root folder
+            let displayPath = doc.relativePath || '/';
+            
+            // For display, we want to show the folder path, not the file path
+            // Files in "Personal-sync" root folder should show "/"
+            // Files in subfolders should show the subfolder path
+            
+            // First, get the folder part (everything before the last slash)
+            const lastSlash = displayPath.lastIndexOf('/');
+            let folderPath = lastSlash === -1 ? '' : displayPath.substring(0, lastSlash);
+            
+            // Now process the folderPath to remove "Personal-sync" prefix
+            if (folderPath === 'Personal-sync' || folderPath === '') {
+              // File is in the root (Personal-sync folder itself or no folder)
+              displayPath = '/';
+            } else if (folderPath.startsWith('Personal-sync/')) {
+              // File is in a subfolder of Personal-sync
+              displayPath = '/' + folderPath.substring('Personal-sync/'.length);
+            } else if (!folderPath.includes('/')) {
+              // Single folder that's not Personal-sync
+              displayPath = '/';
+            } else {
+              // File is in some other structure, just ensure leading slash
+              displayPath = '/' + folderPath;
+            }
+            
+            return {
+              path: displayPath, // Show cleaned path for display
+              fullPath: doc.path, // Keep the full path for unique identification
+              metadata: {
+                name: doc.basename,
+                modified: new Date(doc.mtime).toISOString(),
+                size: doc.size,
+                frontmatter: doc.frontmatter || {},
+                tags: doc.tags || [],
+                links: [], // TODO: get links from indexer
+              },
+            };
+          }),
           total: results.length,
           vaultTotal: vaultTotal,
           hasMore: end < results.length,

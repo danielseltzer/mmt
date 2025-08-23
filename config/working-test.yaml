@@ -1,0 +1,11 @@
+# Working test configuration with correct format
+vaults:
+  - name: 'Test Vault'
+    path: /Users/danielseltzer/code/mmt/test-vault
+    indexPath: /Users/danielseltzer/code/mmt/.mmt-data/indexes/test
+    fileWatching:
+      enabled: false
+
+# Server configuration  
+apiPort: 3001
+webPort: 5173

@@ -28,7 +28,7 @@ function PanelHeader({ icon: Icon, title, summary, isOpen }) {
   );
 }
 
-export function PipelinePanels({ searchBar }) {
+export function PipelinePanels({ searchBar, onCloseCallbackChange }) {
   const [openPanel, setOpenPanel] = useState('select'); // Only one panel open at a time
   const [operations, setOperations] = useState([]);
   const [outputFormat, setOutputFormat] = useState('json');
@@ -44,6 +44,13 @@ export function PipelinePanels({ searchBar }) {
   useEffect(() => {
     setOpenPanel(null);
   }, [searchMode]);
+  
+  // Register close callback for search input focus
+  useEffect(() => {
+    if (onCloseCallbackChange) {
+      onCloseCallbackChange(() => () => setOpenPanel(null));
+    }
+  }, [onCloseCallbackChange]);
   
   // Generate filter summary from the active filters
   const getFilterSummary = () => {
