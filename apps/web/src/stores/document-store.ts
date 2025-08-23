@@ -620,8 +620,10 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       if (vaults.length > 0) {
         try {
           const statusResponse = await fetch(`/api/vaults/${vaults[0].id}/similarity/status`);
-          similarityAvailable = statusResponse.ok;
+          // 501 means not configured, which is fine - not an error
+          similarityAvailable = statusResponse.ok && statusResponse.status !== 501;
         } catch {
+          // Network error or other issue - assume not available
           similarityAvailable = false;
         }
       }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { Button } from '@/components/ui/button';
 import { Search, Sparkles } from 'lucide-react';
@@ -6,16 +6,19 @@ import { cn } from '@/lib/utils';
 
 export function SearchModeToggle() {
   const currentTab = useCurrentTab();
-  const { setSearchMode, similarityAvailable } = useDocumentStore(state => ({
-    setSearchMode: state.setSearchMode,
-    similarityAvailable: state.similarityAvailable
-  }));
+  const setSearchMode = useDocumentStore(state => state.setSearchMode);
+  const similarityAvailable = useDocumentStore(state => state.similarityAvailable);
   const searchMode = currentTab?.searchMode || 'text';
+  const hasCheckedRef = useRef(false);
   
   // If similarity is not available but is selected, switch to text mode
+  // Use a ref to prevent infinite loops
   useEffect(() => {
-    if (!similarityAvailable && searchMode === 'similarity') {
+    if (!similarityAvailable && searchMode === 'similarity' && !hasCheckedRef.current) {
+      hasCheckedRef.current = true;
       setSearchMode('text');
+    } else if (similarityAvailable || searchMode === 'text') {
+      hasCheckedRef.current = false;
     }
   }, [similarityAvailable, searchMode, setSearchMode]);
   
