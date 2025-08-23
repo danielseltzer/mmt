@@ -85,6 +85,7 @@ interface DocumentStoreState {
   // Vault state (shared across tabs)
   vaults: Vault[];
   isLoadingVaults: boolean;
+  similarityAvailable: boolean;
   
   // Tab management actions
   createTab: (vaultId: string) => void;
@@ -180,6 +181,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   // Vault state
   vaults: [],
   isLoadingVaults: false,
+  similarityAvailable: false,
   
   // Tab management actions
   createTab: (vaultId: string) => {
@@ -473,6 +475,9 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       });
       
       if (!response.ok) {
+        if (response.status === 501) {
+          throw new Error('Similarity search is not configured. Add a similarity provider (e.g., Qdrant) to your configuration.');
+        }
         throw new Error(`Similarity search failed: ${response.status}`);
       }
       
@@ -545,6 +550,9 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       });
       
       if (!response.ok) {
+        if (response.status === 501) {
+          throw new Error('Similarity search is not configured. Add a similarity provider (e.g., Qdrant) to your configuration.');
+        }
         throw new Error(`Find similar failed: ${response.status}`);
       }
       
@@ -606,7 +614,19 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       const data = await response.json();
       const vaults = data.vaults || [];
       
-      set({ vaults, isLoadingVaults: false });
+      // Check if similarity search is available
+      // Try to get similarity status from the first vault
+      let similarityAvailable = false;
+      if (vaults.length > 0) {
+        try {
+          const statusResponse = await fetch(`/api/vaults/${vaults[0].id}/similarity/status`);
+          similarityAvailable = statusResponse.ok;
+        } catch {
+          similarityAvailable = false;
+        }
+      }
+      
+      set({ vaults, isLoadingVaults: false, similarityAvailable });
       
       // Initialize tabs if needed
       const { tabs } = get();
