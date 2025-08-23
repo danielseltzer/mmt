@@ -561,6 +561,28 @@ export function TableView({
             <>
               <button
                 className="w-full px-4 py-2 text-left hover:bg-muted"
+                onClick={() => {
+                  // Get the selected documents
+                  const selectedPaths = Object.keys(rowSelection).filter((key) => rowSelection[key]);
+                  if (selectedPaths.length === 1) {
+                    // Get the vault name from the first part of the path (before the first /)
+                    // Or use a default vault name
+                    const vaultName = 'Personal'; // This should come from config/context
+                    const filePath = selectedPaths[0];
+                    // Remove leading slash if present
+                    const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+                    // Build Obsidian URI
+                    const obsidianUri = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(cleanPath)}`;
+                    // Open in Obsidian
+                    window.open(obsidianUri, '_blank');
+                  }
+                  setContextMenu({ x: 0, y: 0, type: null });
+                }}
+              >
+                Open in Obsidian
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-muted"
                 onClick={() => handleOperation('move')}
               >
                 Move selected

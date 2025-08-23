@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FilterBar } from './FilterBar';
 import { TransformPanel } from './TransformPanel';
 import { OutputPanel } from './OutputPanel';
@@ -38,6 +38,12 @@ export function PipelinePanels({ searchBar }) {
   const filters = currentTab?.filters || { conditions: [], logic: 'AND' };
   const documents = currentTab?.documents || [];
   const totalCount = currentTab?.totalCount || 0;
+  const searchMode = currentTab?.searchMode || 'text';
+  
+  // Close panels when search mode changes
+  useEffect(() => {
+    setOpenPanel(null);
+  }, [searchMode]);
   
   // Generate filter summary from the active filters
   const getFilterSummary = () => {

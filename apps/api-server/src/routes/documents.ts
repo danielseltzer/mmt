@@ -471,7 +471,7 @@ export function documentsRouter(context: Context): Router {
         // Format response
         const response = DocumentsResponseSchema.parse({
           documents: paginatedDocs.map((doc: any) => ({
-            path: doc.folderPath || '/', // Use folderPath for the path field (folder relative to vault root)
+            path: doc.relativePath || '/', // Use relativePath for the path field (file path relative to vault root)
             fullPath: doc.path, // Keep the full path for unique identification
             metadata: {
               name: doc.basename,
