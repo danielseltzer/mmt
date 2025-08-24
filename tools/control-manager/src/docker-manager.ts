@@ -53,6 +53,33 @@ export class DockerManager {
   }
   
   /**
+   * Check if any container is using a specific port
+   */
+  static isPortUsedByContainer(port: number): { inUse: boolean; containerName?: string } {
+    try {
+      // Get all running containers with their port mappings
+      const output = execSync(
+        `docker ps --format "table {{.Names}}\t{{.Ports}}"`,
+        { encoding: 'utf-8' }
+      );
+      
+      const lines = output.split('\n').slice(1); // Skip header
+      for (const line of lines) {
+        if (line.includes(`:${port}->`)) {
+          // Extract container name from the line
+          const parts = line.split('\t');
+          if (parts.length > 0) {
+            return { inUse: true, containerName: parts[0].trim() };
+          }
+        }
+      }
+      return { inUse: false };
+    } catch {
+      return { inUse: false };
+    }
+  }
+  
+  /**
    * Get container status
    */
   static getContainerStatus(containerName: string): 'running' | 'stopped' | 'not_found' {
@@ -92,20 +119,34 @@ export class DockerManager {
       throw new Error('Docker is not installed or not running. Please install Docker and start it.');
     }
     
-    // Check current status
+    // First check if any container is already using the Qdrant port
+    const portCheck = DockerManager.isPortUsedByContainer(port);
+    if (portCheck.inUse) {
+      console.log(`✓ Qdrant container '${portCheck.containerName}' is already running on port ${port}`);
+      // Verify it's actually Qdrant by checking the health endpoint
+      try {
+        await this.waitForQdrantReady(port, 5); // Quick check with only 5 attempts
+        console.log('✓ Confirmed Qdrant is responding on port', port);
+        return;
+      } catch {
+        console.warn(`Container on port ${port} is not responding as Qdrant, will try to start our own`);
+      }
+    }
+    
+    // Check current status of our named container
     const status = DockerManager.getContainerStatus(containerName);
     
     if (status === 'running') {
-      console.log('✓ Qdrant container is already running');
+      console.log('✓ MMT Qdrant container is already running');
       return;
     }
     
     if (status === 'stopped') {
-      console.log('Starting existing Qdrant container...');
+      console.log('Starting existing MMT Qdrant container...');
       try {
         execSync(`docker start ${containerName}`, { stdio: 'inherit' });
         await this.waitForQdrantReady(port);
-        console.log('✓ Qdrant container started successfully');
+        console.log('✓ MMT Qdrant container started successfully');
         return;
       } catch (error) {
         console.error('Failed to start existing container, will create new one');
@@ -115,7 +156,7 @@ export class DockerManager {
     }
     
     // Create and start new container
-    console.log('Creating new Qdrant container...');
+    console.log('Creating new MMT Qdrant container...');
     
     const dockerArgs = [
       'run',
@@ -131,7 +172,7 @@ export class DockerManager {
     try {
       execSync(`docker ${dockerArgs.join(' ')}`, { stdio: 'inherit' });
       await this.waitForQdrantReady(port);
-      console.log('✓ Qdrant container created and started successfully');
+      console.log('✓ MMT Qdrant container created and started successfully');
     } catch (error) {
       throw new Error(`Failed to start Qdrant container: ${error}`);
     }

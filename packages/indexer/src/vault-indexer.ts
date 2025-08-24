@@ -53,6 +53,9 @@ export class VaultIndexer {
     const startTime = Date.now();
     this.errorCount = 0; // Reset error count
     
+    // Clear existing storage to prevent duplicates on re-initialization
+    this.storage.clear();
+    
     // Load from cache if available
     if (this.cache) {
       await this.loadFromCache();

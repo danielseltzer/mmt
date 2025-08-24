@@ -1,8 +1,8 @@
 // Export types
-export * from './types';
+export * from './types.js';
 
 // Export interface and base class
-export * from './interface';
+export * from './interface.js';
 
 // Export factory
-export { SimilarityProviderFactory } from './factory';
+export { SimilarityProviderFactory } from './factory.js';

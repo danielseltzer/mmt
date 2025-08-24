@@ -609,6 +609,45 @@ export function TableView({
               </button>
               <button
                 className="w-full px-4 py-2 text-left hover:bg-muted"
+                onClick={async () => {
+                  // Get the right-clicked row's data
+                  if (contextMenu.rowId) {
+                    const row = table.getRowModel().rowsById[contextMenu.rowId];
+                    if (row && row.original) {
+                      const fullPath = row.original.path;
+                      
+                      // Get the current vault ID from the URL
+                      const pathSegments = window.location.pathname.split('/');
+                      const vaultIndex = pathSegments.indexOf('vaults');
+                      const vaultId = vaultIndex !== -1 ? pathSegments[vaultIndex + 1] : null;
+                      
+                      if (vaultId) {
+                        try {
+                          const response = await fetch(`/api/vaults/${vaultId}/documents/reveal-in-finder`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ filePath: fullPath }),
+                          });
+                          
+                          if (!response.ok) {
+                            const error = await response.json();
+                            console.error('Failed to reveal file:', error);
+                          }
+                        } catch (error) {
+                          console.error('Error revealing file:', error);
+                        }
+                      }
+                    }
+                  }
+                  setContextMenu({ x: 0, y: 0, type: null });
+                }}
+              >
+                Reveal in Finder
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-muted"
                 onClick={() => handleOperation('move')}
               >
                 Move selected

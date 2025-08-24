@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Context } from '../context.js';
 import { Document, FilterCollection, FilterCondition } from '@mmt/entities';
 import { validate } from '../middleware/validate.js';
+import { Loggers } from '@mmt/logger';
 import { 
   DocumentsQuerySchema, 
   DocumentsResponseSchema,
@@ -331,6 +332,7 @@ function evaluateSizeOperator(size: number, operator: string, value: number | { 
 
 export function documentsRouter(context: Context): Router {
   const router = Router();
+  const logger = Loggers.apiRoutes();
   
   /**
    * GET /api/documents - Search and list documents with optional filtering
@@ -602,6 +604,62 @@ export function documentsRouter(context: Context): Router {
         });
         
         res.json(response);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+  
+  // Reveal file in system file manager
+  router.post('/reveal-in-finder',
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { filePath } = req.body;
+        
+        if (!filePath) {
+          return res.status(400).json({ error: 'File path is required' });
+        }
+        
+        // Import child_process for executing system commands
+        const { exec } = await import('child_process');
+        const { promisify } = await import('util');
+        const execAsync = promisify(exec);
+        
+        // Determine the platform and execute appropriate command
+        const platform = process.platform;
+        let command: string;
+        
+        if (platform === 'darwin') {
+          // macOS - use 'open' command with -R flag to reveal in Finder
+          command = `open -R "${filePath}"`;
+        } else if (platform === 'win32') {
+          // Windows - use explorer with /select flag
+          // Need to escape backslashes for Windows paths
+          const windowsPath = filePath.replace(/\//g, '\\');
+          command = `explorer.exe /select,"${windowsPath}"`;
+        } else {
+          // Linux - try various file managers
+          // Most Linux distros have xdg-open which opens the parent directory
+          // We'll use a more sophisticated approach to select the file
+          const path = await import('path');
+          const parentDir = path.dirname(filePath);
+          const fileName = path.basename(filePath);
+          
+          // Try different file managers in order of likelihood
+          // nautilus (GNOME), dolphin (KDE), thunar (XFCE), pcmanfm (LXDE)
+          command = `xdg-open "${parentDir}" 2>/dev/null || nautilus --select "${filePath}" 2>/dev/null || dolphin --select "${filePath}" 2>/dev/null || thunar "${parentDir}" 2>/dev/null || pcmanfm "${parentDir}" 2>/dev/null`;
+        }
+        
+        try {
+          await execAsync(command);
+          res.json({ success: true, message: 'File revealed in system file manager' });
+        } catch (error) {
+          logger.error('Failed to reveal file', { error, filePath });
+          res.status(500).json({ 
+            error: 'Failed to reveal file in system file manager',
+            details: error instanceof Error ? error.message : String(error)
+          });
+        }
       } catch (error) {
         next(error);
       }

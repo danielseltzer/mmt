@@ -30,6 +30,7 @@
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
+    "@mmt/logger": "workspace:*",
     "@mmt/query-parser": "workspace:*",
     "arquero": "^8.0.3",
     "p-limit": "^6.2.0"

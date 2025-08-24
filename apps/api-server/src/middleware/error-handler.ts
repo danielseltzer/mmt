@@ -1,4 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.apiMiddleware();
 
 export function errorHandler(
   err: Error,
@@ -6,7 +9,12 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  console.error('API Error:', err);
+  logger.error('API Error', { 
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
   
   // Default error response
   const status = (err as any).status || 500;

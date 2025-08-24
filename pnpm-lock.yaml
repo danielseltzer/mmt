@@ -172,6 +172,9 @@ importers:
       '@mmt/filesystem-access':
         specifier: workspace:*
         version: link:../../packages/filesystem-access
+      '@mmt/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@mmt/query-parser':
         specifier: workspace:*
         version: link:../../packages/query-parser
@@ -414,6 +417,9 @@ importers:
       '@mmt/filesystem-access':
         specifier: workspace:*
         version: link:../filesystem-access
+      '@mmt/logger':
+        specifier: workspace:*
+        version: link:../logger
     devDependencies:
       '@types/node':
         specifier: ^20.14.2
@@ -530,6 +536,9 @@ importers:
       '@mmt/indexer':
         specifier: workspace:*
         version: link:../indexer
+      '@mmt/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@mmt/query-parser':
         specifier: workspace:*
         version: link:../query-parser
@@ -570,6 +579,9 @@ importers:
 
   packages/similarity-provider:
     dependencies:
+      '@mmt/logger':
+        specifier: workspace:*
+        version: link:../logger
       zod:
         specifier: ^3.22.4
         version: 3.25.76

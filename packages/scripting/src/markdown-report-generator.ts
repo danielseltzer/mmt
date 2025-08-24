@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { Loggers, type Logger } from '@mmt/logger';
 
 export interface ReportGenerationOptions {
   scriptPath: string;
@@ -37,6 +38,7 @@ Here's the report:
  * Generates markdown reports from script execution results
  */
 export class MarkdownReportGenerator {
+  private readonly logger: Logger = Loggers.script();
   /**
    * Generate a markdown report from script execution
    */
@@ -346,13 +348,13 @@ _This report was automatically generated. For questions or issues, please refer 
       );
       
       if (stderr) {
-        console.warn('Claude analysis warning:', stderr);
+        this.logger.warn('Claude analysis warning:', { stderr });
       }
       
       const duration = Date.now() - startTime;
       return { content: stdout.trim(), duration };
     } catch (error) {
-      console.error('Failed to generate agent analysis:', error);
+      this.logger.error('Failed to generate agent analysis', { error });
       return null;
     } finally {
       // Clean up temp file

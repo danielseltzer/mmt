@@ -24,6 +24,7 @@ import { ResultFormatter } from './result-formatter.js';
 import { AnalysisRunner } from './analysis-runner.js';
 import { aq } from './analysis-pipeline.js';
 import { MarkdownReportGenerator } from './markdown-report-generator.js';
+import { Loggers, type Logger } from '@mmt/logger';
 
 interface OperationExecutionResult {
   skipped?: boolean;
@@ -64,6 +65,7 @@ export class ScriptRunner {
   // private readonly operationRegistry: OperationRegistry;
   private indexer?: VaultIndexer;
   private readonly apiUrl: string;
+  private readonly logger: Logger;
 
   constructor(options: ScriptRunnerOptions) {
     this.config = options.config;
@@ -75,6 +77,7 @@ export class ScriptRunner {
     this.reportGenerator = new MarkdownReportGenerator();
     // this.operationRegistry = new OperationRegistry();
     this.apiUrl = `http://localhost:${options.config.apiPort}`;
+    this.logger = Loggers.script();
   }
 
   /**
@@ -782,7 +785,7 @@ export class ScriptRunner {
         // Note: created date is not available in the current document schema
         // For now, treat created filters as always false
         if (filter.field === 'created') {
-          console.warn('Created date filtering is not supported - document metadata does not include creation date');
+          this.logger.warn('Created date filtering is not supported - document metadata does not include creation date');
           return false;
         }
         const docDate = doc.metadata.modified;

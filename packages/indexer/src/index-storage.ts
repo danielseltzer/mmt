@@ -41,6 +41,21 @@ export class IndexStorage {
   }
   
   /**
+   * Clear all stored data
+   */
+  clear(): void {
+    this.pages.clear();
+    this.tags.clear();
+    this.etags.clear();
+    this.titles.clear();
+    this.prefixTree = new PrefixIndex();
+    this.outgoingLinks.clear();
+    this.incomingLinks.clear();
+    this.properties.clear();
+    this.touch();
+  }
+  
+  /**
    * Add or update a document in the index
    */
   addDocument(metadata: PageMetadata): void {

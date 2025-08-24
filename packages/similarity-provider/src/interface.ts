@@ -5,7 +5,7 @@ import {
   IndexingResult,
   SimilarityStatus,
   ProviderInitOptions
-} from './types';
+} from './types.js';
 
 /**
  * Main interface for similarity search providers

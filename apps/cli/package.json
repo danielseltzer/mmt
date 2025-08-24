@@ -34,6 +34,7 @@
     "@mmt/config": "workspace:*",
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
+    "@mmt/logger": "workspace:*",
     "@mmt/query-parser": "workspace:*",
     "@mmt/scripting": "workspace:*"
   },

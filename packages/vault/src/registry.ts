@@ -123,16 +123,16 @@ export class VaultRegistry {
     const readyVaults = this.getAllVaults().filter(v => v.status === 'ready');
     const errorVaults = this.getAllVaults().filter(v => v.status === 'error');
     
-    // eslint-disable-next-line no-console
-    console.log(`Vault initialization complete:`);
-    // eslint-disable-next-line no-console
-    console.log(`  - Ready: ${String(readyVaults.length)} vault(s)`);
+    this.logger.info('Vault initialization complete:', {
+      ready: readyVaults.length,
+      failed: errorVaults.length
+    });
+    
     if (errorVaults.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log(`  - Failed: ${String(errorVaults.length)} vault(s)`);
       errorVaults.forEach(v => {
-        // eslint-disable-next-line no-console
-        console.log(`    - ${v.id}: ${String(v.error?.message)}`);
+        this.logger.warn(`Failed vault: ${v.id}`, { 
+          error: v.error?.message 
+        });
       });
     }
   }
@@ -204,8 +204,7 @@ export class VaultRegistry {
    * USAGE: Call during application shutdown or in test cleanup
    */
   shutdown(): void {
-    // eslint-disable-next-line no-console
-    console.log('Shutting down all vaults');
+    this.logger.info('Shutting down all vaults');
     Array.from(this.vaults.values()).forEach(vault => {
       try {
         vault.shutdown();

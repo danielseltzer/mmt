@@ -7,6 +7,7 @@ import { ScriptCommand } from './commands/script-command.js';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Loggers, type Logger } from '@mmt/logger';
 
 /**
  * Main orchestrator for the MMT CLI application.
@@ -21,8 +22,12 @@ import { fileURLToPath } from 'node:url';
 export class ApplicationDirector {
   private commands: Map<string, CommandHandler>;
   private version: string;
+  private logger: Logger;
 
   constructor() {
+    // Initialize logger
+    this.logger = Loggers.cli();
+    
     // Register available commands
     this.commands = new Map([
       [HelpCommand.COMMAND_NAME, new HelpCommand()],
@@ -54,8 +59,7 @@ export class ApplicationDirector {
       
       // 2. Handle special flags first
       if (cliArgs.version) {
-        // eslint-disable-next-line no-console
-        console.log(`mmt version ${this.version}`);
+        this.logger.info(`mmt version ${this.version}`);
         process.exit(0);
       }
       
@@ -122,7 +126,7 @@ export class ApplicationDirector {
       // 10. Handle command result
       if (!result.success) {
         if (result.message) {
-          console.error(result.message);
+          this.logger.error(result.message);
         }
         process.exit(result.exitCode);
       }
@@ -140,7 +144,7 @@ export class ApplicationDirector {
         throw error;
       }
       
-      console.error('Unexpected error:', error);
+      this.logger.error('Unexpected error', { error });
       process.exit(1);
     }
   }
@@ -151,9 +155,9 @@ export class ApplicationDirector {
    * @param message - Error message to display
    */
   private exitWithError(message: string): never {
-    console.error(`Error: ${message}\n`);
-    console.error('Usage: mmt [options] <command> [command-args]');
-    console.error('Try "mmt help" for more information.');
+    this.logger.error(`Error: ${message}`);
+    this.logger.info('Usage: mmt [options] <command> [command-args]');
+    this.logger.info('Try "mmt help" for more information.');
     process.exit(1);
   }
 }

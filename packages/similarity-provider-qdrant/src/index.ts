@@ -1,4 +1,4 @@
-export { QdrantProvider } from './qdrant-provider';
+export { QdrantProvider } from './qdrant-provider.js';
 
 // Re-export types from base package for convenience
 export type {

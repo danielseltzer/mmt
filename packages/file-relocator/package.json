@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@mmt/entities": "workspace:*",
-    "@mmt/filesystem-access": "workspace:*"
+    "@mmt/filesystem-access": "workspace:*",
+    "@mmt/logger": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.14.2",

@@ -1,5 +1,6 @@
-import { SimilarityProvider } from './interface';
-import { ProviderInitOptions } from './types';
+import { SimilarityProvider } from './interface.js';
+import { ProviderInitOptions } from './types.js';
+import { Loggers, type Logger } from '@mmt/logger';
 
 /**
  * Factory for creating and managing similarity providers
@@ -7,6 +8,7 @@ import { ProviderInitOptions } from './types';
 export class SimilarityProviderFactory {
   private static providers = new Map<string, () => SimilarityProvider>();
   private static instances = new Map<string, SimilarityProvider>();
+  private static logger: Logger = Loggers.similarity();
   
   /**
    * Register a provider factory function
@@ -15,7 +17,7 @@ export class SimilarityProviderFactory {
    */
   static register(name: string, factory: () => SimilarityProvider): void {
     if (this.providers.has(name)) {
-      console.warn(`Provider '${name}' is already registered. Overwriting.`);
+      this.logger.warn(`Provider '${name}' is already registered. Overwriting.`);
     }
     this.providers.set(name, factory);
   }
@@ -29,7 +31,9 @@ export class SimilarityProviderFactory {
     // Also cleanup any instances
     const instance = this.instances.get(name);
     if (instance) {
-      instance.shutdown().catch(console.error);
+      instance.shutdown().catch(error => 
+        this.logger.error(`Error shutting down provider ${name}`, { error })
+      );
       this.instances.delete(name);
     }
   }
@@ -97,7 +101,9 @@ export class SimilarityProviderFactory {
    */
   static async shutdownAll(): Promise<void> {
     const shutdownPromises = Array.from(this.instances.values()).map(
-      instance => instance.shutdown().catch(console.error)
+      instance => instance.shutdown().catch(error =>
+        this.logger.error('Error during provider shutdown', { error })
+      )
     );
     await Promise.all(shutdownPromises);
     this.instances.clear();
@@ -108,7 +114,9 @@ export class SimilarityProviderFactory {
    * Useful for testing
    */
   static clear(): void {
-    this.shutdownAll().catch(console.error);
+    this.shutdownAll().catch(error =>
+      this.logger.error('Error during factory clear', { error })
+    );
     this.providers.clear();
     this.instances.clear();
   }

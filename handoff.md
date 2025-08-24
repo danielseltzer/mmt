@@ -1,36 +1,43 @@
 # Handoff Document - MMT Project Status
 
-## Last Updated: 2024-12-22 (Session 4)
+## Last Updated: 2025-08-23
 
-## Current Status: V3 TAB FEATURE COMPLETE
+## Current Status: ALL UI IMPROVEMENTS & CRITICAL FIXES COMPLETE ✅
 
 ### Session Summary
-- **Major Achievement**: Implemented V3 multi-vault tab interface (Issues #157, #158)
-- Fixed critical build blockers (missing utility files)
-- Tested and verified multi-vault functionality
-- Note: Vault-aware API endpoints were already implemented (Issue #189 in earlier commit)
+- **Session Start**: Recovered from crash, found uncommitted V3 tab work already implemented
+- **Major Fixes Completed**:
+  - ✅ Similarity search graceful degradation (PR #214)
+  - ✅ UI improvements - 3 enhancements (PR #216, Issue #215)
+  - ✅ Open in Obsidian context menu fix (PR #218, Issue #217)
+- **Testing Infrastructure Added**:
+  - Browser health check tool
+  - Obsidian URL validation test (TDD approach)
+  - UI improvements test suite
+- **Result**: System fully stable, all recent issues resolved
 
-## Recently Completed Work
+## Recently Completed Work (This Session)
 
-### V3 Multi-Vault Tab Interface (Issues #157, #158) ✅ 
-- **TabBar Component**: Smart tab management that auto-hides for single vault
-- **Per-Tab State**: Independent search, filters, and documents per tab
-- **localStorage Persistence**: Tabs survive page refresh
-- **Test Configuration**: `multi-vault-test-config.yaml` for development
-- **Utility Files**: Created missing filter-utils.js and template-utils.js
+### UI Improvements (Issue #215, PR #216) ✅
+1. **Open in Obsidian**: Added as first context menu item
+2. **Panel Auto-Close**: Sub-panels close when clicking search box or switching modes
+3. **Path Display Fix**: Shows "/" for root files, removes "Personal-sync" prefix
 
-### Qdrant Similarity Search (PRs #211, #212) ✅
-- **Fully functional** similarity search with Qdrant vector database
-- **Visual UI** with search mode toggle and similarity scoring
-- **Bug fixes** resolved (indexing regression, text search filtering)
-- **Performance** is excellent (sub-second searches, 5990/6002 docs indexed)
+### Open in Obsidian Fix (Issue #217, PR #218) ✅
+- **Problem**: Always opened previously selected document, not the right-clicked one
+- **Solution**: Track right-clicked row in context menu state
+- **Testing**: Created Playwright test using TDD - confirmed bug, then validated fix
+- **Result**: 100% test pass rate, correct document opens every time
 
-### Issues Closed This Session
-- **#157**: Implement tab bar component - COMPLETED
-- **#158**: Create per-tab state management - COMPLETED  
-- **#206**: Similarity indexing regression - FIXED in PR #211
-- **#207**: Text search filtering bug - FIXED 
-- **#209**: Error logging improvements - IMPLEMENTED
+### Similarity Search Graceful Degradation (PR #214) ✅
+- **Problem**: Infinite loop when similarity not configured
+- **Solution**: Detect availability, auto-switch to text search, disable UI controls
+- **Testing**: Browser health check tool created to verify page loads without errors
+
+### Previously Completed (Found During Recovery)
+- **V3 Multi-Vault Tabs**: Already implemented but uncommitted
+- **Vault-Aware API**: Routes working at `/api/vaults/:vaultId/...`
+- **Per-Tab State**: Independent state management with localStorage
 
 ## Priority Work Items for Next Session
 
@@ -47,9 +54,10 @@
 The tab foundation is complete. Next V3 priorities from the roadmap:
 
 **Performance & UX Improvements**
-- Issue #208: Fix document paths showing as "/" (UX bug)
+- ~~Issue #208: Fix document paths showing as "/"~~ **FIXED THIS SESSION**
 - Optimize tab switching performance
 - Add keyboard shortcuts for tab navigation
+- Make Obsidian vault name dynamic (currently hardcoded as "Personal-sync")
 
 ### 🥉 Priority 3: Test Coverage (Lower Priority)
 **Issue #204: Test Case for "Too Deep Objects" Error**
@@ -84,17 +92,22 @@ The tab foundation is complete. Next V3 priorities from the roadmap:
 
 ### Running the System
 ```bash
-# Test multi-vault tabs
+# Test multi-vault tabs (CURRENTLY RUNNING as bash_17)
 ./bin/mmt start --config multi-vault-test-config.yaml
 
 # Or with Qdrant similarity search
 ./bin/mmt start --config config/personal-vault-qdrant.yaml
 
-# Ensure Docker is running Qdrant (for similarity)
+# Ensure Docker is running Qdrant (for similarity - optional)
 docker run -p 6333:6333 qdrant/qdrant
 
-# Ensure Ollama is running for embeddings (for similarity)
+# Ensure Ollama is running for embeddings (for similarity - optional)
 ollama serve
+
+# Run tests
+node tools/check-browser-health.js      # Verify UI loads
+node tools/test-obsidian-urls.js        # Test Obsidian URLs
+node tools/test-ui-improvements.js      # Test UI features
 ```
 
 ### Key Configuration Files

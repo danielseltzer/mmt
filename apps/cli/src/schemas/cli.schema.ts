@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Loggers, type Logger } from '@mmt/logger';
 
 /**
  * Command-line arguments schema.
@@ -34,13 +35,14 @@ export type ScriptCommandArgs = z.infer<typeof ScriptCommandArgsSchema>;
  */
 export let DEBUG = false;
 
+const logger: Logger = Loggers.cli();
+
 export function setDebug(value: boolean): void {
   DEBUG = value;
 }
 
 export function debugLog(...args: unknown[]): void {
   if (DEBUG) {
-    // eslint-disable-next-line no-console
-    console.debug('[DEBUG]', ...args);
+    logger.debug('Debug output', { args });
   }
 }

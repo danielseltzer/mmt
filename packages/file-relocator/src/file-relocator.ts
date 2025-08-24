@@ -1,10 +1,12 @@
 import { FileSystemAccess } from '@mmt/filesystem-access';
+import { Loggers, type Logger } from '@mmt/logger';
 import path from 'path';
 import { FileReferences, Link, RelocatorOptions } from './types';
 
 export class FileRelocator {
   private fileSystem: FileSystemAccess;
   private options: Required<RelocatorOptions>;
+  private logger: Logger;
 
   constructor(
     fileSystem: FileSystemAccess,
@@ -16,6 +18,7 @@ export class FileRelocator {
       extensions: options.extensions ?? ['.md'],
       excludePaths: options.excludePaths ?? [],
     };
+    this.logger = Loggers.operations();
   }
 
   /**
@@ -86,7 +89,7 @@ export class FileRelocator {
           }
         } catch (error) {
           // Skip files we can't stat
-          console.warn(`Could not stat ${fullPath}:`, error);
+          this.logger.warn(`Could not stat ${fullPath}`, { error });
         }
       }
     };
