@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { PipelinePanels } from './PipelinePanels';
 import { SearchModeToggle } from './SearchModeToggle';
+import { SimilarityIndexingWarning } from './SimilarityStatusIndicator';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
@@ -35,20 +36,24 @@ export function QueryBar() {
   
   const searchBar = (
     <div className="flex items-center gap-2">
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder={searchMode === 'similarity' ? "Enter semantic search query..." : "Search all fields..."}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => {
-            if (panelCloseCallback) {
-              panelCloseCallback();
-            }
-          }}
-          className="pl-10 h-9 text-sm"
-        />
+      <div className="relative flex-1 max-w-md space-y-1">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder={searchMode === 'similarity' ? "Enter semantic search query..." : "Search all fields..."}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => {
+              if (panelCloseCallback) {
+                panelCloseCallback();
+              }
+            }}
+            className="pl-10 h-9 text-sm"
+          />
+        </div>
+        {/* Show warning when indexing is in progress */}
+        <SimilarityIndexingWarning />
       </div>
       <SearchModeToggle />
     </div>

@@ -7,21 +7,40 @@ const logger: Logger = Loggers.api();
 export function similarityRouter(context: Context): Router {
   const router = Router();
   
-  // Check if similarity search is enabled
-  router.use((req, res, next) => {
-    if (!context.similaritySearch) {
-      return res.status(501).json({
-        error: 'Similarity search is not configured',
-        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
-      });
-    }
-    next();
-  });
-  
-  // GET /api/similarity/status - Get current status
+  // GET /api/similarity/status - Get current indexing status (new format for issue #221)
   router.get('/status', async (req, res) => {
     try {
-      const status = await context.similaritySearch!.getStatus();
+      // Check if similarity search is configured
+      if (!context.similaritySearch) {
+        return res.json({
+          status: 'not_configured',
+          totalDocuments: 0,
+          indexedDocuments: 0,
+          percentComplete: 0,
+          estimatedTimeRemaining: null
+        });
+      }
+      
+      const status = await context.similaritySearch.getIndexingStatus();
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({
+        error: 'Failed to get similarity search status',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  // GET /api/similarity/status/detailed - Get detailed status (legacy format)
+  router.get('/status/detailed', async (req, res) => {
+    try {
+      if (!context.similaritySearch) {
+        return res.status(501).json({
+          error: 'Similarity search is not configured',
+          message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
+        });
+      }
+      const status = await context.similaritySearch.getStatus();
       res.json(status);
     } catch (error) {
       res.status(500).json({
@@ -33,6 +52,13 @@ export function similarityRouter(context: Context): Router {
   
   // GET /api/similarity/events - Server-sent events for status updates
   router.get('/events', (req, res) => {
+    if (!context.similaritySearch) {
+      return res.status(501).json({
+        error: 'Similarity search is not configured',
+        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
+      });
+    }
+    
     // Set up SSE
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -82,6 +108,13 @@ export function similarityRouter(context: Context): Router {
   
   // POST /api/similarity/search - Search for similar documents
   router.post('/search', async (req, res) => {
+    if (!context.similaritySearch) {
+      return res.status(501).json({
+        error: 'Similarity search is not configured',
+        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
+      });
+    }
+    
     const { documentPath, query, limit = 10, includeExcerpt = true } = req.body;
     
     if (!documentPath && !query) {
@@ -119,6 +152,13 @@ export function similarityRouter(context: Context): Router {
   
   // POST /api/similarity/reindex - Manually trigger reindexing
   router.post('/reindex', async (req, res) => {
+    if (!context.similaritySearch) {
+      return res.status(501).json({
+        error: 'Similarity search is not configured',
+        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
+      });
+    }
+    
     const { force = false } = req.body;
     
     try {
