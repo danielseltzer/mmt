@@ -44,6 +44,7 @@ export interface IndexingProgress {
   currentFile?: string;
   startedAt?: Date;
   elapsedSeconds?: number;
+  estimatedSecondsRemaining?: number;
 }
 
 export interface SimilarityStatus {
@@ -283,12 +284,19 @@ export class SimilaritySearchService extends EventEmitter {
 
         const batch = docsToIndex.slice(i, Math.min(i + batchSize, docsToIndex.length));
         
-        // Update progress
-        this.indexingProgress.current = i;
-        this.indexingProgress.percentage = Math.round((i / documents.length) * 100);
+        // Update progress - use successCount for accurate tracking
+        this.indexingProgress.current = successCount;
+        this.indexingProgress.percentage = Math.round((successCount / documents.length) * 100);
         this.indexingProgress.currentFile = batch[0].path;
         this.indexingProgress.elapsedSeconds = 
           (Date.now() - this.indexingProgress.startedAt!.getTime()) / 1000;
+        
+        // Calculate estimated time remaining based on actual success rate
+        if (this.indexingProgress.elapsedSeconds > 0 && successCount > 0) {
+          const docsPerSecond = successCount / this.indexingProgress.elapsedSeconds;
+          const remainingDocs = documents.length - successCount;
+          this.indexingProgress.estimatedSecondsRemaining = Math.ceil(remainingDocs / docsPerSecond);
+        }
         
         this.emit('indexing-progress', this.indexingProgress);
 
@@ -296,6 +304,20 @@ export class SimilaritySearchService extends EventEmitter {
         this.logger.info(`Processing batch ${i / batchSize + 1} (${batch.length} documents)`);
         const result = await this.provider.indexBatch(batch);
         successCount += result.successful;
+        
+        // Update progress after batch completes with actual count
+        this.indexingProgress.current = successCount;
+        this.indexingProgress.percentage = Math.round((successCount / documents.length) * 100);
+        
+        // Recalculate estimated time with updated success count
+        if (this.indexingProgress.elapsedSeconds > 0 && successCount > 0) {
+          this.indexingProgress.elapsedSeconds = (Date.now() - this.indexingProgress.startedAt!.getTime()) / 1000;
+          const docsPerSecond = successCount / this.indexingProgress.elapsedSeconds;
+          const remainingDocs = documents.length - successCount;
+          this.indexingProgress.estimatedSecondsRemaining = Math.ceil(remainingDocs / docsPerSecond);
+        }
+        
+        this.emit('indexing-progress', this.indexingProgress);
         
         if (result.failed > 0) {
           this.logger.error(`Batch indexing had failures`, {
@@ -433,6 +455,69 @@ export class SimilaritySearchService extends EventEmitter {
       progress: this.indexingProgress || undefined,
       error: this.lastError || ollamaHealth.error || undefined,
       generatedAt: new Date()
+    };
+  }
+
+  /**
+   * Get simplified indexing status for the new status endpoint
+   * Returns status in the format specified in issue #221
+   */
+  async getIndexingStatus(): Promise<{
+    status: 'indexing' | 'ready' | 'error' | 'not_configured';
+    totalDocuments: number;
+    indexedDocuments: number;
+    percentComplete: number;
+    estimatedTimeRemaining: string | null;
+  }> {
+    // Map internal status to API status
+    let apiStatus: 'indexing' | 'ready' | 'error' | 'not_configured';
+    
+    if (!this.config.similarity?.enabled || !this.provider) {
+      apiStatus = 'not_configured';
+    } else if (this.indexStatus === 'indexing') {
+      apiStatus = 'indexing';
+    } else if (this.indexStatus === 'ready') {
+      apiStatus = 'ready';
+    } else if (this.indexStatus === 'error') {
+      apiStatus = 'error';
+    } else {
+      // not_started maps to not_configured
+      apiStatus = 'not_configured';
+    }
+
+    // Calculate values based on current state
+    const totalDocuments = this.indexingProgress?.total || this.documentCount || 0;
+    const indexedDocuments = this.indexingProgress?.current || this.documentCount || 0;
+    const percentComplete = totalDocuments > 0 
+      ? Math.round((indexedDocuments / totalDocuments) * 100)
+      : 0;
+
+    // Calculate estimated time remaining
+    let estimatedTimeRemaining: string | null = null;
+    if (this.indexingProgress && this.indexingProgress.elapsedSeconds && this.indexingProgress.current > 0) {
+      const docsPerSecond = this.indexingProgress.current / this.indexingProgress.elapsedSeconds;
+      const remainingDocs = this.indexingProgress.total - this.indexingProgress.current;
+      const remainingSeconds = Math.ceil(remainingDocs / docsPerSecond);
+      
+      // Format as human-readable time
+      if (remainingSeconds < 60) {
+        estimatedTimeRemaining = `${remainingSeconds} seconds`;
+      } else if (remainingSeconds < 3600) {
+        const minutes = Math.ceil(remainingSeconds / 60);
+        estimatedTimeRemaining = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      } else {
+        const hours = Math.floor(remainingSeconds / 3600);
+        const minutes = Math.ceil((remainingSeconds % 3600) / 60);
+        estimatedTimeRemaining = `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      }
+    }
+
+    return {
+      status: apiStatus,
+      totalDocuments,
+      indexedDocuments,
+      percentComplete,
+      estimatedTimeRemaining
     };
   }
 
