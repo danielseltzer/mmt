@@ -21,16 +21,31 @@ This document tracks the implementation progress of code review recommendations 
 
 **Impact**: Tests now use real implementations, improving reliability and catching actual integration issues.
 
-### 2. Console.log Usage (Priority 2) - PARTIALLY COMPLETED
-**Status**: 🔄 ~15 instances fixed, ~150+ remaining
-**Commit**: `016ecc8` - "fix: replace console.log with Logger module (partial)"
+### 2. Console.log Usage (Priority 2) - MAJOR PROGRESS
+**Status**: 🔄 ~35 instances fixed, ~100+ remaining  
+**Latest Commit**: `ef6600b` - "fix: replace console.log with Logger module in web components and control manager"
+**Previous Commit**: `016ecc8` - "fix: replace console.log with Logger module (partial)"
 
-**Fixed Files**:
+**Fixed Files - Session 1**:
 - `packages/scripting/tests/test-api-server.ts` - Debug logging → logger.debug()
 - `packages/scripting/tests/result-formatter.test.ts` - Debug output → logger.debug()
 - `packages/indexer/tests/indexer.test.ts` - Performance logging → logger.info()
 - `tools/generate-operations-report.ts` - Report generation → logger.info()
 - `tools/control-manager/src/docker-manager.ts` - Docker operations → logger.info() (partial)
+
+**Fixed Files - Session 2**:
+- **Web Components** (8 files):
+  - `apps/web/src/components/FilterBar.jsx` - Error/warn logging for config and filters
+  - `apps/web/src/components/PreviewModal.jsx` - Error logging for preview/execution
+  - `apps/web/src/components/PipelinePanels.jsx` - Info logging for pipeline execution
+  - `apps/web/src/components/OutputPanel.jsx` - Info logging for user actions
+  - `apps/web/src/components/SimilarityStatusIndicator.jsx` - Error logging for status
+  - `apps/web/src/components/DocumentTable.tsx` - Debug logging for selections
+  - `apps/web/src/stores/document-store.ts` - Error logging for storage operations
+  - `packages/table-view/src/TableView.tsx` - Debug logging for Obsidian URLs
+- **Control Manager** (2 files):
+  - `tools/control-manager/src/cli.ts` - Complete replacement of all console statements
+  - `tools/control-manager/src/docker-manager.ts` - Complete replacement of all console statements
 
 **Pattern Applied**:
 ```typescript
@@ -65,16 +80,16 @@ PipelineExecutor (440 lines)
 ## Remaining Work 🔄
 
 ### Console.log Usage (Priority 2) - CONTINUE
-**Estimated Effort**: 2-3 hours
-**Remaining Files** (~150+ instances):
-- `apps/web/src/` - React components and utilities
-- `apps/api-server/src/` - Server-side logging
-- `packages/` - Various package logging
-- `tools/` - Additional tooling scripts
+**Estimated Effort**: 1-2 hours
+**Remaining Files** (~100+ instances):
+- Test scripts and tools (`test-*.js`, `debug-*.js`)
+- Playwright tests (`apps/web/playwright/*.spec.ts`)
+- API server tests (`apps/api-server/tests/*`)
+- Various utility scripts and examples
 
 **Next Steps**:
-1. Focus on high-impact files first (core services, main components)
-2. Use find/replace pattern: `console.log` → `logger.info` (with proper imports)
+1. Many remaining are in test files/scripts - consider if these need replacement
+2. Focus on production code over test utilities
 3. Consider log levels: debug for development, info for user-facing, warn/error for issues
 
 ### Large Files (Priority 3) - CONTINUE
@@ -233,33 +248,38 @@ gh pr list                  # View open PRs
 
 ---
 
-## CURRENT SESSION UPDATE (2025-08-25)
+## CURRENT SESSION UPDATE (2025-08-25) - Session 2
 
-### Code Review Recommendations Implementation - IN PROGRESS
+### Code Review Recommendations Implementation - SIGNIFICANT PROGRESS
 
 **Branch**: `fix/code-review-recommendations-225`
 **Status**: Major progress on code quality improvements
 
 #### Completed This Session ✅
-1. **NO MOCKS Policy Violations** - ALL FIXED (Priority 1)
-2. **Console.log Replacement** - PARTIALLY COMPLETE (Priority 2)
-3. **Large File Refactoring** - MAJOR PROGRESS (Priority 3)
+1. **NO MOCKS Policy Violations** - ALL FIXED (Priority 1) - Session 1
+2. **Console.log Replacement** - MAJOR PROGRESS (Priority 2) - Sessions 1 & 2
+3. **Large File Refactoring** - STARTED (Priority 3) - Session 1
 
 #### Key Achievements
-- **PipelineExecutor**: 601 lines → 440 lines (extracted FilterExecutor & DocumentSelector)
-- **Test Reliability**: Removed all mocked implementations, tests use real services
-- **Logging Standards**: Established Logger pattern, ~15 instances converted
+- **Session 1**:
+  - **PipelineExecutor**: 601 lines → 440 lines (extracted FilterExecutor & DocumentSelector)
+  - **Test Reliability**: Removed all mocked implementations, tests use real services
+  - **Initial Logging**: ~15 instances converted to Logger
+- **Session 2**:
+  - **Web Components**: 8 files fully converted to Logger module
+  - **Control Manager**: Complete replacement in cli.ts and docker-manager.ts
+  - **Logger Coverage**: ~35 total instances fixed across critical components
 
 #### Remaining Work
-- **Console.log**: ~150+ instances remaining across codebase
+- **Console.log**: ~100+ instances remaining (mostly in test files and scripts)
 - **Large Files**: DocumentTable.tsx (500+ lines), vault-indexer.ts (600+ lines)
 - **Error Handling**: Not started (Priority 4)
 - **Type Safety**: Not started (Priority 5)
 
 #### Estimated Completion
-- **Time Remaining**: 8-12 hours
-- **Next Priority**: Continue console.log replacement
-- **Foundation**: Solid patterns established, ready for continuation
+- **Time Remaining**: 6-8 hours
+- **Next Priority**: Focus on production code console.logs, then large file refactoring
+- **Foundation**: Solid patterns established, web layer mostly complete
 
 ## Session Handoff Complete
 The project has made significant progress on code quality improvements from Issue #225. The foundation is solid with clear patterns established for the remaining work. The next session should continue with console.log replacement following the established patterns.
