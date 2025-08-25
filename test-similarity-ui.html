@@ -3,216 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MMT Similarity Search UI Test</title>
+    <title>Similarity Status UI Test</title>
     <style>
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background: #f5f5f5;
         }
-        .test-section {
+        .container {
             background: white;
             border-radius: 8px;
             padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: #333;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-        }
-        h2 {
-            color: #555;
-            margin-top: 0;
-        }
-        .status {
-            padding: 8px 12px;
+        h1 { color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .status-box {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
             border-radius: 4px;
-            margin: 10px 0;
-            font-weight: 500;
+            padding: 15px;
+            margin: 20px 0;
         }
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        .feature-list {
-            list-style: none;
-            padding: 0;
-        }
-        .feature-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .feature-list li:before {
-            content: "✓ ";
-            color: #28a745;
-            font-weight: bold;
-            margin-right: 8px;
-        }
-        iframe {
-            width: 100%;
-            height: 600px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        .test-button {
-            background: #007bff;
+        .status-ready { color: #10b981; background: #f0fdf4; border-color: #86efac; }
+        .status-indexing { color: #3b82f6; background: #eff6ff; border-color: #93c5fd; }
+        button {
+            background: #3b82f6;
             color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
             margin: 5px;
-            font-size: 14px;
         }
-        .test-button:hover {
-            background: #0056b3;
-        }
-        .results {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+        #api-status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
             border-radius: 4px;
-            padding: 10px;
-            margin-top: 10px;
             font-family: monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow-y: auto;
+            white-space: pre-wrap;
         }
     </style>
 </head>
 <body>
-    <h1>MMT Similarity Search UI Test Report</h1>
-    
-    <div class="test-section">
-        <h2>Implementation Summary</h2>
-        <div class="status success">✅ All requested features have been successfully implemented!</div>
+    <div class="container">
+        <h1>Similarity Search Status Test</h1>
+        <p class="subtitle">Testing Issue #221 - Progress Indicator</p>
         
-        <h3>Completed Features:</h3>
-        <ul class="feature-list">
-            <li><strong>Search Mode Toggle:</strong> Added toggle to switch between "Text Search" and "Similarity" modes</li>
-            <li><strong>Document Store Updated:</strong> Added similarity search state and API integration methods</li>
-            <li><strong>Similarity Search API:</strong> Integrated POST endpoint for semantic search queries</li>
-            <li><strong>Similarity Scores Display:</strong> Shows percentage scores with color-coded badges (Green >70%, Yellow 50-70%, Gray <50%)</li>
-            <li><strong>"Find Similar" Feature:</strong> Added action button to find similar documents for each result</li>
-            <li><strong>Visual Design:</strong> Consistent dark theme with Tailwind CSS and shadcn UI components</li>
-            <li><strong>Loading States:</strong> Proper loading indicators for similarity searches</li>
-            <li><strong>Empty States:</strong> User-friendly message when no similar documents found</li>
-        </ul>
+        <button onclick="checkStatus()">Check Status</button>
+        <button onclick="window.open('http://localhost:5173', '_blank')">Open MMT App</button>
+        
+        <div id="api-status"></div>
+        
+        <div class="status-box status-ready">
+            <strong>Expected Ready State:</strong><br>
+            ✓ Similarity search ready (5,992 documents indexed)
+        </div>
+        
+        <div class="status-box status-indexing">
+            <strong>Expected Indexing State:</strong><br>
+            Building similarity index...<br>
+            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░ 70%<br>
+            4,194/5,992 documents
+        </div>
     </div>
     
-    <div class="test-section">
-        <h2>Files Modified/Created</h2>
-        <ul>
-            <li><strong>/apps/web/src/stores/document-store.ts</strong> - Added similarity search state and methods</li>
-            <li><strong>/apps/web/src/components/QueryBar.jsx</strong> - Integrated search mode toggle</li>
-            <li><strong>/apps/web/src/components/DocumentTable.jsx</strong> - Updated to use enhanced table for similarity mode</li>
-            <li><strong>/apps/web/src/components/SearchModeToggle.jsx</strong> - New toggle component</li>
-            <li><strong>/apps/web/src/components/EnhancedDocumentTable.jsx</strong> - New table with similarity features</li>
-        </ul>
-    </div>
-    
-    <div class="test-section">
-        <h2>API Test</h2>
-        <button class="test-button" onclick="testSimilarityAPI()">Test Similarity Search API</button>
-        <button class="test-button" onclick="testFindSimilar()">Test Find Similar API</button>
-        <div id="api-results" class="results" style="display:none;"></div>
-    </div>
-    
-    <div class="test-section">
-        <h2>Live Web UI</h2>
-        <div class="status info">📍 The web UI is running at http://localhost:5173</div>
-        <p>Below is an embedded view of the running application. You can interact with it directly:</p>
-        <iframe src="http://localhost:5173" title="MMT Web UI"></iframe>
-    </div>
-    
-    <div class="test-section">
-        <h2>How to Test</h2>
-        <ol>
-            <li>Open the web UI at <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></li>
-            <li>Look for the new toggle buttons next to the search bar (Text Search | Similarity)</li>
-            <li>Click on "Similarity" to switch to semantic search mode</li>
-            <li>Enter a query like "woodworking tools" or "typescript error"</li>
-            <li>Observe the similarity scores displayed as colored percentage badges</li>
-            <li>Click the "Similar" button on any document to find related documents</li>
-            <li>Switch back to "Text Search" to use the regular search functionality</li>
-        </ol>
-    </div>
-    
-    <div class="test-section">
-        <h2>Technical Details</h2>
-        <div class="status success">✅ Build successful - No compilation errors</div>
-        <div class="status success">✅ API integration tested - Returns valid similarity scores</div>
-        <div class="status success">✅ 5,990 documents indexed in Qdrant vector database</div>
-        <p><strong>Performance:</strong> Similarity searches complete in ~300-500ms for 20 results</p>
-        <p><strong>Dependencies Added:</strong> @tanstack/react-table for enhanced table functionality</p>
-    </div>
-
     <script>
-        async function testSimilarityAPI() {
-            const resultsDiv = document.getElementById('api-results');
-            resultsDiv.style.display = 'block';
-            resultsDiv.innerHTML = 'Testing similarity search API...';
-            
+        async function checkStatus() {
+            const statusDiv = document.getElementById('api-status');
             try {
-                const response = await fetch('http://localhost:3001/api/vaults/Personal/similarity/search', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        query: 'woodworking tools',
-                        limit: 5
-                    })
-                });
+                const vaultsResponse = await fetch('http://localhost:5173/api/vaults');
+                const vaults = await vaultsResponse.json();
                 
+                if (vaults.vaults.length === 0) {
+                    statusDiv.textContent = 'No vaults available';
+                    return;
+                }
+                
+                const vaultId = vaults.vaults[0].id;
+                const response = await fetch(\`http://localhost:5173/api/vaults/\${vaultId}/similarity/status\`);
                 const data = await response.json();
-                resultsDiv.innerHTML = '<strong>Similarity Search Results:</strong>\n' + 
-                    JSON.stringify(data, null, 2);
+                
+                let output = \`Vault: \${vaultId}\n\`;
+                output += \`Status: \${data.status}\n\`;
+                output += \`Documents: \${data.indexedDocuments}/\${data.totalDocuments}\n\`;
+                output += \`Progress: \${data.percentComplete}%\`;
+                
+                statusDiv.textContent = output;
             } catch (error) {
-                resultsDiv.innerHTML = '<span style="color: red;">Error: ' + error.message + '</span>';
+                statusDiv.textContent = \`Error: \${error.message}\`;
             }
         }
-        
-        async function testFindSimilar() {
-            const resultsDiv = document.getElementById('api-results');
-            resultsDiv.style.display = 'block';
-            resultsDiv.innerHTML = 'Testing find similar API...';
-            
-            try {
-                const response = await fetch('http://localhost:3001/api/vaults/Personal/similarity/search', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        documentPath: '/Users/danielseltzer/Notes/Personal-sync/Making/Woodwork/Woodcarving tools and setup.md',
-                        limit: 3
-                    })
-                });
-                
-                const data = await response.json();
-                resultsDiv.innerHTML = '<strong>Find Similar Results:</strong>\n' + 
-                    JSON.stringify(data, null, 2);
-            } catch (error) {
-                resultsDiv.innerHTML = '<span style="color: red;">Error: ' + error.message + '</span>';
-            }
-        }
+        checkStatus();
     </script>
 </body>
 </html>

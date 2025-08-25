@@ -59,11 +59,11 @@ const checkBrowserHealth = async (url = 'http://localhost:5173', options = {}) =
     if (verbose) console.log(`Checking browser health at ${url}...`);
     
     await page.goto(url, { 
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout 
     });
     
-    // Wait for any delayed errors
+    // Wait for React to mount and any delayed errors
     await page.waitForTimeout(waitTime);
     
     // Check if the app root exists
