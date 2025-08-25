@@ -12,6 +12,9 @@ import {
   ColumnSizingState,
 } from '@tanstack/react-table';
 import type { Document as BaseDocument } from '@mmt/entities';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 // Extend Document type to include fullPath for unique identification
 type Document = BaseDocument & {
@@ -596,7 +599,7 @@ export function TableView({
                       
                       // Build Obsidian URI
                       const obsidianUri = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
-                      console.log('Opening in Obsidian:', obsidianUri);
+                      logger.debug('Opening in Obsidian:', obsidianUri);
                       
                       // Open in Obsidian
                       window.open(obsidianUri, '_blank');

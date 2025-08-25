@@ -7,6 +7,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput, Eye } from 'lucide-react';
 import { useDocumentStore, useCurrentTab, useActiveFilters, useActiveTotalCount } from '../stores/document-store';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 // eslint-disable-next-line no-unused-vars
 function PanelHeader({ icon: Icon, title, summary, isOpen }) {
@@ -121,7 +124,7 @@ export function PipelinePanels({ searchBar, onCloseCallbackChange }) {
 
   const handleExecute = async () => {
     // TODO: Implement pipeline execution
-    console.log('Executing pipeline:', {
+    logger.info('Executing pipeline:', {
       filters,
       operations,
       outputFormat,

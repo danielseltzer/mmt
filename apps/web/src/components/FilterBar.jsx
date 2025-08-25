@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
 import { MetadataFilter } from './MetadataFilter';
 import { parseDateExpression, parseSizeExpression } from '../utils/filter-utils';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 export function FilterBar() {
   const currentTab = useCurrentTab();
@@ -28,7 +31,7 @@ export function FilterBar() {
     fetch('/api/config')
       .then(res => res.json())
       .then(data => setVaultPath(data.vaultPath))
-      .catch(err => console.error('Failed to fetch vault config:', err));
+      .catch(err => logger.error('Failed to fetch vault config:', err));
   }, []);
   
   // Convert filter values to FilterCollection format when they change
@@ -102,7 +105,7 @@ export function FilterBar() {
           });
         }
       } catch {
-        console.warn('Invalid date expression:', filterValues.dateExpression);
+        logger.warn('Invalid date expression:', filterValues.dateExpression);
       }
     }
     
@@ -118,7 +121,7 @@ export function FilterBar() {
           });
         }
       } catch {
-        console.warn('Invalid size expression:', filterValues.sizeExpression);
+        logger.warn('Invalid size expression:', filterValues.sizeExpression);
       }
     }
     

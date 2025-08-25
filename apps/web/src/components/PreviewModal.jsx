@@ -9,6 +9,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, FileText, Wand2, FileOutput, Loader2 } from 'lucide-react';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 export function PreviewModal({ 
   isOpen, 
@@ -85,7 +88,7 @@ export function PreviewModal({
       const data = await response.json();
       setPreviewData(data);
     } catch (err) {
-      console.error('Failed to fetch preview:', err);
+      logger.error('Failed to fetch preview:', err);
       setError(err.message || 'Failed to generate preview');
     } finally {
       setIsLoading(false);
@@ -99,7 +102,7 @@ export function PreviewModal({
       await onExecute(true);
       onClose();
     } catch (error) {
-      console.error('Execution failed:', error);
+      logger.error('Execution failed:', error);
       setIsExecuting(false);
     }
   };
