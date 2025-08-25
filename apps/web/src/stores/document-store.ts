@@ -157,11 +157,12 @@ const loadTabsFromStorage = (): TabState[] => {
 const saveTabsToStorage = (tabs: TabState[]) => {
   try {
     // Only save essential state, not documents
+    // Don't persist search queries - start fresh on reload
     const toSave = tabs.map(tab => ({
       tabId: tab.tabId,
       vaultId: tab.vaultId,
       tabName: tab.tabName,
-      searchQuery: tab.searchQuery,
+      // searchQuery: tab.searchQuery,  // Don't persist search queries
       filters: tab.filters,
       sortBy: tab.sortBy,
       sortOrder: tab.sortOrder,
@@ -187,18 +188,24 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   createTab: (vaultId: string) => {
     const vault = get().vaults.find(v => v.id === vaultId);
     if (!vault) return;
-    
-    const newTab = createInitialTabState(vaultId, vault.name);
+
+    // Check if there are existing tabs for this vault to create unique names
+    const existingVaultTabs = get().tabs.filter(t => t.vaultId === vaultId);
+    const tabName = existingVaultTabs.length > 0
+      ? `${vault.name} (${existingVaultTabs.length + 1})`
+      : vault.name;
+
+    const newTab = createInitialTabState(vaultId, tabName);
     const updatedTabs = [...get().tabs, newTab];
-    
-    set({ 
+
+    set({
       tabs: updatedTabs,
-      activeTabId: newTab.tabId 
+      activeTabId: newTab.tabId
     });
-    
+
     saveTabsToStorage(updatedTabs);
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, newTab.tabId);
-    
+
     // Fetch documents for the new tab
     get().fetchDocuments();
   },
@@ -645,7 +652,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
               vaults.find((v: Vault) => v.id === stored.vaultId)?.name || stored.tabName),
             tabId: stored.tabId,
             tabName: stored.tabName,
-            searchQuery: stored.searchQuery || '',
+            searchQuery: '',  // Always start with empty search query
             filters: stored.filters || { conditions: [], logic: 'AND' },
             sortBy: stored.sortBy,
             sortOrder: stored.sortOrder || 'asc',

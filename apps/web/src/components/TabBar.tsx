@@ -2,6 +2,12 @@ import { useEffect } from 'react';
 import { useDocumentStore } from '@/stores/document-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { X, Plus, Loader2 } from 'lucide-react';
 
 export function TabBar() {
@@ -39,16 +45,8 @@ export function TabBar() {
     return null;
   }
 
-  const handleNewTab = () => {
-    // Find first ready vault that doesn't have a tab open
-    const openVaultIds = new Set(tabs.map(t => t.vaultId));
-    const availableVault = vaults.find(v => 
-      v.status === 'ready' && !openVaultIds.has(v.id)
-    ) || vaults.find(v => v.status === 'ready');
-    
-    if (availableVault) {
-      createTab(availableVault.id);
-    }
+  const handleCreateTab = (vaultId: string) => {
+    createTab(vaultId);
   };
 
   const handleCloseTab = (tabId: string, e: React.MouseEvent) => {
@@ -61,22 +59,23 @@ export function TabBar() {
   };
 
   return (
-    <div className="flex items-center gap-1 border-b px-2 py-1 bg-background">
+    <div className="flex items-end border-b bg-muted/20">
       {/* Tab list */}
-      <div className="flex items-center gap-1 flex-1 overflow-x-auto">
+      <div className="flex items-end overflow-x-auto">
         {tabs.map((tab) => {
           const vault = vaults.find(v => v.id === tab.vaultId);
           const isActive = tab.tabId === activeTabId;
-          
+
           return (
             <div
               key={tab.tabId}
               className={cn(
-                "group flex items-center gap-2 px-3 py-1.5 rounded-t-md cursor-pointer transition-colors",
-                "border border-b-0 min-w-[120px] max-w-[200px]",
-                isActive 
-                  ? "bg-background border-border" 
-                  : "bg-muted/30 border-transparent hover:bg-muted/50"
+                "group flex items-center gap-2 px-4 py-2 cursor-pointer transition-all duration-200",
+                "border-t border-l border-r min-w-[140px] max-w-[220px] relative",
+                "rounded-t-lg -mb-px",
+                isActive
+                  ? "bg-background border-border z-10 shadow-sm"
+                  : "bg-muted/40 border-muted-foreground/20 hover:bg-muted/60 hover:border-muted-foreground/30"
               )}
               onClick={() => switchTab(tab.tabId)}
             >
@@ -113,20 +112,43 @@ export function TabBar() {
             </div>
           );
         })}
+
+        {/* Add new tab button with vault picker dropdown */}
+        {vaults.some(v => v.status === 'ready') && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div
+                className={cn(
+                  "flex items-center justify-center cursor-pointer transition-colors",
+                  "w-8 h-8 ml-1 rounded-md hover:bg-muted/60",
+                  "border border-transparent hover:border-muted-foreground/20"
+                )}
+                title="Open new vault tab"
+              >
+                <Plus className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              {vaults
+                .filter(v => v.status === 'ready')
+                .map((vault) => (
+                  <DropdownMenuItem
+                    key={vault.id}
+                    onClick={() => handleCreateTab(vault.id)}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{vault.name}</span>
+                      {vault.status === 'initializing' && (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-      
-      {/* Add new tab button - only show if there are vaults without tabs */}
-      {vaults.some(v => v.status === 'ready') && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={handleNewTab}
-          title="Open new vault tab"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      )}
     </div>
   );
 }
