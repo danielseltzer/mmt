@@ -6,6 +6,7 @@
 import { spawn, execSync, ChildProcess } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Loggers } from '@mmt/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +23,7 @@ export interface DockerServiceConfig {
 
 export class DockerManager {
   private processes = new Map<string, ChildProcess>();
+  private logger = Loggers.default();
   
   /**
    * Check if Docker is installed and running
@@ -122,11 +124,11 @@ export class DockerManager {
     // First check if any container is already using the Qdrant port
     const portCheck = DockerManager.isPortUsedByContainer(port);
     if (portCheck.inUse) {
-      console.log(`✓ Qdrant container '${portCheck.containerName}' is already running on port ${port}`);
+      this.logger.info(`✓ Qdrant container '${portCheck.containerName}' is already running on port ${port}`);
       // Verify it's actually Qdrant by checking the health endpoint
       try {
         await this.waitForQdrantReady(port, 5); // Quick check with only 5 attempts
-        console.log('✓ Confirmed Qdrant is responding on port', port);
+        this.logger.info('✓ Confirmed Qdrant is responding on port', port);
         return;
       } catch {
         console.warn(`Container on port ${port} is not responding as Qdrant, will try to start our own`);
@@ -137,12 +139,12 @@ export class DockerManager {
     const status = DockerManager.getContainerStatus(containerName);
     
     if (status === 'running') {
-      console.log('✓ MMT Qdrant container is already running');
+      this.logger.info('✓ MMT Qdrant container is already running');
       return;
     }
-    
+
     if (status === 'stopped') {
-      console.log('Starting existing MMT Qdrant container...');
+      this.logger.info('Starting existing MMT Qdrant container...');
       try {
         execSync(`docker start ${containerName}`, { stdio: 'inherit' });
         await this.waitForQdrantReady(port);
