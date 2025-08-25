@@ -1,6 +1,9 @@
 import type { AppContext, CommandResult } from '@mmt/entities';
 import { CommandResults } from '@mmt/entities';
+import { Loggers } from '@mmt/logger';
 import type { CommandHandler } from './index.js';
+
+const logger = Loggers.default();
 
 /**
  * Help command handler.
@@ -32,8 +35,9 @@ export class HelpCommand implements CommandHandler {
       '  mmt help',
     ];
     
-    // eslint-disable-next-line no-console
-    console.log(output.join('\n'));
+    // For help output, we want it to go to stdout directly
+    // Using info level to ensure it displays regardless of log level
+    logger.info(output.join('\n'));
     
     return Promise.resolve(CommandResults.success());
   }

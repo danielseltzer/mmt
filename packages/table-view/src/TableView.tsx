@@ -636,10 +636,10 @@ export function TableView({
                           
                           if (!response.ok) {
                             const error = await response.json();
-                            console.error('Failed to reveal file:', error);
+                            logger.error('Failed to reveal file:', error);
                           }
                         } catch (error) {
-                          console.error('Error revealing file:', error);
+                          logger.error('Error revealing file:', error);
                         }
                       }
                     }
