@@ -1,38 +1,93 @@
-# Handoff Document - MMT Project Status
+# Code Review Recommendations Implementation - Handoff Status
 
-## Last Updated: 2025-08-23
+## Last Updated: 2025-08-25
 
-## Current Status: ALL UI IMPROVEMENTS & CRITICAL FIXES COMPLETE ✅
+## Current Status: MAJOR CODE QUALITY IMPROVEMENTS IN PROGRESS 🔄
 
-### Session Summary
-- **Session Start**: Recovered from crash, found uncommitted V3 tab work already implemented
-- **Major Fixes Completed**:
-  - ✅ Similarity search graceful degradation (PR #214)
-  - ✅ UI improvements - 3 enhancements (PR #216, Issue #215)
-  - ✅ Open in Obsidian context menu fix (PR #218, Issue #217)
-- **Testing Infrastructure Added**:
-  - Browser health check tool
-  - Obsidian URL validation test (TDD approach)
-  - UI improvements test suite
-- **Result**: System fully stable, all recent issues resolved
+## Overview
+This document tracks the implementation progress of code review recommendations from Issue #225. The work is being done on branch `fix/code-review-recommendations-225`.
 
-## Recently Completed Work (This Session)
+## Completed Work ✅
 
-### UI Improvements (Issue #215, PR #216) ✅
-1. **Open in Obsidian**: Added as first context menu item
-2. **Panel Auto-Close**: Sub-panels close when clicking search box or switching modes
-3. **Path Display Fix**: Shows "/" for root files, removes "Personal-sync" prefix
+### 1. NO MOCKS Policy Violations (Priority 1) - COMPLETED
+**Status**: ✅ All 4 violations fixed
+**Commit**: `cd053a2` - "fix: remove NO MOCKS policy violations in tests"
 
-### Open in Obsidian Fix (Issue #217, PR #218) ✅
-- **Problem**: Always opened previously selected document, not the right-clicked one
-- **Solution**: Track right-clicked row in context menu state
-- **Testing**: Created Playwright test using TDD - confirmed bug, then validated fix
-- **Result**: 100% test pass rate, correct document opens every time
+**Fixed Files**:
+- `apps/api-server/tests/unit/reveal-in-finder.test.ts` - Replaced mocked child_process with real VaultRegistry
+- `apps/api-server/tests/unit/similarity-status.test.ts` - Created TestSimilarityService class instead of vi.fn() mocks
+- `apps/web/src/__tests__/sorting.test.tsx` - Used real zustand store instead of mocked store
+- `packages/vault/src/__tests__/registry.test.ts` - Removed console.log mocking, test actual behavior
 
-### Similarity Search Graceful Degradation (PR #214) ✅
-- **Problem**: Infinite loop when similarity not configured
-- **Solution**: Detect availability, auto-switch to text search, disable UI controls
-- **Testing**: Browser health check tool created to verify page loads without errors
+**Impact**: Tests now use real implementations, improving reliability and catching actual integration issues.
+
+### 2. Console.log Usage (Priority 2) - PARTIALLY COMPLETED
+**Status**: 🔄 ~15 instances fixed, ~150+ remaining
+**Commit**: `016ecc8` - "fix: replace console.log with Logger module (partial)"
+
+**Fixed Files**:
+- `packages/scripting/tests/test-api-server.ts` - Debug logging → logger.debug()
+- `packages/scripting/tests/result-formatter.test.ts` - Debug output → logger.debug()
+- `packages/indexer/tests/indexer.test.ts` - Performance logging → logger.info()
+- `tools/generate-operations-report.ts` - Report generation → logger.info()
+- `tools/control-manager/src/docker-manager.ts` - Docker operations → logger.info() (partial)
+
+**Pattern Applied**:
+```typescript
+// Before:
+console.log('message');
+
+// After:
+import { Loggers } from '@mmt/logger';
+const logger = Loggers.default();
+logger.info('message');  // or logger.debug() for debug info
+```
+
+### 3. Large Files (Priority 3) - PARTIALLY COMPLETED
+**Status**: 🔄 1 major file refactored, others remain
+**Commit**: `308f39f` - "refactor: extract filter logic from PipelineExecutor to reduce file size"
+
+**Completed**:
+- `apps/api-server/src/services/pipeline-executor.ts` (601 lines → 440 lines)
+  - Extracted `FilterExecutor` class for filter evaluation logic
+  - Extracted `DocumentSelector` class for document selection logic
+  - Removed large switch statements and repetitive filter methods
+  - Maintained all existing functionality
+
+**Architecture Improvement**:
+```
+PipelineExecutor (440 lines)
+├── DocumentSelector (handles selection logic)
+│   └── FilterExecutor (handles filter evaluation)
+└── PreviewGenerator (handles preview generation)
+```
+
+## Remaining Work 🔄
+
+### Console.log Usage (Priority 2) - CONTINUE
+**Estimated Effort**: 2-3 hours
+**Remaining Files** (~150+ instances):
+- `apps/web/src/` - React components and utilities
+- `apps/api-server/src/` - Server-side logging
+- `packages/` - Various package logging
+- `tools/` - Additional tooling scripts
+
+**Next Steps**:
+1. Focus on high-impact files first (core services, main components)
+2. Use find/replace pattern: `console.log` → `logger.info` (with proper imports)
+3. Consider log levels: debug for development, info for user-facing, warn/error for issues
+
+### Large Files (Priority 3) - CONTINUE
+**Estimated Effort**: 4-6 hours
+**Remaining Large Files**:
+- `apps/web/src/components/DocumentTable.tsx` (500+ lines)
+- `packages/indexer/src/vault-indexer.ts` (600+ lines)
+- `apps/api-server/src/routes/documents.ts` (400+ lines, approaching limit)
+
+**Refactoring Strategy**:
+1. **DocumentTable.tsx**: Extract column definitions, sorting logic, filtering UI
+2. **vault-indexer.ts**: Extract file processing, metadata extraction, caching logic
+3. **documents.ts**: Extract route handlers into separate controller classes
 
 ### Previously Completed (Found During Recovery)
 - **V3 Multi-Vault Tabs**: Already implemented but uncommitted
@@ -176,5 +231,35 @@ gh issue list --state open  # View open issues
 gh pr list                  # View open PRs
 ```
 
+---
+
+## CURRENT SESSION UPDATE (2025-08-25)
+
+### Code Review Recommendations Implementation - IN PROGRESS
+
+**Branch**: `fix/code-review-recommendations-225`
+**Status**: Major progress on code quality improvements
+
+#### Completed This Session ✅
+1. **NO MOCKS Policy Violations** - ALL FIXED (Priority 1)
+2. **Console.log Replacement** - PARTIALLY COMPLETE (Priority 2)
+3. **Large File Refactoring** - MAJOR PROGRESS (Priority 3)
+
+#### Key Achievements
+- **PipelineExecutor**: 601 lines → 440 lines (extracted FilterExecutor & DocumentSelector)
+- **Test Reliability**: Removed all mocked implementations, tests use real services
+- **Logging Standards**: Established Logger pattern, ~15 instances converted
+
+#### Remaining Work
+- **Console.log**: ~150+ instances remaining across codebase
+- **Large Files**: DocumentTable.tsx (500+ lines), vault-indexer.ts (600+ lines)
+- **Error Handling**: Not started (Priority 4)
+- **Type Safety**: Not started (Priority 5)
+
+#### Estimated Completion
+- **Time Remaining**: 8-12 hours
+- **Next Priority**: Continue console.log replacement
+- **Foundation**: Solid patterns established, ready for continuation
+
 ## Session Handoff Complete
-The project has reached a major milestone with the V3 multi-vault tab interface now fully implemented! Both the Qdrant similarity search and tab features are working excellently. The foundation for the V3 vision is in place. The next session should focus on documentation (#213) and polishing the user experience.
+The project has made significant progress on code quality improvements from Issue #225. The foundation is solid with clear patterns established for the remaining work. The next session should continue with console.log replacement following the established patterns.
