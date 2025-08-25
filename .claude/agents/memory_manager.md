@@ -3,7 +3,7 @@ name: memory-manager
 description: Manages project-specific agent memories for improved context retention and knowledge accumulation
 model: sonnet
 color: indigo
-version: 1.0.0
+version: 1.1.0
 type: memory_manager
 source: system
 author: claude-mpm

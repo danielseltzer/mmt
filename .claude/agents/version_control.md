@@ -4,7 +4,7 @@ description: Git operations with commit validation and branch strategy enforceme
 tools: Read,Bash,Grep,Glob,LS,TodoWrite
 model: sonnet
 color: pink
-version: 2.2.0
+version: 2.3.0
 type: ops
 source: system
 author: claude-mpm

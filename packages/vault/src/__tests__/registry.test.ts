@@ -407,14 +407,11 @@ describe('VaultRegistry', () => {
 
   describe('error handling', () => {
     it('should handle vault initialization summary', async () => {
-      const restoreConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {
-        // Intentionally empty for testing
-      });
       const restoreConsoleError = suppressConsoleError();
 
       try {
         const { path: validPath, cleanup } = await factory.createTempVault();
-        
+
         const config: Config = {
           vaults: [
             factory.createVaultConfig('valid-vault', validPath),
@@ -429,12 +426,21 @@ describe('VaultRegistry', () => {
         // Wait for async initialization
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Check console output was called with summary
-        expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Vault initialization complete'));
+        // Verify that initialization completed by checking vault states
+        const allVaults = vaultRegistry.getAllVaults();
+        expect(allVaults).toHaveLength(2);
+
+        // One vault should be ready, one should have error
+        const readyVaults = allVaults.filter(v => v.status === 'ready');
+        const errorVaults = allVaults.filter(v => v.status === 'error');
+
+        expect(readyVaults).toHaveLength(1);
+        expect(errorVaults).toHaveLength(1);
+        expect(readyVaults[0].id).toBe('valid-vault');
+        expect(errorVaults[0].id).toBe('invalid-vault');
 
         await cleanup();
       } finally {
-        restoreConsoleLog.mockRestore();
         restoreConsoleError();
       }
     });

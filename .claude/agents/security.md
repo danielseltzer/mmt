@@ -4,7 +4,7 @@ description: Advanced security scanning with SAST, dependency auditing, and secr
 tools: Read,Grep,Glob,LS,WebSearch,TodoWrite
 model: sonnet
 color: red
-version: 2.2.0
+version: 2.3.0
 type: security
 source: system
 author: claude-mpm

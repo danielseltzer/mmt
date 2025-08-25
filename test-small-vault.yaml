@@ -1,0 +1,8 @@
+# Test configuration with a small vault
+vaults:
+  - name: SmallTest
+    path: /tmp/small-test-vault
+    indexPath: /tmp/small-test-index
+
+apiPort: 3001
+webPort: 5173
