@@ -21,7 +21,15 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "playwright/**/*",
+    "*.ts",
+    "*.tsx",
+    "*.js",
+    "*.jsx"
+  ],
   "references": [
     { "path": "../../packages/entities" },
     { "path": "../../packages/table-view" }
