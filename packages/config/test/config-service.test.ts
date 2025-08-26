@@ -1,20 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ConfigService } from '../src/config-service.js';
+import { Loggers } from '@mmt/logger';
 
 describe('ConfigService', () => {
   let tempDir: string;
   let configService: ConfigService;
   let originalExit: typeof process.exit;
-  let originalConsoleError: typeof console.error;
   let capturedErrors: string[] = [];
   
   beforeEach(() => {
     // Create temp directory for tests
     tempDir = mkdtempSync(join(tmpdir(), 'mmt-config-test-'));
-    configService = new ConfigService();
     capturedErrors = [];
     
     // Override process.exit to throw instead
@@ -23,11 +22,21 @@ describe('ConfigService', () => {
       throw new Error(`Process exited with code ${code}`);
     }) as any;
     
-    // Override console.error to capture output
-    originalConsoleError = console.error;
-    console.error = ((...args: any[]) => {
-      capturedErrors.push(args.join(' '));
-    }) as any;
+    // Mock the logger to capture error messages - must be done before ConfigService construction
+    const mockLogger = {
+      error: vi.fn((message: string) => {
+        capturedErrors.push(message);
+      }),
+      warn: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn()
+    };
+    
+    // Override the default logger before creating ConfigService
+    vi.spyOn(Loggers, 'default').mockReturnValue(mockLogger as any);
+    
+    // Now create the config service with the mocked logger
+    configService = new ConfigService();
   });
 
   afterEach(() => {
@@ -36,7 +45,7 @@ describe('ConfigService', () => {
     
     // Restore originals
     process.exit = originalExit;
-    console.error = originalConsoleError;
+    vi.restoreAllMocks();
   });
 
   describe('successful loading', () => {
