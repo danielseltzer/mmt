@@ -203,6 +203,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.1.0)
+      '@mmt/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@mmt/table-view':
         specifier: workspace:*
         version: link:../../packages/table-view
