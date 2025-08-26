@@ -22,7 +22,7 @@ interface Document {
 interface FilterCondition {
   field: string;
   operator: string;
-  value: any;
+  value: string | string[] | number | Date | boolean | { min: number | Date; max: number | Date };
   key?: string;
   caseSensitive?: boolean;
 }
@@ -494,7 +494,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       const data = await response.json();
       
       // Transform results to include similarity scores
-      const documentsWithScores = data.results.map((result: any) => ({
+      const documentsWithScores = data.results.map((result) => ({
         path: result.path,
         fullPath: result.path,
         metadata: {
@@ -569,7 +569,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       const data = await response.json();
       
       // Transform results to include similarity scores
-      const documentsWithScores = data.results.map((result: any) => ({
+      const documentsWithScores = data.results.map((result) => ({
         path: result.path,
         fullPath: result.path,
         metadata: {

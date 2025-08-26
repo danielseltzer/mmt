@@ -76,14 +76,14 @@ export function similarityRouter(context: Context): Router {
     });
     
     // Set up event listeners
-    const statusChangeHandler = (data: any) => {
+    const statusChangeHandler = (data: unknown) => {
       res.write(`data: ${JSON.stringify({
         event: 'status-changed',
         data
       })}\n\n`);
     };
     
-    const progressHandler = (data: any) => {
+    const progressHandler = (data: unknown) => {
       res.write(`data: ${JSON.stringify({
         event: 'progress',
         data
@@ -182,7 +182,7 @@ export function similarityRouter(context: Context): Router {
       // Get all documents from the indexer
       const documents = await vault.indexer.getAllDocuments();
       const docsWithContent = await Promise.all(
-        documents.map(async (doc: any) => {
+        documents.map(async (doc) => {
           try {
             const content = await context.fs.readFile(doc.path);
             return {
@@ -216,7 +216,7 @@ export function similarityRouter(context: Context): Router {
       );
       
       context.similaritySearch!.reindexAll(docsWithContent)
-        .catch((error: any) => {
+        .catch((error) => {
           logger.error('Background reindexing failed', {
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,

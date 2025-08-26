@@ -54,9 +54,16 @@ export type DateFilter = z.infer<typeof DateFilterSchema>;
 export type SizeFilter = z.infer<typeof SizeFilterSchema>;
 export type ComparisonOperator = z.infer<typeof ComparisonOperatorSchema>;
 
+// Type for filter condition used in selection
+interface FilterConditionForSelection {
+  field: string;
+  operator: string;
+  value: string | string[] | number | Date | { min: number | Date; max: number | Date };
+}
+
 // Helper to convert FilterCriteria to a serializable operation selection
 export function filterCriteriaToSelection(criteria: FilterCriteria) {
-  const conditions: any[] = [];
+  const conditions: FilterConditionForSelection[] = [];
   
   if (criteria.search) {
     conditions.push({ field: 'any', operator: 'contains', value: criteria.search });

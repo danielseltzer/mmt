@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import type { Context } from '../context.js';
+import type { Vault } from '@mmt/vault';
 
 declare global {
   namespace Express {
     interface Request {
       vaultId?: string;
-      vault?: any;
+      vault?: Vault;
     }
   }
 }

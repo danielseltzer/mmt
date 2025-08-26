@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@mmt/entities": "workspace:*",
+    "@mmt/logger": "workspace:*",
     "@tanstack/react-table": "^8.20.6",
     "@tanstack/react-virtual": "^3.13.12",
     "clsx": "^2.1.1",

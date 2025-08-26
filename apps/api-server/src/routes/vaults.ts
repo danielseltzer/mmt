@@ -41,7 +41,7 @@ export function vaultsRouter(context: Context): Router {
       res.json({
         vaults,
         total: vaults.length,
-        ready: vaults.filter((v: any) => v.status === 'ready').length
+        ready: vaults.filter((v) => v.status === 'ready').length
       });
     } catch (err) {
       next(err);

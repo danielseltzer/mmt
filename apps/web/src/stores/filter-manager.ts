@@ -120,7 +120,7 @@ function evaluateArrayOperator(array: string[], operator: string, values: string
 /**
  * Evaluate date-based operators
  */
-function evaluateDateOperator(date: Date, operator: string, value: any): boolean {
+function evaluateDateOperator(date: Date, operator: string, value: string | Date | { min: Date; max: Date }): boolean {
   switch (operator) {
     case 'before':
       return date < new Date(value);
@@ -138,7 +138,7 @@ function evaluateDateOperator(date: Date, operator: string, value: any): boolean
 /**
  * Evaluate number-based operators
  */
-function evaluateNumberOperator(num: number, operator: string, value: any): boolean {
+function evaluateNumberOperator(num: number, operator: string, value: number | { min: number; max: number }): boolean {
   switch (operator) {
     case 'equals':
       return num === value;
