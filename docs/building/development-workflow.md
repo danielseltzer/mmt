@@ -33,7 +33,7 @@ Create minimal test scripts to validate against production data:
 
 ```bash
 # Test with real vault
-mmt --config config/test-vault.yaml script test-scripts/validate-feature.mmt.ts
+mmt --config config/test-vault.yaml script scripts/test-scripts/validate-feature.mmt.ts
 ```
 
 ### 4. Error Message Quality
@@ -81,7 +81,7 @@ echo "✅ Testing..."
 pnpm test
 
 echo "🌍 Real-world test..."
-mmt --config config/daniel-vault-simple.yaml script test-scripts/count-all.mmt.ts
+mmt --config config/daniel-vault-simple.yaml script scripts/test-scripts/count-all.mmt.ts
 
 echo "✨ All checks passed!"
 ```

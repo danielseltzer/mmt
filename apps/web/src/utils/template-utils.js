@@ -1,111 +1,77 @@
 /**
- * Template utilities for document transformation
+ * Template utility functions for the TransformPanel component
  */
 
-/**
- * Extract template variables from a template string
- * Looks for {{variable}} patterns
- * 
- * @param {string} template - Template string to analyze
- * @returns {string[]} Array of unique variable names found in template
- */
-export function getTemplateVariables(template) {
-  if (!template) return [];
+export function expandTemplate(template, context) {
+  if (!template || !context) return template;
   
-  const matches = template.match(/\{\{([^}]+)\}\}/g) || [];
-  const variables = matches.map(match => match.replace(/[{}]/g, '').trim());
-  return [...new Set(variables)]; // Return unique variables
-}
-
-/**
- * Expand a template with provided values
- * Replaces {{variable}} with corresponding values
- * 
- * @param {string} template - Template string with {{variable}} placeholders
- * @param {Record<string, any>} values - Object mapping variable names to values
- * @returns {string} Expanded template with variables replaced
- */
-export function expandTemplate(template, values) {
-  if (!template) return '';
-  if (!values) return template;
-  
-  return template.replace(/\{\{([^}]+)\}\}/g, (match, variable) => {
-    const varName = variable.trim();
-    
-    // Handle nested properties like {{metadata.title}}
-    const parts = varName.split('.');
-    let value = values;
-    
-    for (const part of parts) {
-      if (value && typeof value === 'object' && part in value) {
-        value = value[part];
-      } else {
-        // Variable not found, return original placeholder
-        return match;
-      }
-    }
-    
-    // Convert value to string for template expansion
-    if (value === null || value === undefined) {
-      return '';
-    }
-    
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    
-    return String(value);
+  // Replace template variables with context values
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+    return context[key] !== undefined ? context[key] : match;
   });
 }
 
-/**
- * Validate a template string
- * Checks for balanced braces and valid variable names
- * 
- * @param {string} template - Template string to validate
- * @returns {{ valid: boolean, error?: string }} Validation result
- */
-export function validateTemplate(template) {
-  if (!template) {
-    return { valid: true };
-  }
+export function getTemplateVariables(template) {
+  if (!template) return [];
   
-  // Check for balanced braces
-  let braceCount = 0;
-  for (let i = 0; i < template.length; i++) {
-    if (template[i] === '{' && template[i + 1] === '{') {
-      braceCount++;
-      i++; // Skip next brace
-    } else if (template[i] === '}' && template[i + 1] === '}') {
-      braceCount--;
-      i++; // Skip next brace
-      if (braceCount < 0) {
-        return { 
-          valid: false, 
-          error: 'Unmatched closing braces }}' 
-        };
-      }
+  const variables = [];
+  const regex = /\{\{(\w+)\}\}/g;
+  let match;
+  
+  while ((match = regex.exec(template)) !== null) {
+    if (!variables.includes(match[1])) {
+      variables.push(match[1]);
     }
   }
   
-  if (braceCount !== 0) {
-    return { 
-      valid: false, 
-      error: 'Unmatched opening braces {{' 
-    };
+  return variables;
+}
+
+export function validateTemplate(template) {
+  if (!template) return { valid: false, error: 'Template is required' };
+  
+  // Check for balanced braces
+  let openCount = 0;
+  let closeCount = 0;
+  
+  for (let i = 0; i < template.length; i++) {
+    if (template[i] === '{' && template[i + 1] === '{') {
+      openCount++;
+      i++; // Skip next character
+    } else if (template[i] === '}' && template[i + 1] === '}') {
+      closeCount++;
+      i++; // Skip next character
+    }
+  }
+  
+  if (openCount !== closeCount) {
+    return { valid: false, error: 'Unbalanced template braces' };
   }
   
   // Check for valid variable names
-  const variables = getTemplateVariables(template);
-  for (const variable of variables) {
-    // Variable names should only contain letters, numbers, dots, underscores
-    if (!/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(variable)) {
-      return {
-        valid: false,
-        error: `Invalid variable name: ${variable}`
-      };
+  const regex = /\{\{(\w+)\}\}/g;
+  let match;
+  
+  while ((match = regex.exec(template)) !== null) {
+    if (!/^[a-zA-Z_]\w*$/.test(match[1])) {
+      return { valid: false, error: `Invalid variable name: ${match[1]}` };
     }
   }
   
   return { valid: true };
+}
+
+export function getAvailableVariables() {
+  // Return list of available template variables
+  return [
+    { name: 'name', description: 'File name without extension' },
+    { name: 'path', description: 'Full file path' },
+    { name: 'folder', description: 'Parent folder name' },
+    { name: 'date', description: 'Current date (YYYY-MM-DD)' },
+    { name: 'time', description: 'Current time (HH:MM)' },
+    { name: 'timestamp', description: 'Unix timestamp' },
+    { name: 'year', description: 'Current year' },
+    { name: 'month', description: 'Current month (01-12)' },
+    { name: 'day', description: 'Current day (01-31)' }
+  ];
 }
