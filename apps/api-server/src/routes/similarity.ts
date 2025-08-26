@@ -32,25 +32,6 @@ export function similarityRouter(context: Context): Router {
     }
   });
   
-  // GET /api/similarity/status/detailed - Get detailed status (legacy format)
-  router.get('/status/detailed', async (req, res) => {
-    try {
-      if (!context.similaritySearch) {
-        return res.status(501).json({
-          error: 'Similarity search is not configured',
-          message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
-        });
-      }
-      const status = await context.similaritySearch.getStatus();
-      res.json(status);
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to get similarity search status',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-  
   // GET /api/similarity/events - Server-sent events for status updates
   router.get('/events', (req, res) => {
     if (!context.similaritySearch) {

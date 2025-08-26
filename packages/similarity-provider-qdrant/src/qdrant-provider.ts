@@ -9,19 +9,7 @@ import {
   ProviderInitOptions
 } from '@mmt/similarity-provider';
 import { Loggers, formatError, type Logger } from '@mmt/logger';
-
-// Type guard for axios-like errors
-interface AxiosLikeError {
-  response?: {
-    status?: number;
-    data?: unknown;
-  };
-  message?: string;
-}
-
-function isAxiosLikeError(error: unknown): error is AxiosLikeError {
-  return typeof error === 'object' && error !== null && 'response' in error;
-}
+import { isAxiosLikeError } from '@mmt/entities';
 
 /**
  * Qdrant vector database provider implementation

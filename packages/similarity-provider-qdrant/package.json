@@ -10,10 +10,11 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@mmt/entities": "workspace:*",
     "@mmt/logger": "workspace:*",
     "@mmt/similarity-provider": "workspace:*",
     "@qdrant/js-client-rest": "^1.9.0",

@@ -47,6 +47,9 @@ export const DocumentSetSchema = z.object({
 
 export type DocumentSet = z.infer<typeof DocumentSetSchema>;
 
+// Export type guards
+export * from './type-guards.js';
+
 // Import the CommandResults helper for re-export
 import { CommandResults } from './cli.schema.js';
 

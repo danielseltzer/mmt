@@ -1,4 +1,5 @@
 import type { Document, SelectCriteria, FilterCollection } from '@mmt/entities';
+import { hasFilters, hasLimit, isFilterCondition } from '@mmt/entities';
 import type { Logger } from '@mmt/logger';
 import { FilterExecutor } from './filter-executor.js';
 
@@ -20,12 +21,12 @@ export class DocumentSelector {
     let selectedDocuments = [...allDocuments];
 
     // Apply filters if specified
-    if ('filters' in criteria && criteria.filters) {
+    if (hasFilters(criteria)) {
       selectedDocuments = this.applyFilters(selectedDocuments, criteria.filters);
     }
 
     // Apply limit if specified
-    if ('limit' in criteria && criteria.limit && criteria.limit > 0) {
+    if (hasLimit(criteria)) {
       selectedDocuments = selectedDocuments.slice(0, criteria.limit);
     }
 
@@ -49,7 +50,7 @@ export class DocumentSelector {
     }
 
     const results = collection.conditions.map(condition => {
-      if ('field' in condition) {
+      if (isFilterCondition(condition)) {
         // It's a FilterCondition
         return this.filterExecutor.evaluateFilter(doc, condition);
       } else {
