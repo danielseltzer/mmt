@@ -11,6 +11,7 @@ import { QueryParser } from '@mmt/query-parser';
 import { VaultIndexer } from '@mmt/indexer';
 import { createTestApiServer } from './test-api-server.js';
 import type { ChildProcess } from 'child_process';
+import { Loggers } from '@mmt/logger';
 
 describe('ResultFormatter', () => {
   let tempDir: string;
@@ -223,8 +224,9 @@ describe('ResultFormatter', () => {
 
       // Debug output
       if (!output.includes('1 file')) {
-        console.log('Detailed preview output:', output);
-        console.log('Result:', JSON.stringify(mixedResult, null, 2));
+        const logger = Loggers.default();
+        logger.debug('Detailed preview output:', output);
+        logger.debug('Result:', JSON.stringify(mixedResult, null, 2));
       }
 
       expect(output).toContain('PREVIEW MODE');

@@ -3,7 +3,7 @@ name: vercel-ops-agent
 description: Specialized agent for Vercel platform deployment, environment management, and optimization
 model: sonnet
 color: black
-version: 1.0.0
+version: 1.1.0
 type: ops
 source: system
 author: claude-mpm

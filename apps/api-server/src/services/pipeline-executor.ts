@@ -13,6 +13,8 @@ import type { OperationContext } from '@mmt/document-operations';
 import { basename, join } from 'path';
 import { PreviewGenerator } from './preview-generator.js';
 import { Loggers, type Logger } from '@mmt/logger';
+import { DocumentSelector } from './document-selector.js';
+import { FilterExecutor } from './filter-executor.js';
 
 export interface PipelineExecutionResult {
   success: boolean;
@@ -66,12 +68,14 @@ export class PipelineExecutor {
   private readonly context: Context;
   private readonly operationRegistry: OperationRegistry;
   private readonly previewGenerator: PreviewGenerator;
+  private readonly documentSelector: DocumentSelector;
   private readonly logger: Logger = Loggers.api();
 
   constructor(context: Context) {
     this.context = context;
     this.operationRegistry = new OperationRegistry();
     this.previewGenerator = new PreviewGenerator();
+    this.documentSelector = new DocumentSelector(this.logger);
   }
 
   async execute(pipeline: OperationPipeline): Promise<PipelineExecutionResult | PipelinePreviewResponse> {
@@ -429,173 +433,9 @@ export class PipelineExecutor {
     });
   }
 
-  private evaluateFilter(doc: Document, filter: FilterCondition): boolean {
-    switch (filter.field) {
-      case 'name':
-      case 'content':
-      case 'search': {
-        const textFilter = filter as any; // TypeScript discriminated union limitation
-        const searchIn = this.getSearchableText(doc, textFilter.field);
-        return this.evaluateTextOperator(searchIn, textFilter.operator, textFilter.value, textFilter.caseSensitive);
-      }
-      
-      case 'folders': {
-        const folderFilter = filter as any;
-        const docFolder = doc.path.substring(0, doc.path.lastIndexOf('/'));
-        if (folderFilter.operator === 'in') {
-          return folderFilter.value.some((folder: string) => docFolder.startsWith(folder));
-        } else {
-          // not_in
-          return !folderFilter.value.some((folder: string) => docFolder.startsWith(folder));
-        }
-      }
-      
-      case 'tags': {
-        const tagFilter = filter as any;
-        const docTags = doc.metadata.tags || [];
-        return this.evaluateArrayOperator(docTags, tagFilter.operator, tagFilter.value);
-      }
-      
-      case 'metadata': {
-        const metaFilter = filter as any;
-        const metaValue = doc.metadata.frontmatter?.[metaFilter.key];
-        // MVP: only equals operator for metadata
-        return metaValue === metaFilter.value;
-      }
-      
-      case 'modified':
-      case 'created': {
-        const dateFilter = filter as any;
-        // Note: created date is not available in the current document schema
-        // For now, treat created filters as always false
-        if (dateFilter.field === 'created') {
-          this.logger.warn('Created date filtering is not supported - document metadata does not include creation date');
-          return false;
-        }
-        const docDate = doc.metadata.modified;
-        if (!docDate) return false;
-        return this.evaluateDateOperator(docDate, dateFilter.operator, dateFilter.value);
-      }
-      
-      case 'size': {
-        const sizeFilter = filter as any;
-        return this.evaluateNumberOperator(doc.metadata.size, sizeFilter.operator, sizeFilter.value);
-      }
-      
-      default:
-        return false;
-    }
-  }
+  // Filter evaluation moved to FilterExecutor class
 
-  private getSearchableText(doc: Document, field: 'name' | 'content' | 'search'): string {
-    switch (field) {
-      case 'name':
-        return doc.metadata.name;
-      case 'content':
-        return doc.content;
-      case 'search':
-        // Search across multiple fields
-        return [
-          doc.metadata.name,
-          doc.content,
-          doc.metadata.tags?.join(' ') || '',
-          Object.entries(doc.metadata.frontmatter || {}).map(([k, v]) => `${k}:${v}`).join(' ')
-        ].join(' ');
-    }
-  }
+  // Text, array, and date evaluation methods moved to FilterExecutor class
 
-  private evaluateTextOperator(text: string, operator: string, value: string, caseSensitive = false): boolean {
-    const searchText = caseSensitive ? text : text.toLowerCase();
-    const searchValue = caseSensitive ? value : value.toLowerCase();
-    
-    switch (operator) {
-      case 'contains':
-        return searchText.includes(searchValue);
-      case 'not_contains':
-        return !searchText.includes(searchValue);
-      case 'equals':
-        return searchText === searchValue;
-      case 'not_equals':
-        return searchText !== searchValue;
-      case 'starts_with':
-        return searchText.startsWith(searchValue);
-      case 'ends_with':
-        return searchText.endsWith(searchValue);
-      case 'matches':
-        try {
-          const regex = new RegExp(value, caseSensitive ? '' : 'i');
-          return regex.test(text);
-        } catch {
-          return false;
-        }
-      default:
-        return false;
-    }
-  }
-
-  private evaluateArrayOperator(array: string[], operator: string, values: string[]): boolean {
-    switch (operator) {
-      case 'contains':
-        return values.some(v => array.includes(v));
-      case 'not_contains':
-        return !values.some(v => array.includes(v));
-      case 'contains_all':
-        return values.every(v => array.includes(v));
-      case 'contains_any':
-        return values.some(v => array.includes(v));
-      default:
-        return false;
-    }
-  }
-
-  private evaluateDateOperator(date: Date, operator: string, value: string | number | { from: string; to: string }): boolean {
-    const dateMs = date.getTime();
-    
-    if (typeof value === 'object' && 'from' in value) {
-      // Handle between operator
-      const fromMs = new Date(value.from).getTime();
-      const toMs = new Date(value.to).getTime();
-      if (operator === 'between') {
-        return dateMs >= fromMs && dateMs <= toMs;
-      } else {
-        // not_between
-        return dateMs < fromMs || dateMs > toMs;
-      }
-    }
-    
-    const compareMs = typeof value === 'number' ? value : new Date(value).getTime();
-    
-    switch (operator) {
-      case 'gt':
-        return dateMs > compareMs;
-      case 'gte':
-        return dateMs >= compareMs;
-      case 'lt':
-        return dateMs < compareMs;
-      case 'lte':
-        return dateMs <= compareMs;
-      default:
-        return false;
-    }
-  }
-
-  private evaluateNumberOperator(num: number, operator: string, value: number | { from: number; to: number }): boolean {
-    if (typeof value === 'object' && 'from' in value) {
-      // Handle between operator
-      return num >= value.from && num <= value.to;
-    }
-    
-    switch (operator) {
-      case 'gt':
-        return num > value;
-      case 'gte':
-        return num >= value;
-      case 'lt':
-        return num < value;
-      case 'lte':
-        return num <= value;
-      default:
-        return false;
-    }
-  }
+  // Date and number evaluation methods moved to FilterExecutor class
 }

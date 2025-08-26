@@ -10,6 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 const OUTPUT_FORMATS = [
   { value: 'json', label: 'JSON', description: 'JavaScript Object Notation' },
@@ -240,7 +243,7 @@ export function OutputPanel({ selectedDocuments = [], onFormatChange }) {
               className="h-7 px-2"
               onClick={() => {
                 // TODO: Implement download functionality
-                console.log('Download clicked');
+                logger.info('Download clicked');
               }}
             >
               <Download className="h-3 w-3 mr-1" />

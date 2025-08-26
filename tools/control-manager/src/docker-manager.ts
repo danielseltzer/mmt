@@ -6,10 +6,13 @@
 import { spawn, execSync, ChildProcess } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Loggers } from '@mmt/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../../..');
+
+const logger = Loggers.control();
 
 export interface DockerServiceConfig {
   qdrant?: {
@@ -22,6 +25,7 @@ export interface DockerServiceConfig {
 
 export class DockerManager {
   private processes = new Map<string, ChildProcess>();
+  private logger = Loggers.default();
   
   /**
    * Check if Docker is installed and running
@@ -122,14 +126,14 @@ export class DockerManager {
     // First check if any container is already using the Qdrant port
     const portCheck = DockerManager.isPortUsedByContainer(port);
     if (portCheck.inUse) {
-      console.log(`✓ Qdrant container '${portCheck.containerName}' is already running on port ${port}`);
+      this.logger.info(`✓ Qdrant container '${portCheck.containerName}' is already running on port ${port}`);
       // Verify it's actually Qdrant by checking the health endpoint
       try {
         await this.waitForQdrantReady(port, 5); // Quick check with only 5 attempts
-        console.log('✓ Confirmed Qdrant is responding on port', port);
+        this.logger.info('✓ Confirmed Qdrant is responding on port', port);
         return;
       } catch {
-        console.warn(`Container on port ${port} is not responding as Qdrant, will try to start our own`);
+        logger.warn(`Container on port ${port} is not responding as Qdrant, will try to start our own`);
       }
     }
     
@@ -137,26 +141,26 @@ export class DockerManager {
     const status = DockerManager.getContainerStatus(containerName);
     
     if (status === 'running') {
-      console.log('✓ MMT Qdrant container is already running');
+      this.logger.info('✓ MMT Qdrant container is already running');
       return;
     }
-    
+
     if (status === 'stopped') {
-      console.log('Starting existing MMT Qdrant container...');
+      this.logger.info('Starting existing MMT Qdrant container...');
       try {
         execSync(`docker start ${containerName}`, { stdio: 'inherit' });
         await this.waitForQdrantReady(port);
-        console.log('✓ MMT Qdrant container started successfully');
+        logger.info('✓ MMT Qdrant container started successfully');
         return;
       } catch (error) {
-        console.error('Failed to start existing container, will create new one');
+        logger.error('Failed to start existing container, will create new one');
         // Remove the old container
         execSync(`docker rm ${containerName}`, { stdio: 'ignore' });
       }
     }
     
     // Create and start new container
-    console.log('Creating new MMT Qdrant container...');
+    logger.info('Creating new MMT Qdrant container...');
     
     const dockerArgs = [
       'run',
@@ -172,7 +176,7 @@ export class DockerManager {
     try {
       execSync(`docker ${dockerArgs.join(' ')}`, { stdio: 'inherit' });
       await this.waitForQdrantReady(port);
-      console.log('✓ MMT Qdrant container created and started successfully');
+      logger.info('✓ MMT Qdrant container created and started successfully');
     } catch (error) {
       throw new Error(`Failed to start Qdrant container: ${error}`);
     }
@@ -185,14 +189,14 @@ export class DockerManager {
     const containerName = 'mmt-qdrant';
     
     if (!DockerManager.isContainerRunning(containerName)) {
-      console.log('Qdrant container is not running');
+      logger.info('Qdrant container is not running');
       return;
     }
     
-    console.log('Stopping Qdrant container...');
+    logger.info('Stopping Qdrant container...');
     try {
       execSync(`docker stop ${containerName}`, { stdio: 'inherit' });
-      console.log('✓ Qdrant container stopped');
+      logger.info('✓ Qdrant container stopped');
     } catch (error) {
       throw new Error(`Failed to stop Qdrant container: ${error}`);
     }
@@ -213,10 +217,10 @@ export class DockerManager {
       await this.stopQdrant();
     }
     
-    console.log('Removing Qdrant container...');
+    logger.info('Removing Qdrant container...');
     try {
       execSync(`docker rm ${containerName}`, { stdio: 'inherit' });
-      console.log('✓ Qdrant container removed');
+      logger.info('✓ Qdrant container removed');
     } catch (error) {
       throw new Error(`Failed to remove Qdrant container: ${error}`);
     }
@@ -226,7 +230,7 @@ export class DockerManager {
    * Wait for Qdrant to be ready
    */
   private async waitForQdrantReady(port: number, maxAttempts = 30): Promise<void> {
-    console.log('Waiting for Qdrant to be ready...');
+    logger.info('Waiting for Qdrant to be ready...');
     
     for (let i = 0; i < maxAttempts; i++) {
       try {

@@ -3,6 +3,9 @@ import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 export function SimilarityStatusIndicator() {
   const currentTab = useCurrentTab();
@@ -57,7 +60,7 @@ export function SimilarityStatusIndicator() {
       const data = await response.json();
       setStatus(data);
     } catch (error) {
-      console.error('Failed to fetch similarity status:', error);
+      logger.error('Failed to fetch similarity status:', error);
       setStatus({
         status: 'error',
         error: error.message,
@@ -180,7 +183,7 @@ export function SimilarityIndexingWarning() {
       const data = await response.json();
       setStatus(data);
     } catch (error) {
-      console.error('Failed to fetch similarity status:', error);
+      logger.error('Failed to fetch similarity status:', error);
       setStatus(null);
     }
   };

@@ -3,7 +3,7 @@ name: web-ui
 description: Front-end web specialist with expertise in HTML5, CSS3, JavaScript, responsive design, accessibility, and user interface implementation
 model: opus
 color: purple
-version: 1.3.0
+version: 1.4.0
 type: engineer
 source: system
 author: claude-mpm

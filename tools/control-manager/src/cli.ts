@@ -2,6 +2,9 @@
 
 import { Command } from 'commander';
 import { MMTControlManager } from './control-manager.js';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.control();
 
 interface StartOptions {
   config: string;
@@ -36,11 +39,11 @@ program
       if (isExiting) return;
       isExiting = true;
       
-      console.log(`\nShutting down${signal ? ` (${signal})` : ''}...`);
+      logger.info(`\nShutting down${signal ? ` (${signal})` : ''}...`);
       try {
         await manager.stopAll();
       } catch (cleanupError) {
-        console.error('Error during cleanup:', cleanupError);
+        logger.error('Error during cleanup:', cleanupError);
       }
       process.exit(signal ? 0 : 1);
     };
@@ -49,11 +52,11 @@ program
     process.on('SIGINT', () => cleanup('SIGINT'));
     process.on('SIGTERM', () => cleanup('SIGTERM'));
     process.on('uncaughtException', (error) => {
-      console.error('Uncaught exception:', error);
+      logger.error('Uncaught exception:', error);
       cleanup();
     });
     process.on('unhandledRejection', (reason) => {
-      console.error('Unhandled rejection:', reason);
+      logger.error('Unhandled rejection:', reason);
       cleanup();
     });
     cleanupRegistered = true;
@@ -65,7 +68,7 @@ program
       // Keep the process alive - handlers already registered above
       
     } catch (error) {
-      console.error('Failed to start services:', error);
+      logger.error('Failed to start services:', error);
       await cleanup();
     }
   });
@@ -76,9 +79,9 @@ program
   .action(async () => {
     try {
       await MMTControlManager.stopByPid();
-      console.log('✓ MMT services stopped successfully');
+      logger.info('✓ MMT services stopped successfully');
     } catch (error: any) {
-      console.error(`Error: ${error.message}`);
+      logger.error(`Error: ${error.message}`);
       process.exit(1);
     }
   });
@@ -91,9 +94,9 @@ program
     const isRunning = MMTControlManager.isRunning();
     
     if (isRunning) {
-      console.log('✓ MMT is running');
+      logger.info('✓ MMT is running');
     } else {
-      console.log('✗ MMT is not running');
+      logger.info('✗ MMT is not running');
     }
     
     if (options.verbose || isRunning) {
@@ -107,10 +110,10 @@ program
           ? await DockerManager.getQdrantHealth() 
           : null;
         
-        console.log('\nDocker Services:');
-        console.log(`  Qdrant: ${qdrantStatus}${qdrantHealth?.healthy ? ' (healthy)' : qdrantHealth ? ' (unhealthy)' : ''}`);
+        logger.info('\nDocker Services:');
+        logger.info(`  Qdrant: ${qdrantStatus}${qdrantHealth?.healthy ? ' (healthy)' : qdrantHealth ? ' (unhealthy)' : ''}`);
       } else {
-        console.log('\nDocker: not available');
+        logger.info('\nDocker: not available');
       }
     }
   });
@@ -119,16 +122,16 @@ program
 program.configureOutput({
   outputError: (str, write) => {
     if (str.includes('required option') && str.includes('--config')) {
-      console.error('\n❌ Error: Config file is required (no defaults)\n');
-      console.error('Usage: ./bin/mmt start --config <path-to-config.yaml>\n');
-      console.error('Examples:');
-      console.error('  ./bin/mmt start --config dev-config.yaml');
-      console.error('  ./bin/mmt start --config personal-vault-config.yaml\n');
-      console.error('Create a config file with:');
-      console.error('  vaultPath: /absolute/path/to/vault');
-      console.error('  indexPath: /absolute/path/to/index');
-      console.error('  apiPort: 3001');
-      console.error('  webPort: 5173\n');
+      logger.error('\n❌ Error: Config file is required (no defaults)\n');
+      logger.error('Usage: ./bin/mmt start --config <path-to-config.yaml>\n');
+      logger.error('Examples:');
+      logger.error('  ./bin/mmt start --config dev-config.yaml');
+      logger.error('  ./bin/mmt start --config personal-vault-config.yaml\n');
+      logger.error('Create a config file with:');
+      logger.error('  vaultPath: /absolute/path/to/vault');
+      logger.error('  indexPath: /absolute/path/to/index');
+      logger.error('  apiPort: 3001');
+      logger.error('  webPort: 5173\n');
     } else {
       write(str);
     }

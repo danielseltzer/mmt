@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 // Local type definitions to avoid importing from @mmt/entities
 interface Document {
@@ -148,7 +151,7 @@ const loadTabsFromStorage = (): TabState[] => {
       return Array.isArray(parsed) ? parsed : [];
     }
   } catch (e) {
-    console.error('Failed to load tabs from storage:', e);
+    logger.error('Failed to load tabs from storage:', e);
   }
   return [];
 };
@@ -170,7 +173,7 @@ const saveTabsToStorage = (tabs: TabState[]) => {
     }));
     localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(toSave));
   } catch (e) {
-    console.error('Failed to save tabs to storage:', e);
+    logger.error('Failed to save tabs to storage:', e);
   }
 };
 
@@ -681,7 +684,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         }
       }
     } catch (error) {
-      console.error('Failed to load vaults:', error);
+      logger.error('Failed to load vaults:', error);
       set({ 
         isLoadingVaults: false 
       });

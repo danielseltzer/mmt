@@ -4,6 +4,9 @@ import { useDocumentStore, useCurrentTab } from '../stores/document-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Sparkles } from 'lucide-react';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.web();
 
 export function DocumentTable() {
   const currentTab = useCurrentTab();
@@ -62,7 +65,7 @@ export function DocumentTable() {
       <TableView 
         documents={filteredDocuments}
         onSelectionChange={(selectedIds) => {
-          console.log('Selected:', selectedIds);
+          logger.debug('Selected documents:', selectedIds);
         }}
         currentSort={sortBy ? { field: sortBy, order: sortOrder } : undefined}
         onSortChange={setSort}

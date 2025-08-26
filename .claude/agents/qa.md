@@ -3,7 +3,7 @@ name: qa
 description: Memory-efficient testing with strategic sampling, targeted validation, and smart coverage analysis
 model: sonnet
 color: green
-version: 3.4.0
+version: 3.5.0
 type: qa
 source: system
 author: claude-mpm

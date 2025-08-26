@@ -3,11 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { DocumentTable } from '../components/DocumentTable';
 import { useDocumentStore } from '../stores/document-store';
 
-// Mock the document store
-vi.mock('../stores/document-store');
-
 describe('Document Table Sorting', () => {
-  const mockDocuments = [
+  const testDocuments = [
     {
       path: '/',
       metadata: {
@@ -43,29 +40,27 @@ describe('Document Table Sorting', () => {
     }
   ];
 
-  const mockSetSort = vi.fn();
-
   beforeEach(() => {
-    vi.clearAllMocks();
-    
-    (useDocumentStore as any).mockReturnValue({
-      filteredDocuments: mockDocuments,
-      loading: false,
-      error: null,
-      sortBy: undefined,
-      sortOrder: 'asc',
-      setSort: mockSetSort
-    });
+    // Reset the store to initial state and set test data
+    const store = useDocumentStore.getState();
+
+    // Reset store state
+    store.setDocuments(testDocuments);
+    store.setLoading(false);
+    store.setError(null);
+    store.setSort(undefined, 'asc');
   });
 
-  it('should call setSort when Name column header is clicked', () => {
+  it('should update sort state when Name column header is clicked', () => {
     render(<DocumentTable />);
-    
+
     const nameHeader = screen.getByTestId('column-header-name');
     fireEvent.click(nameHeader);
-    
-    // First click should sort ascending
-    expect(mockSetSort).toHaveBeenCalledWith('name', 'asc');
+
+    // Check that the store state was updated
+    const store = useDocumentStore.getState();
+    expect(store.sortBy).toBe('name');
+    expect(store.sortOrder).toBe('asc');
   });
 
   it('should toggle sort order when same column is clicked twice', () => {
@@ -75,63 +70,57 @@ describe('Document Table Sorting', () => {
     
     // First click - ascending
     fireEvent.click(nameHeader);
-    expect(mockSetSort).toHaveBeenCalledWith('name', 'asc');
-    
-    // Update the mock to reflect the sort state
-    (useDocumentStore as any).mockReturnValue({
-      filteredDocuments: mockDocuments,
-      loading: false,
-      error: null,
-      sortBy: 'name',
-      sortOrder: 'asc',
-      setSort: mockSetSort
-    });
-    rerender(<DocumentTable />);
-    
+    let store = useDocumentStore.getState();
+    expect(store.sortBy).toBe('name');
+    expect(store.sortOrder).toBe('asc');
+
     // Second click - should toggle to descending
     fireEvent.click(nameHeader);
-    expect(mockSetSort).toHaveBeenCalledWith('name', 'desc');
+    store = useDocumentStore.getState();
+    expect(store.sortBy).toBe('name');
+    expect(store.sortOrder).toBe('desc');
   });
 
   it('should sort by Path column when clicked', () => {
     render(<DocumentTable />);
-    
+
     const pathHeader = screen.getByTestId('column-header-path');
     fireEvent.click(pathHeader);
-    
-    expect(mockSetSort).toHaveBeenCalledWith('path', 'asc');
+
+    const store = useDocumentStore.getState();
+    expect(store.sortBy).toBe('path');
+    expect(store.sortOrder).toBe('asc');
   });
 
   it('should sort by Modified column when clicked', () => {
     render(<DocumentTable />);
-    
+
     const modifiedHeader = screen.getByTestId('column-header-modified');
     fireEvent.click(modifiedHeader);
-    
-    expect(mockSetSort).toHaveBeenCalledWith('modified', 'asc');
+
+    const store = useDocumentStore.getState();
+    expect(store.sortBy).toBe('modified');
+    expect(store.sortOrder).toBe('asc');
   });
 
   it('should sort by Size column when clicked', () => {
     render(<DocumentTable />);
-    
+
     const sizeHeader = screen.getByTestId('column-header-size');
     fireEvent.click(sizeHeader);
-    
-    expect(mockSetSort).toHaveBeenCalledWith('size', 'asc');
+
+    const store = useDocumentStore.getState();
+    expect(store.sortBy).toBe('size');
+    expect(store.sortOrder).toBe('asc');
   });
 
   it('should show sort indicator on sorted column', () => {
-    (useDocumentStore as any).mockReturnValue({
-      filteredDocuments: mockDocuments,
-      loading: false,
-      error: null,
-      sortBy: 'name',
-      sortOrder: 'desc',
-      setSort: mockSetSort
-    });
-    
+    // Set up the store with a sorted state
+    const store = useDocumentStore.getState();
+    store.setSort('name', 'desc');
+
     render(<DocumentTable />);
-    
+
     const nameHeader = screen.getByTestId('column-header-name');
     // Check for desc sort indicator (usually ↓ or similar)
     expect(nameHeader.textContent).toContain('↓');

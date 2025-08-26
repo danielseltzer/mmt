@@ -5,6 +5,7 @@ import { join } from 'path';
 import { VaultIndexer } from '../src/vault-indexer.js';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import type { PageMetadata } from '../src/types.js';
+import { Loggers } from '@mmt/logger';
 
 describe('Indexer E2E', () => {
   let testVaultPath: string;
@@ -204,7 +205,8 @@ This document only contains [[doc3]] now.`);
     const largeVaultPath = mkdtempSync(join(tmpdir(), 'mmt-large-vault-'));
     
     // Create 5000 test files
-    console.log('Creating 5000 test files...');
+    const logger = Loggers.default();
+    logger.info('Creating 5000 test files...');
     for (let i = 0; i < 5000; i++) {
       const folderNum = Math.floor(i / 100);
       const folderPath = join(largeVaultPath, `folder${folderNum}`);
@@ -242,7 +244,7 @@ It links to [[doc${(i + 1) % 5000}]] and [[doc${(i + 2) % 5000}]].
     await largeIndexer.initialize();
     const duration = Date.now() - startTime;
     
-    console.log(`Indexed 5000 files in ${duration}ms`);
+    logger.info(`Indexed 5000 files in ${duration}ms`);
     
     // Verify indexing completed
     const allDocs = await largeIndexer.getAllDocuments();

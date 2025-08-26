@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { Loggers } from '@mmt/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,9 +69,10 @@ webPort: 3000
       const chunk = data.toString();
       output += chunk;
       
-      // Log output for debugging (remove in production)
+      // Log output for debugging
       if (process.env.DEBUG_API_SERVER) {
-        console.log('[API Server]:', chunk.trim());
+        const logger = Loggers.default();
+        logger.debug('[API Server]:', chunk.trim());
       }
       
       if (output.includes('MMT API Server running on')) {

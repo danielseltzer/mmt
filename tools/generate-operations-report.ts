@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, relative, dirname } from 'path';
 import { glob } from 'glob';
 import { fileURLToPath } from 'url';
+import { Loggers } from '@mmt/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -128,7 +129,8 @@ function getOperationDescription(opType: string): string {
 }
 
 async function generateReport() {
-  console.log('Generating operations status report...');
+  const logger = Loggers.default();
+  logger.info('Generating operations status report...');
   
   const operations = await findOperations();
   const queryOperators = await findQueryOperators();
@@ -245,7 +247,7 @@ packages/
   // Write report
   const reportPath = join(__dirname, '../docs/operations-status.md');
   writeFileSync(reportPath, report);
-  console.log(`Report written to: ${relative(process.cwd(), reportPath)}`);
+  logger.info(`Report written to: ${relative(process.cwd(), reportPath)}`);
 }
 
 // Run the generator
