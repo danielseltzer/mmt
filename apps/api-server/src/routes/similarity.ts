@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Context } from '../context.js';
+import type { Document } from '@mmt/entities';
 import { Loggers, type Logger } from '@mmt/logger';
 
 const logger: Logger = Loggers.api();
@@ -182,7 +183,7 @@ export function similarityRouter(context: Context): Router {
       // Get all documents from the indexer
       const documents = await vault.indexer.getAllDocuments();
       const docsWithContent = await Promise.all(
-        documents.map(async (doc) => {
+        documents.map(async (doc: Document) => {
           try {
             const content = await context.fs.readFile(doc.path);
             return {
@@ -190,10 +191,10 @@ export function similarityRouter(context: Context): Router {
               content: content,
               // Include metadata from the indexed document (PageMetadata structure)
               metadata: {
-                title: doc.title || doc.basename,
-                modified: doc.mtime ? new Date(doc.mtime).toISOString() : undefined,
-                size: doc.size,
-                tags: doc.tags || []
+                title: (doc.metadata.frontmatter?.title as string) || doc.metadata.name,
+                modified: doc.metadata.modified ? doc.metadata.modified.toISOString() : undefined,
+                size: doc.metadata.size,
+                tags: doc.metadata.tags || []
               }
             };
           } catch (error) {
@@ -205,10 +206,10 @@ export function similarityRouter(context: Context): Router {
               path: doc.path,  // Use the absolute path
               content: '',
               metadata: {
-                title: doc.title || doc.basename,
-                modified: doc.mtime ? new Date(doc.mtime).toISOString() : undefined,
-                size: doc.size,
-                tags: doc.tags || []
+                title: (doc.metadata.frontmatter?.title as string) || doc.metadata.name,
+                modified: doc.metadata.modified ? doc.metadata.modified.toISOString() : undefined,
+                size: doc.metadata.size,
+                tags: doc.metadata.tags || []
               }
             };
           }

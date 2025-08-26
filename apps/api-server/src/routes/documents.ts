@@ -20,7 +20,7 @@ function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath:
   
   if (filters.name) {
     filtered = filtered.filter(doc => 
-      doc.basename.toLowerCase().includes(filters.name!.toLowerCase())
+      doc.metadata.name.toLowerCase().includes(filters.name!.toLowerCase())
     );
   }
   
@@ -28,11 +28,13 @@ function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath:
     const searchLower = filters.content.toLowerCase();
     filtered = filtered.filter(doc => {
       // Search in multiple fields for content
-      if (doc.title?.toLowerCase().includes(searchLower)) return true;
-      if (doc.basename?.toLowerCase().includes(searchLower)) return true;
+      const title = doc.metadata.frontmatter?.title as string | undefined;
+      if (title?.toLowerCase().includes(searchLower)) return true;
+      if (doc.metadata.name.toLowerCase().includes(searchLower)) return true;
       if (doc.path.toLowerCase().includes(searchLower)) return true;
-      if (doc.aliases?.some((alias: string) => alias.toLowerCase().includes(searchLower))) return true;
-      if (doc.tags?.some((tag: string) => tag.toLowerCase().includes(searchLower))) return true;
+      const aliases = doc.metadata.frontmatter?.aliases as string[] | undefined;
+      if (aliases?.some((alias: string) => alias.toLowerCase().includes(searchLower))) return true;
+      if (doc.metadata.tags?.some((tag: string) => tag.toLowerCase().includes(searchLower))) return true;
       return false;
     });
   }
@@ -57,20 +59,20 @@ function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath:
   
   if (filters.tags && filters.tags.length > 0) {
     filtered = filtered.filter(doc => 
-      filters.tags!.some((tag: string) => doc.tags?.includes(tag))
+      filters.tags!.some((tag: string) => doc.metadata.tags?.includes(tag))
     );
   }
   
   if (filters.metadata && filters.metadata.length > 0) {
     filtered = filtered.filter(doc => {
-      if (!doc.frontmatter) return false;
+      if (!doc.metadata.frontmatter) return false;
       
       // Check if all metadata filters match
       return filters.metadata!.every((metadataFilter: string) => {
         const [key, value] = metadataFilter.split(':');
         if (!key) return false;
         
-        const docValue = doc.frontmatter[key];
+        const docValue = doc.metadata.frontmatter[key];
         if (!docValue) return false;
         
         // If no value specified, just check if key exists
@@ -89,8 +91,8 @@ function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath:
   
   if (filters.date) {
     filtered = filtered.filter(doc => {
-      if (!doc.mtime) return false;
-      const docDate = new Date(doc.mtime);
+      if (!doc.metadata.modified) return false;
+      const docDate = new Date(doc.metadata.modified);
       
       // Parse date value
       const { operator, value } = filters.date!;
@@ -119,7 +121,7 @@ function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath:
   
   if (filters.size) {
     filtered = filtered.filter(doc => {
-      const docSize = doc.size || 0;
+      const docSize = doc.metadata.size || 0;
       const { operator, value } = filters.size!;
       
       // Parse size value (e.g., "1k", "10M")
@@ -173,7 +175,7 @@ function evaluateFilter(doc: Document, filter: FilterCondition, vaultPath: strin
   switch (filter.field) {
     case 'name': {
       const textFilter = filter as any;
-      const searchIn = doc.basename || '';
+      const searchIn = doc.metadata.name || '';
       return evaluateTextOperator(searchIn, textFilter.operator, textFilter.value, textFilter.caseSensitive);
     }
     
@@ -181,11 +183,11 @@ function evaluateFilter(doc: Document, filter: FilterCondition, vaultPath: strin
       const textFilter = filter as any;
       // For now, search in multiple fields since we don't have full content
       const searchableText = [
-        doc.title,
-        doc.basename,
+        doc.metadata.frontmatter?.title as string | undefined,
+        doc.metadata.name,
         doc.path,
-        ...(doc.aliases || []),
-        ...(doc.tags || [])
+        ...((doc.metadata.frontmatter?.aliases as string[] | undefined) || []),
+        ...(doc.metadata.tags || [])
       ].filter(Boolean).join(' ');
       return evaluateTextOperator(searchableText, textFilter.operator, textFilter.value, textFilter.caseSensitive);
     }
@@ -215,28 +217,28 @@ function evaluateFilter(doc: Document, filter: FilterCondition, vaultPath: strin
     
     case 'tags': {
       const tagFilter = filter as any;
-      const docTags = doc.tags || [];
+      const docTags = doc.metadata.tags || [];
       return evaluateArrayOperator(docTags, tagFilter.operator, tagFilter.value);
     }
     
     case 'metadata': {
       const metaFilter = filter as any;
-      if (!doc.frontmatter) return false;
-      const metaValue = doc.frontmatter[metaFilter.key];
+      if (!doc.metadata.frontmatter) return false;
+      const metaValue = doc.metadata.frontmatter[metaFilter.key];
       // MVP: only equals operator for metadata
       return metaValue === metaFilter.value;
     }
     
     case 'modified': {
       const dateFilter = filter as any;
-      if (!doc.mtime) return false;
-      const docDate = new Date(doc.mtime);
+      if (!doc.metadata.modified) return false;
+      const docDate = new Date(doc.metadata.modified);
       return evaluateDateOperator(docDate, dateFilter.operator, dateFilter.value);
     }
     
     case 'size': {
       const sizeFilter = filter as any;
-      return evaluateSizeOperator(doc.size || 0, sizeFilter.operator, sizeFilter.value);
+      return evaluateSizeOperator(doc.metadata.size || 0, sizeFilter.operator, sizeFilter.value);
     }
     
     default:
@@ -434,19 +436,19 @@ export function documentsRouter(context: Context): Router {
         
         // Sort BEFORE pagination if requested
         if (sortBy) {
-          results.sort((a, b) => {
+          results.sort((a: any, b: any) => {
             let aVal: string | number | undefined;
             let bVal: string | number | undefined;
             
             if (sortBy === 'name') {
               aVal = a.basename;
-              bVal = b.basename;
+              bVal = b.metadata.name;
             } else if (sortBy === 'modified') {
-              aVal = a.mtime;
-              bVal = b.mtime;
+              aVal = a.metadata.modified ? a.metadata.modified.getTime() : undefined;
+              bVal = b.metadata.modified ? b.metadata.modified.getTime() : undefined;
             } else if (sortBy === 'size') {
-              aVal = a.size;
-              bVal = b.size;
+              aVal = a.metadata.size;
+              bVal = b.metadata.size;
             } else if (sortBy === 'path') {
               aVal = a.path;
               bVal = b.path;
@@ -472,9 +474,9 @@ export function documentsRouter(context: Context): Router {
         
         // Format response
         const response = DocumentsResponseSchema.parse({
-          documents: paginatedDocs.map((doc) => {
+          documents: paginatedDocs.map((doc: Document) => {
             // Process path to show "/" for root files and remove common root folder
-            let displayPath = doc.relativePath || '/';
+            let displayPath = (doc as any).relativePath || '/';
             
             // For display, we want to show the folder path, not the file path
             // Files in "Personal-sync" root folder should show "/"
@@ -503,11 +505,11 @@ export function documentsRouter(context: Context): Router {
               path: displayPath, // Show cleaned path for display
               fullPath: doc.path, // Keep the full path for unique identification
               metadata: {
-                name: doc.basename,
-                modified: new Date(doc.mtime).toISOString(),
-                size: doc.size,
-                frontmatter: doc.frontmatter || {},
-                tags: doc.tags || [],
+                name: doc.metadata.name,
+                modified: doc.metadata.modified.toISOString(),
+                size: doc.metadata.size,
+                frontmatter: doc.metadata.frontmatter || {},
+                tags: doc.metadata.tags || [],
                 links: [], // TODO: get links from indexer
               },
             };
@@ -532,7 +534,7 @@ export function documentsRouter(context: Context): Router {
       const path = fullPath.substring('/by-path/'.length);
       
       const documents = await (req as any).vault.indexer.getAllDocuments();
-      const document = documents.find((d) => d.path === path || d.relativePath === path);
+      const document = documents.find((d: Document) => d.path === path || (d as any).relativePath === path);
       
       if (!document) {
         return res.status(404).json({ error: 'Document not found' });
@@ -572,12 +574,12 @@ export function documentsRouter(context: Context): Router {
           // Generate CSV
           const selectedColumns = columns || ['path', 'name', 'modified', 'size'];
           const headers = selectedColumns.join(',');
-          const rows = results.map((doc) => {
-            return selectedColumns.map((col) => {
+          const rows = results.map((doc: Document) => {
+            return selectedColumns.map((col: string) => {
               if (col === 'path') return doc.path;
-              if (col === 'name') return doc.basename;
-              if (col === 'modified') return new Date(doc.mtime).toISOString();
-              if (col === 'size') return doc.size.toString();
+              if (col === 'name') return doc.metadata.name;
+              if (col === 'modified') return doc.metadata.modified.toISOString();
+              if (col === 'size') return doc.metadata.size.toString();
               return '';
             }).join(',');
           });

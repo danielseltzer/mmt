@@ -56,7 +56,7 @@ export class FilterExecutor {
         }
         const docDate = doc.metadata.modified;
         if (!docDate) return false;
-        return this.evaluateDateOperator(docDate, dateFilter.operator, dateFilter.value);
+        return this.evaluateDateOperator(docDate.toISOString(), dateFilter.operator, dateFilter.value.toISOString());
       }
       
       case 'size': {
@@ -126,7 +126,7 @@ export class FilterExecutor {
     }
   }
 
-  private evaluateDateOperator(docDate: string, operator: string, value: string): boolean {
+  private evaluateDateOperator(docDate: Date | string, operator: string, value: Date | string): boolean {
     const docTime = new Date(docDate).getTime();
     const filterTime = new Date(value).getTime();
     
