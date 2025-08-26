@@ -25,7 +25,7 @@ program
   .command('start')
   .description('Start MMT services (API and Web)')
   .requiredOption('-c, --config <path>', 'Path to config YAML file (required - no defaults)')
-  .addHelpText('after', '\nExample:\n  ./bin/mmt start --config dev-config.yaml\n  ./bin/mmt start --config personal-vault-config.yaml')
+  .addHelpText('after', '\nExample:\n  ./bin/mmt start --config config/test/dev-config.yaml\n  ./bin/mmt start --config config/examples/personal-vault-config.yaml')
   .action(async (options: StartOptions) => {
     const manager = new MMTControlManager({
       configPath: options.config
@@ -125,8 +125,8 @@ program.configureOutput({
       logger.error('\n❌ Error: Config file is required (no defaults)\n');
       logger.error('Usage: ./bin/mmt start --config <path-to-config.yaml>\n');
       logger.error('Examples:');
-      logger.error('  ./bin/mmt start --config dev-config.yaml');
-      logger.error('  ./bin/mmt start --config personal-vault-config.yaml\n');
+      logger.error('  ./bin/mmt start --config config/test/dev-config.yaml');
+      logger.error('  ./bin/mmt start --config config/examples/personal-vault-config.yaml\n');
       logger.error('Create a config file with:');
       logger.error('  vaultPath: /absolute/path/to/vault');
       logger.error('  indexPath: /absolute/path/to/index');

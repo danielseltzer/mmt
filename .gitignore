@@ -73,6 +73,12 @@ test-config.yaml
 test-config.yml
 reports/
 
+# Generated report files
+*.csv
+frontmatter-analysis.csv
+tag-analysis.csv
+most-linked-documents.csv
+
 # MMT runtime data
 .mmt-data/
 .mmt-cache/

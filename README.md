@@ -18,7 +18,7 @@ A desktop application for managing large markdown vaults with bulk operations, s
 
 ```bash
 # Start MMT
-./bin/mmt start --config your-config.yaml
+./bin/mmt start --config config/examples/your-config.yaml
 
 # Stop MMT
 ./bin/mmt stop
@@ -54,7 +54,7 @@ cat logs/mmt-$(date +%Y-%m-%d).log
 MMT requires explicit configuration with no defaults. Create a YAML config file:
 
 ```yaml
-# your-config.yaml
+# config/examples/your-config.yaml
 vaultPath: /absolute/path/to/your/vault
 indexPath: /absolute/path/to/store/index
 apiPort: 3001
@@ -67,8 +67,9 @@ fileWatching:
 ```
 
 Example configurations:
-- [dev-config.yaml](dev-config.yaml) - For development with test vault
-- [personal-vault-config.yaml](personal-vault-config.yaml) - Example with real vault
+- [dev-config.yaml](config/test/dev-config.yaml) - For development with test vault
+- [example-config.yaml](config/examples/example.yaml) - Basic configuration template
+- [personal-vault-config.yaml](config/examples/personal-vault-config.yaml) - Example with real vault
 
 ## Documentation
 

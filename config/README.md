@@ -1,6 +1,8 @@
 # MMT Configuration Files
 
-This directory contains example configuration files for MMT.
+This directory contains configuration files for MMT, organized into:
+- `examples/` - Example configurations for reference
+- `test/` - Test configurations for development and testing
 
 ## User Configuration
 
@@ -15,7 +17,7 @@ Example:
 mkdir -p ~/.mmt/config
 
 # Copy and customize an example config
-cp config/example.yaml ~/.mmt/config/my-vault.yaml
+cp config/examples/example.yaml ~/.mmt/config/my-vault.yaml
 
 # Edit with your vault paths
 vim ~/.mmt/config/my-vault.yaml
@@ -26,8 +28,19 @@ pnpm mmt --config ~/.mmt/config/my-vault.yaml script examples/analysis/vault-lin
 
 ## Files
 
-### test-vault.yaml
-Test configuration for validating the indexer against a production Obsidian vault.
+### Available Configurations
+
+#### examples/
+- `example.yaml` - Basic configuration template
+- `personal-vault-config.yaml` - Example personal vault setup
+- `personal-vault-similarity-config.yaml` - Example with similarity search
+
+#### test/
+- `dev-config.yaml` - Development configuration
+- `test-minimal-config.yaml` - Minimal test setup
+- `test-notes-config.yaml` - Test notes vault
+- `test-small-vault.yaml` - Small test vault
+- `multi-vault-test-config.yaml` - Multi-vault testing
 
 Update the `vaultPath` to point to your actual vault before running test scripts:
 
@@ -40,11 +53,14 @@ vaultPath: /path/to/your/obsidian/vault
 Reference config files when running MMT commands:
 
 ```bash
-# Run a script with config
-pnpm mmt script path/to/script.mmt.ts --config config/test-vault.yaml
+# Run a script with example config
+pnpm mmt script path/to/script.mmt.ts --config config/examples/example.yaml
+
+# Run with test config
+pnpm mmt script path/to/script.mmt.ts --config config/test/dev-config.yaml
 
 # Other commands that need config
-pnpm mmt <command> --config config/your-config.yaml
+pnpm mmt <command> --config config/examples/your-config.yaml
 ```
 
 ## Config Schema
