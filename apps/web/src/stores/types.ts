@@ -11,7 +11,7 @@ export interface Document {
     name: string;
     modified: string;
     size: number;
-    frontmatter?: Record<string, any>;
+    frontmatter?: Record<string, unknown>;
     tags?: string[];
     links?: string[];
     backlinks?: string[];
@@ -22,7 +22,7 @@ export interface Document {
 export interface FilterCondition {
   field: string;
   operator: string;
-  value: any;
+  value: string | string[] | number | Date | boolean | { min: number | Date; max: number | Date };
   key?: string;
   caseSensitive?: boolean;
 }

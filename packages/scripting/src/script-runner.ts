@@ -208,7 +208,7 @@ export class ScriptRunner {
           succeeded: Array<{
             document: Document;
             operation: ScriptOperation;
-            details: any;
+            details: unknown;
           }>;
           failed: Array<{
             document: Document;
@@ -246,7 +246,7 @@ export class ScriptRunner {
           item: r.document,
           operation: r.operation,
           details: {
-            ...r.details,
+            ...(r.details || {}),
             preview: !pipeline.options?.destructive
           },
         })) ?? [],

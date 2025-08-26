@@ -15,7 +15,7 @@ interface DocumentResponse {
 }
 
 interface SearchRequest {
-  filters?: any;
+  filters?: FilterCollection;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }

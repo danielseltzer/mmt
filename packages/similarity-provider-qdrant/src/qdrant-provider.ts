@@ -10,6 +10,19 @@ import {
 } from '@mmt/similarity-provider';
 import { Loggers, formatError, type Logger } from '@mmt/logger';
 
+// Type guard for axios-like errors
+interface AxiosLikeError {
+  response?: {
+    status?: number;
+    data?: unknown;
+  };
+  message?: string;
+}
+
+function isAxiosLikeError(error: unknown): error is AxiosLikeError {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
+
 /**
  * Qdrant vector database provider implementation
  */
@@ -85,12 +98,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
         
         this.logger.info(`Created Qdrant collection: ${this.collectionName}`);
       }
-    } catch (error: any) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to ensure collection', {
         error: message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         collectionName: this.collectionName,
         operation: 'ensureCollection'
       });
@@ -105,11 +118,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
     try {
       const info = await this.client.getCollection(this.collectionName);
       this.documentCount = info.points_count || 0;
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to get document count', {
-        error: error.message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        error: message,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         collectionName: this.collectionName
       });
       this.documentCount = 0;
@@ -125,11 +139,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
       // Try to get collection info as health check
       await this.client.getCollection(this.collectionName);
       return true;
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Health check failed', {
-        error: error.message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        error: message,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         collectionName: this.collectionName
       });
       this.lastError = error instanceof Error ? error.message : String(error);
@@ -189,10 +204,11 @@ export class QdrantProvider extends BaseSimilarityProvider {
       }
       
       return data.embedding as number[];
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to generate embedding', {
-        error: error.message,
-        httpStatus: error.response?.status,
+        error: message,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
         ollamaUrl: this.ollamaUrl,
         model: this.model,
         textLength: text.length
@@ -252,12 +268,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
       
       this.lastIndexedTime = new Date();
       this.documentCount++;
-    } catch (error: any) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to index single document', {
         error: message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         documentPath: doc.path,
         documentId: doc.id,
         collectionName: this.collectionName
@@ -338,19 +354,19 @@ export class QdrantProvider extends BaseSimilarityProvider {
         this.lastIndexedTime = new Date();
         this.documentCount += points.length;
         this.logger.info(`Successfully upserted ${points.length} documents`);
-      } catch (error: any) {
+      } catch (error) {
         // If batch fails, try indexing documents one by one to identify problematic ones
         const batchError = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Batch upsert failed, falling back to individual indexing for ${points.length} documents`);
         this.logger.warn('Batch error was:', {
           error: batchError,
-          httpStatus: error.response?.status,
-          qdrantError: error.response?.data
+          httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+          qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined
         });
         
         // Try indexing each document individually
         let individualSuccesses = 0;
-        const failedDocs: Array<{path: string, error: string, payload?: any}> = [];
+        const failedDocs: Array<{path: string, error: string, payload?: unknown}> = [];
         
         for (const point of points) {
           const originalId = (point.payload as any).originalId;
@@ -364,15 +380,15 @@ export class QdrantProvider extends BaseSimilarityProvider {
               points: [point]
             });
             individualSuccesses++;
-          } catch (individualError: any) {
+          } catch (individualError) {
             const errorMsg = individualError instanceof Error ? individualError.message : String(individualError);
             
             // Log detailed error information for debugging
             const errorDetails = {
               path: doc.path,
               error: errorMsg,
-              httpStatus: individualError.response?.status,
-              qdrantError: individualError.response?.data,
+              httpStatus: isAxiosLikeError(individualError) ? individualError.response?.status : undefined,
+              qdrantError: isAxiosLikeError(individualError) ? individualError.response?.data : undefined,
               documentId: doc.id,
               numericId: point.id,
               payloadSize: JSON.stringify(point.payload).length,
@@ -451,12 +467,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
       });
       
       this.documentCount = Math.max(0, this.documentCount - 1);
-    } catch (error: any) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to remove document', {
         error: message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         documentId: id,
         qdrantId: this.md5ToNumericId(id),
         collectionName: this.collectionName
@@ -477,12 +493,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
       
       this.documentCount = 0;
       this.lastIndexedTime = undefined;
-    } catch (error: any) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to clear index', {
         error: message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         collectionName: this.collectionName,
         operation: 'clearIndex'
       });
@@ -499,12 +515,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
       // Generate query embedding
       const embedding = await this.generateEmbedding(query);
       return await this.searchByVector(embedding, options);
-    } catch (error: any) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Search query failed', {
         error: message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         query: query.slice(0, 100),
         collectionName: this.collectionName,
         options
@@ -536,12 +552,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
         content: '',  // Content not stored in Qdrant
         metadata: hit.payload as Record<string, any>
       }));
-    } catch (error: any) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Vector search failed', {
         error: message,
-        httpStatus: error.response?.status,
-        qdrantError: error.response?.data,
+        httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
+        qdrantError: isAxiosLikeError(error) ? error.response?.data : undefined,
         vectorDimensions: vector.length,
         collectionName: this.collectionName,
         limit,

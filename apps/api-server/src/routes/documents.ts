@@ -15,7 +15,7 @@ import {
 } from '@mmt/entities';
 
 // Helper function to apply filters to documents
-function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: string): any[] {
+function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath: string): Document[] {
   let filtered = [...documents];
   
   if (filters.name) {
@@ -152,7 +152,7 @@ function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: stri
 
 
 // Apply declarative filters to documents
-function applyDeclarativeFilters(documents: any[], filterCollection: FilterCollection, vaultPath: string): any[] {
+function applyDeclarativeFilters(documents: Document[], filterCollection: FilterCollection, vaultPath: string): Document[] {
   return documents.filter(doc => {
     const results = filterCollection.conditions.map(condition => 
       evaluateFilter(doc, condition, vaultPath)
@@ -169,7 +169,7 @@ function applyDeclarativeFilters(documents: any[], filterCollection: FilterColle
 }
 
 // Evaluate a single filter condition
-function evaluateFilter(doc: any, filter: FilterCondition, vaultPath: string): boolean {
+function evaluateFilter(doc: Document, filter: FilterCondition, vaultPath: string): boolean {
   switch (filter.field) {
     case 'name': {
       const textFilter = filter as any;
@@ -434,9 +434,9 @@ export function documentsRouter(context: Context): Router {
         
         // Sort BEFORE pagination if requested
         if (sortBy) {
-          results.sort((a: any, b: any) => {
-            let aVal: any;
-            let bVal: any;
+          results.sort((a, b) => {
+            let aVal: string | number | undefined;
+            let bVal: string | number | undefined;
             
             if (sortBy === 'name') {
               aVal = a.basename;
@@ -472,7 +472,7 @@ export function documentsRouter(context: Context): Router {
         
         // Format response
         const response = DocumentsResponseSchema.parse({
-          documents: paginatedDocs.map((doc: any) => {
+          documents: paginatedDocs.map((doc) => {
             // Process path to show "/" for root files and remove common root folder
             let displayPath = doc.relativePath || '/';
             
@@ -532,7 +532,7 @@ export function documentsRouter(context: Context): Router {
       const path = fullPath.substring('/by-path/'.length);
       
       const documents = await (req as any).vault.indexer.getAllDocuments();
-      const document = documents.find((d: any) => d.path === path || d.relativePath === path);
+      const document = documents.find((d) => d.path === path || d.relativePath === path);
       
       if (!document) {
         return res.status(404).json({ error: 'Document not found' });
@@ -572,8 +572,8 @@ export function documentsRouter(context: Context): Router {
           // Generate CSV
           const selectedColumns = columns || ['path', 'name', 'modified', 'size'];
           const headers = selectedColumns.join(',');
-          const rows = results.map((doc: any) => {
-            return selectedColumns.map((col: any) => {
+          const rows = results.map((doc) => {
+            return selectedColumns.map((col) => {
               if (col === 'path') return doc.path;
               if (col === 'name') return doc.basename;
               if (col === 'modified') return new Date(doc.mtime).toISOString();

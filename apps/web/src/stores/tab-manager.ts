@@ -154,7 +154,7 @@ export class TabManager {
   /**
    * Ensure at least one tab exists
    */
-  static ensureTabExists(tabs: TabState[], vaults: any[]): TabState[] {
+  static ensureTabExists(tabs: TabState[], vaults: Vault[]): TabState[] {
     if (tabs.length === 0 && vaults.length > 0) {
       const defaultVault = vaults.find(v => v.status === 'ready') || vaults[0];
       if (defaultVault) {

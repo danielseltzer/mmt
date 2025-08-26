@@ -28,7 +28,7 @@ export interface PipelineExecutionResult {
     succeeded: Array<{
       document: Document;
       operation: ScriptOperation;
-      details: any;
+      details: unknown;
     }>;
     failed: Array<{
       document: Document;
@@ -46,7 +46,7 @@ export interface PipelineExecutionResult {
     operation: string;
     error: string;
   }>;
-  output?: any;
+  output?: unknown;
 }
 
 /**
@@ -267,8 +267,8 @@ export class PipelineExecutor {
     return await this.convertMetadataToDocuments(results);
   }
 
-  private buildIndexerQuery(criteria: Record<string, unknown>): any {
-    const conditions: any[] = [];
+  private buildIndexerQuery(criteria: Record<string, unknown>): Record<string, unknown> {
+    const conditions: Array<Record<string, unknown>> = [];
 
     for (const [field, value] of Object.entries(criteria)) {
       let operator = 'equals';
@@ -282,7 +282,7 @@ export class PipelineExecutor {
     return { conditions };
   }
 
-  private async convertMetadataToDocuments(metadata: any[]): Promise<Document[]> {
+  private async convertMetadataToDocuments(metadata: unknown[]): Promise<Document[]> {
     const documents: Document[] = [];
     
     for (const meta of metadata) {
@@ -345,7 +345,7 @@ export class PipelineExecutor {
     };
   }
 
-  private createDocumentOperation(operation: ScriptOperation, doc: Document): any {
+  private createDocumentOperation(operation: ScriptOperation, doc: Document): Record<string, unknown> {
     switch (operation.type) {
       case 'move': {
         if (!operation.destination) {
@@ -405,7 +405,7 @@ export class PipelineExecutor {
     }
   }
 
-  private async formatOutput(documents: Document[], outputConfig?: any): Promise<any> {
+  private async formatOutput(documents: Document[], outputConfig?: unknown): Promise<unknown> {
     if (!outputConfig || outputConfig.length === 0) {
       return undefined;
     }
