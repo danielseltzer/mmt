@@ -12,7 +12,7 @@ export const DocumentsQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
   // Filter parameters - sent as JSON string in query param
   filters: z.string().optional().transform((val) => {
-    if (!val) return {};
+    if (!val) {return {};}
     try {
       return FilterCriteriaSchema.parse(JSON.parse(val));
     } catch {

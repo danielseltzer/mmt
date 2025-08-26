@@ -14,12 +14,12 @@ export function parseDateExpression(input: string): DateFilter | null {
   const normalized = input.trim().toLowerCase();
   
   // Handle empty input
-  if (!normalized) return null;
+  if (!normalized) {return null;}
   
   // Check for explicit operator syntax first (e.g., "> 2024-01-01", "<= yesterday")
   // But NOT for shorthand units like "7d", "3m", "2w", "1y"
-  const operatorMatch = normalized.match(/^(<=?|>=?|=)\s+(.+)$/);
-  if (operatorMatch && !operatorMatch[2].match(/^\d+(d|w|m|y)$/)) {
+  const operatorMatch = /^(<=?|>=?|=)\s+(.+)$/.exec(normalized);
+  if (operatorMatch && !(/^\d+(d|w|m|y)$/.exec(operatorMatch[2]))) {
     const operator = operatorMatch[1] as '<' | '>' | '<=' | '>=' | '=';
     const dateExpr = operatorMatch[2];
     
@@ -40,7 +40,7 @@ export function parseDateExpression(input: string): DateFilter | null {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
   // Relative past patterns
-  const lastXDaysMatch = normalized.match(/^(?:last|past)\s+(\d+)\s+days?$/);
+  const lastXDaysMatch = /^(?:last|past)\s+(\d+)\s+days?$/.exec(normalized);
   if (lastXDaysMatch) {
     const days = parseInt(lastXDaysMatch[1]);
     const date = new Date();
@@ -50,7 +50,7 @@ export function parseDateExpression(input: string): DateFilter | null {
   
   // Pattern for operator with shorthand units (e.g., "<7d", ">3m", "<=2w")
   // When using operator notation, the operator is literal (< means less than)
-  const operatorShorthandMatch = normalized.match(/^(<=?|>=?)\s*(\d+)(d|w|m|y)$/);
+  const operatorShorthandMatch = /^(<=?|>=?)\s*(\d+)(d|w|m|y)$/.exec(normalized);
   if (operatorShorthandMatch) {
     const operator = operatorShorthandMatch[1] as '<' | '>' | '<=' | '>=';
     const amount = parseInt(operatorShorthandMatch[2]);
@@ -80,7 +80,7 @@ export function parseDateExpression(input: string): DateFilter | null {
   }
   
   // Pattern for "< N days/weeks/months/years" (modified less than N time ago = within last N time)
-  const lessThanTimeMatch = normalized.match(/^<\s+(\d+)\s*(days?|weeks?|months?|years?)$/);
+  const lessThanTimeMatch = /^<\s+(\d+)\s*(days?|weeks?|months?|years?)$/.exec(normalized);
   if (lessThanTimeMatch) {
     const amount = parseInt(lessThanTimeMatch[1]);
     const unit = lessThanTimeMatch[2];
@@ -100,7 +100,7 @@ export function parseDateExpression(input: string): DateFilter | null {
   }
   
   // Pattern for "> N days/weeks/months/years" (modified more than N time ago)
-  const moreThanTimeMatch = normalized.match(/^>\s+(\d+)\s*(days?|weeks?|months?|years?)$/);
+  const moreThanTimeMatch = /^>\s+(\d+)\s*(days?|weeks?|months?|years?)$/.exec(normalized);
   if (moreThanTimeMatch) {
     const amount = parseInt(moreThanTimeMatch[1]);
     const unit = moreThanTimeMatch[2];
@@ -170,12 +170,12 @@ export function parseDateExpression(input: string): DateFilter | null {
   }
   
   // Since patterns
-  const sinceMatch = normalized.match(/^(?:since|after)\s+(.+)$/);
+  const sinceMatch = /^(?:since|after)\s+(.+)$/.exec(normalized);
   if (sinceMatch) {
     const dateStr = sinceMatch[1];
     
     // Try parsing as year
-    const yearMatch = dateStr.match(/^(\d{4})$/);
+    const yearMatch = /^(\d{4})$/.exec(dateStr);
     if (yearMatch) {
       // Use UTC to avoid timezone issues
       const date = new Date(Date.UTC(parseInt(yearMatch[1]), 0, 1));
@@ -188,7 +188,7 @@ export function parseDateExpression(input: string): DateFilter | null {
     const monthIndex = monthNames.findIndex(m => dateStr.includes(m));
     if (monthIndex !== -1) {
       // Check if year is included
-      const yearInMonthMatch = dateStr.match(/(\d{4})/);
+      const yearInMonthMatch = /(\d{4})/.exec(dateStr);
       const year = yearInMonthMatch ? parseInt(yearInMonthMatch[1]) : today.getFullYear();
       const date = new Date(Date.UTC(year, monthIndex, 1));
       return { operator: '>=', value: date.toISOString() };
@@ -202,12 +202,12 @@ export function parseDateExpression(input: string): DateFilter | null {
   }
   
   // Before patterns
-  const beforeMatch = normalized.match(/^(?:before|until)\s+(.+)$/);
+  const beforeMatch = /^(?:before|until)\s+(.+)$/.exec(normalized);
   if (beforeMatch) {
     const dateStr = beforeMatch[1];
     
     // Try parsing as year
-    const yearMatch = dateStr.match(/^(\d{4})$/);
+    const yearMatch = /^(\d{4})$/.exec(dateStr);
     if (yearMatch) {
       const date = new Date(Date.UTC(parseInt(yearMatch[1]), 0, 1));
       return { operator: '<', value: date.toISOString() };
@@ -218,7 +218,7 @@ export function parseDateExpression(input: string): DateFilter | null {
                        'july', 'august', 'september', 'october', 'november', 'december'];
     const monthIndex = monthNames.findIndex(m => dateStr.includes(m));
     if (monthIndex !== -1) {
-      const yearInMonthMatch = dateStr.match(/(\d{4})/);
+      const yearInMonthMatch = /(\d{4})/.exec(dateStr);
       const year = yearInMonthMatch ? parseInt(yearInMonthMatch[1]) : today.getFullYear();
       const date = new Date(Date.UTC(year, monthIndex, 1));
       return { operator: '<', value: date.toISOString() };
@@ -232,7 +232,7 @@ export function parseDateExpression(input: string): DateFilter | null {
   }
   
   // Shorthand relative dates (e.g., "-30d", "+7d", "2w", "3m", "1y")
-  const relativeMatch = normalized.match(/^([+-]?)(\d+)(d|w|m|y)$/);
+  const relativeMatch = /^([+-]?)(\d+)(d|w|m|y)$/.exec(normalized);
   if (relativeMatch) {
     const sign = relativeMatch[1] || '-';
     const amount = parseInt(relativeMatch[2]);

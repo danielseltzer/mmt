@@ -68,3 +68,6 @@ export * from './filter.schema.js';
 
 // Export preview schemas
 export * from './preview.schema.js';
+
+// Export error classes
+export * from './errors.js';
