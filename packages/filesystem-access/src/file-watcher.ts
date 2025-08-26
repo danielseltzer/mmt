@@ -49,7 +49,7 @@ export class FileWatcher extends EventEmitter {
       // Properly handle promise return without blocking
       const result = callback(event);
       if (result && typeof result.catch === 'function') {
-        result.catch((error: Error) => this.emit('error', error));
+        result.catch((error: unknown) => this.emit('error', error));
       }
     });
   }
