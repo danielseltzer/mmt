@@ -82,7 +82,7 @@ async function runE2ETests() {
   console.log('\n✅ Servers are ready! Running Playwright tests...\n');
   
   // Run Playwright tests
-  const tests = spawn('npx', ['playwright', 'test', '--config=playwright-web.config.ts'], {
+  const tests = spawn('npx', ['playwright', 'test', '-c', 'tests/playwright.config.ts', '--project=chromium-web'], {
     stdio: 'inherit'
   });
   
