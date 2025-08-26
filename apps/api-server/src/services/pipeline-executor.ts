@@ -9,7 +9,8 @@ import type {
   PipelinePreviewResponse
 } from '@mmt/entities';
 import { OperationRegistry } from '@mmt/document-operations';
-import type { OperationContext } from '@mmt/document-operations';
+import type { OperationContext, DocumentOperation } from '@mmt/document-operations';
+import type { Query } from '@mmt/indexer';
 import { basename, join } from 'path';
 import { PreviewGenerator } from './preview-generator.js';
 import { Loggers, type Logger } from '@mmt/logger';
@@ -267,8 +268,8 @@ export class PipelineExecutor {
     return await this.convertMetadataToDocuments(results);
   }
 
-  private buildIndexerQuery(criteria: Record<string, unknown>): Record<string, unknown> {
-    const conditions: Array<Record<string, unknown>> = [];
+  private buildIndexerQuery(criteria: Record<string, unknown>): Query {
+    const conditions: any[] = [];
 
     for (const [field, value] of Object.entries(criteria)) {
       let operator = 'equals';
@@ -286,21 +287,23 @@ export class PipelineExecutor {
     const documents: Document[] = [];
     
     for (const meta of metadata) {
-      const outgoingLinks = this.context.indexer.getOutgoingLinks(meta.relativePath);
-      const incomingLinks = this.context.indexer.getBacklinks(meta.relativePath);
+      if (!meta || typeof meta !== 'object') continue;
+      const metaAny = meta as any;
+      const outgoingLinks = this.context.indexer.getOutgoingLinks(metaAny.relativePath);
+      const incomingLinks = this.context.indexer.getBacklinks(metaAny.relativePath);
       
       // Load content for filtering
-      const content = await this.context.fs.readFile(meta.path, 'utf-8');
+      const content = await this.context.fs.readFile(metaAny.path, 'utf-8');
       
       documents.push({
-        path: meta.path,
+        path: metaAny.path,
         content,
         metadata: {
-          name: meta.basename,
-          modified: new Date(meta.mtime),
-          size: meta.size,
-          frontmatter: meta.frontmatter,
-          tags: meta.tags,
+          name: metaAny.basename || metaAny.name,
+          modified: metaAny.mtime ? new Date(metaAny.mtime) : metaAny.modified,
+          size: metaAny.size,
+          frontmatter: metaAny.frontmatter || {},
+          tags: metaAny.tags || [],
           links: outgoingLinks.map(targetDoc => targetDoc.relativePath),
           backlinks: incomingLinks.map(sourceDoc => sourceDoc.relativePath)
         }
@@ -345,7 +348,7 @@ export class PipelineExecutor {
     };
   }
 
-  private createDocumentOperation(operation: ScriptOperation, doc: Document): Record<string, unknown> {
+  private createDocumentOperation(operation: ScriptOperation, doc: Document): DocumentOperation {
     switch (operation.type) {
       case 'move': {
         if (!operation.destination) {
@@ -406,7 +409,7 @@ export class PipelineExecutor {
   }
 
   private async formatOutput(documents: Document[], outputConfig?: unknown): Promise<unknown> {
-    if (!outputConfig || outputConfig.length === 0) {
+    if (!outputConfig || (Array.isArray(outputConfig) && outputConfig.length === 0)) {
       return undefined;
     }
 
@@ -418,9 +421,10 @@ export class PipelineExecutor {
   }
 
   private applyFilters(documents: Document[], filterCollection: FilterCollection): Document[] {
+    const filterExecutor = new FilterExecutor(this.logger);
     return documents.filter(doc => {
       const results = filterCollection.conditions.map(condition => 
-        this.evaluateFilter(doc, condition)
+        filterExecutor.evaluateFilter(doc, condition as FilterCondition)
       );
       
       // Apply logic (AND/OR)

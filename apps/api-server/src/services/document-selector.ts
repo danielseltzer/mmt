@@ -20,12 +20,12 @@ export class DocumentSelector {
     let selectedDocuments = [...allDocuments];
 
     // Apply filters if specified
-    if (criteria.filters) {
+    if ('filters' in criteria && criteria.filters) {
       selectedDocuments = this.applyFilters(selectedDocuments, criteria.filters);
     }
 
     // Apply limit if specified
-    if (criteria.limit && criteria.limit > 0) {
+    if ('limit' in criteria && criteria.limit && criteria.limit > 0) {
       selectedDocuments = selectedDocuments.slice(0, criteria.limit);
     }
 
@@ -59,14 +59,12 @@ export class DocumentSelector {
     });
 
     // Apply logical operator
-    switch (collection.operator) {
+    const logic = collection.logic || 'AND';
+    switch (logic) {
       case 'AND':
         return results.every(result => result);
       case 'OR':
         return results.some(result => result);
-      case 'NOT':
-        // For NOT, we expect exactly one condition and negate it
-        return results.length === 1 ? !results[0] : false;
       default:
         return false;
     }
