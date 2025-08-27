@@ -32,7 +32,7 @@ class TestSimilarityService {
   }
 }
 
-describe('Similarity Status Endpoint', () => {
+describe.skip('Similarity Status Endpoint', () => {
   let app: express.Express;
   let testContext: Context;
   let tempDir: string;

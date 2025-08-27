@@ -1,112 +1,102 @@
 /**
- * Filter utility functions for the FilterBar component
+ * Parse natural language date expressions into filter operators
  */
-
-export function parseFilterValue(value, type) {
-  if (!value) return null;
-  
-  switch (type) {
-    case 'number':
-      return parseInt(value, 10);
-    case 'boolean':
-      return value === 'true';
-    case 'date':
-      return new Date(value);
-    default:
-      return value;
-  }
-}
-
-export function formatFilterDisplay(filter) {
-  const { field, operator, value } = filter;
-  const operatorSymbols = {
-    eq: '=',
-    ne: '≠',
-    gt: '>',
-    gte: '≥',
-    lt: '<',
-    lte: '≤',
-    contains: '~',
-    startsWith: '^',
-    endsWith: '$'
-  };
-  
-  return `${field} ${operatorSymbols[operator] || operator} ${value}`;
-}
-
-export function isValidFilter(filter) {
-  return filter && 
-         filter.field && 
-         filter.operator && 
-         filter.value !== undefined && 
-         filter.value !== '';
-}
-
-export function getFieldType(field) {
-  // Map field names to their types
-  const fieldTypes = {
-    size: 'number',
-    modified: 'date',
-    created: 'date',
-    tags_count: 'number',
-    links_count: 'number',
-    backlinks_count: 'number',
-    fm_draft: 'boolean',
-    fm_published: 'boolean'
-  };
-  
-  return fieldTypes[field] || 'string';
-}
-
 export function parseDateExpression(expression) {
-  if (!expression) return null;
+  if (!expression || typeof expression !== 'string') {
+    return null;
+  }
+
+  const trimmed = expression.trim().toLowerCase();
   
-  const now = new Date();
-  const match = expression.match(/^(\d+)([dwmy])$/);
-  
-  if (!match) {
-    // Try to parse as ISO date
-    const date = new Date(expression);
-    return isNaN(date) ? null : date;
+  // Pattern: "last X days/weeks/months/years"
+  const lastMatch = trimmed.match(/^last\s+(\d+)\s+(days?|weeks?|months?|years?)$/);
+  if (lastMatch) {
+    const [, amount, unit] = lastMatch;
+    const unitChar = unit.charAt(0); // d, w, m, y
+    return { operator: 'gt', value: `-${amount}${unitChar}` };
   }
   
-  const [, amount, unit] = match;
-  const value = parseInt(amount, 10);
-  
-  switch (unit) {
-    case 'd':
-      now.setDate(now.getDate() - value);
-      break;
-    case 'w':
-      now.setDate(now.getDate() - value * 7);
-      break;
-    case 'm':
-      now.setMonth(now.getMonth() - value);
-      break;
-    case 'y':
-      now.setFullYear(now.getFullYear() - value);
-      break;
+  // Pattern: "< X days/weeks/months/years"
+  const ltMatch = trimmed.match(/^<\s*(\d+)\s*(days?|weeks?|months?|years?)$/);
+  if (ltMatch) {
+    const [, amount, unit] = ltMatch;
+    const unitChar = unit.charAt(0);
+    return { operator: 'gt', value: `-${amount}${unitChar}` };
   }
   
-  return now;
+  // Pattern: "> YYYY-MM-DD" or ">= YYYY-MM-DD"
+  const dateCompareMatch = trimmed.match(/^(>|>=|<|<=)\s*(\d{4}(?:-\d{2}){0,2})$/);
+  if (dateCompareMatch) {
+    const [, op, date] = dateCompareMatch;
+    const operatorMap = {
+      '>': 'gt',
+      '>=': 'gte',
+      '<': 'lt',
+      '<=': 'lte'
+    };
+    return { operator: operatorMap[op], value: date };
+  }
+  
+  // Pattern: "since YYYY"
+  const sinceMatch = trimmed.match(/^since\s+(\d{4})$/);
+  if (sinceMatch) {
+    const [, year] = sinceMatch;
+    return { operator: 'gte', value: year };
+  }
+  
+  return null;
 }
 
+/**
+ * Parse natural language size expressions into filter operators
+ */
 export function parseSizeExpression(expression) {
-  if (!expression) return null;
+  if (!expression || typeof expression !== 'string') {
+    return null;
+  }
+
+  const trimmed = expression.trim().toLowerCase();
   
-  const match = expression.match(/^(\d+(?:\.\d+)?)\s*([kmg]?b)?$/i);
-  if (!match) return null;
-  
-  const [, amount, unit = 'b'] = match;
-  const value = parseFloat(amount);
-  
-  const multipliers = {
-    b: 1,
-    kb: 1024,
-    mb: 1024 * 1024,
-    gb: 1024 * 1024 * 1024
+  // Size unit multipliers
+  const units = {
+    'b': 1,
+    'k': 1024,
+    'kb': 1024,
+    'm': 1048576,
+    'mb': 1048576,
+    'g': 1073741824,
+    'gb': 1073741824
   };
   
-  const multiplier = multipliers[unit.toLowerCase()] || 1;
-  return value * multiplier;
+  // Pattern: "over X[unit]" or "under X[unit]"
+  const overUnderMatch = trimmed.match(/^(over|under)\s+(\d+(?:\.\d+)?)\s*([kmg]b?)?$/);
+  if (overUnderMatch) {
+    const [, direction, amount, unit = 'b'] = overUnderMatch;
+    const multiplier = units[unit] || 1;
+    const bytes = Math.floor(parseFloat(amount) * multiplier);
+    return {
+      operator: direction === 'over' ? 'gt' : 'lt',
+      value: bytes.toString()
+    };
+  }
+  
+  // Pattern: "> X[unit]" or "< X[unit]" etc
+  const operatorMatch = trimmed.match(/^(>|>=|<|<=)\s*(\d+(?:\.\d+)?)\s*([kmg]b?)?$/);
+  if (operatorMatch) {
+    const [, op, amount, unit = 'b'] = operatorMatch;
+    const multiplier = units[unit] || 1;
+    const bytes = Math.floor(parseFloat(amount) * multiplier);
+    const operatorMap = {
+      '>': 'gt',
+      '>=': 'gte',
+      '<': 'lt',
+      '<=': 'lte'
+    };
+    return {
+      operator: operatorMap[op],
+      value: bytes.toString()
+    };
+  }
+  
+  return null;
 }

@@ -1,77 +1,52 @@
 /**
- * Template utility functions for the TransformPanel component
+ * Get list of available template variables
  */
-
-export function expandTemplate(template, context) {
-  if (!template || !context) return template;
-  
-  // Replace template variables with context values
-  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-    return context[key] !== undefined ? context[key] : match;
-  });
-}
-
-export function getTemplateVariables(template) {
-  if (!template) return [];
-  
-  const variables = [];
-  const regex = /\{\{(\w+)\}\}/g;
-  let match;
-  
-  while ((match = regex.exec(template)) !== null) {
-    if (!variables.includes(match[1])) {
-      variables.push(match[1]);
-    }
-  }
-  
-  return variables;
-}
-
-export function validateTemplate(template) {
-  if (!template) return { valid: false, error: 'Template is required' };
-  
-  // Check for balanced braces
-  let openCount = 0;
-  let closeCount = 0;
-  
-  for (let i = 0; i < template.length; i++) {
-    if (template[i] === '{' && template[i + 1] === '{') {
-      openCount++;
-      i++; // Skip next character
-    } else if (template[i] === '}' && template[i + 1] === '}') {
-      closeCount++;
-      i++; // Skip next character
-    }
-  }
-  
-  if (openCount !== closeCount) {
-    return { valid: false, error: 'Unbalanced template braces' };
-  }
-  
-  // Check for valid variable names
-  const regex = /\{\{(\w+)\}\}/g;
-  let match;
-  
-  while ((match = regex.exec(template)) !== null) {
-    if (!/^[a-zA-Z_]\w*$/.test(match[1])) {
-      return { valid: false, error: `Invalid variable name: ${match[1]}` };
-    }
-  }
-  
-  return { valid: true };
-}
-
-export function getAvailableVariables() {
-  // Return list of available template variables
+export function getTemplateVariables() {
   return [
-    { name: 'name', description: 'File name without extension' },
-    { name: 'path', description: 'Full file path' },
-    { name: 'folder', description: 'Parent folder name' },
-    { name: 'date', description: 'Current date (YYYY-MM-DD)' },
-    { name: 'time', description: 'Current time (HH:MM)' },
-    { name: 'timestamp', description: 'Unix timestamp' },
-    { name: 'year', description: 'Current year' },
-    { name: 'month', description: 'Current month (01-12)' },
-    { name: 'day', description: 'Current day (01-31)' }
+    '{{name}}',      // Current filename without extension
+    '{{date}}',      // Current date (YYYY-MM-DD)
+    '{{time}}',      // Current time (HH:MM:SS)
+    '{{timestamp}}', // Unix timestamp
+    '{{year}}',      // Current year
+    '{{month}}',     // Current month (01-12)
+    '{{day}}'        // Current day (01-31)
   ];
+}
+
+/**
+ * Expand template variables with actual values
+ * @param {string} template - Template string with variables
+ * @param {string} fileName - Current file name (for {{name}} variable)
+ * @returns {string} Expanded template
+ */
+export function expandTemplate(template, fileName = '') {
+  if (!template || typeof template !== 'string') {
+    return template || '';
+  }
+  
+  const now = new Date();
+  
+  // Extract name without extension
+  const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+  
+  // Format helpers
+  const pad = (num) => String(num).padStart(2, '0');
+  
+  // Variable replacements
+  const replacements = {
+    '{{name}}': nameWithoutExt,
+    '{{date}}': `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    '{{time}}': `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+    '{{timestamp}}': Math.floor(now.getTime() / 1000).toString(),
+    '{{year}}': now.getFullYear().toString(),
+    '{{month}}': pad(now.getMonth() + 1),
+    '{{day}}': pad(now.getDate())
+  };
+  
+  let result = template;
+  for (const [variable, value] of Object.entries(replacements)) {
+    result = result.replace(new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g'), value);
+  }
+  
+  return result;
 }
