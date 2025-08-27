@@ -1,8 +1,9 @@
-import type { VaultConfig } from '@mmt/entities';
+import type { VaultConfig, Config } from '@mmt/entities';
 import { VaultIndexer } from '@mmt/indexer';
 import { NodeFileSystem, type FileSystemAccess } from '@mmt/filesystem-access';
 import type { Vault as IVault, VaultStatus, VaultServices } from './types.js';
 import { Loggers, type Logger } from '@mmt/logger';
+import { SimilaritySearchService } from './similarity-search-service.js';
 
 /**
  * Represents a single vault containing markdown files with associated indexing capabilities.
@@ -34,10 +35,12 @@ export class Vault implements IVault {
   private fileSystem: FileSystemAccess;
   private logger: Logger;
   private vaultDebugLogger: Logger;
+  private globalConfig?: Config; // For fallback similarity config
 
-  constructor(id: string, config: VaultConfig) {
+  constructor(id: string, config: VaultConfig, globalConfig?: Config) {
     this.id = id;
     this.config = config;
+    this.globalConfig = globalConfig;
     this.status = 'initializing';
     this.fileSystem = new NodeFileSystem();
     this.logger = Loggers.vault();
@@ -73,9 +76,27 @@ export class Vault implements IVault {
 
       await indexer.initialize();
 
+      // Initialize similarity search if configured
+      let similaritySearch: SimilaritySearchService | undefined;
+      
+      // Use per-vault config if available, otherwise fall back to global config
+      const similarityConfig = this.config.similarity || this.globalConfig?.similarity;
+      
+      if (similarityConfig?.enabled) {
+        try {
+          similaritySearch = new SimilaritySearchService(similarityConfig, this.id, this.config.path);
+          await similaritySearch.initialize();
+          this.vaultDebugLogger.debug(`Initialized similarity search for vault ${this.id}`);
+        } catch (error) {
+          // Log error but don't fail vault initialization
+          this.logger.warn(`Failed to initialize similarity search for vault ${this.id}`, { error });
+        }
+      }
+
       // Store services
       this.services = {
-        indexer
+        indexer,
+        similaritySearch
       };
 
       this.status = 'ready';
@@ -108,6 +129,20 @@ export class Vault implements IVault {
   }
 
   /**
+   * Gets the vault's similarity search service if configured.
+   * 
+   * WHY: Provides controlled access to similarity search while allowing it to be optional.
+   * - Returns undefined if similarity search is not configured
+   * - Enforces proper vault lifecycle (must be ready)
+   * - Allows vaults to have different similarity configurations
+   * 
+   * @returns SimilaritySearchService instance or undefined
+   */
+  get similaritySearch(): SimilaritySearchService | undefined {
+    return this.services?.similaritySearch;
+  }
+
+  /**
    * Shuts down the vault and cleans up resources.
    * 
    * WHY: Ensures proper cleanup of file watchers and indexer resources.
@@ -117,9 +152,14 @@ export class Vault implements IVault {
    * 
    * NOTE: After shutdown, vault must be re-initialized before use.
    */
-  shutdown(): void {
+  async shutdown(): Promise<void> {
     // eslint-disable-next-line no-console
     this.logger.info(`Shutting down vault: ${this.id}`);
+    
+    // Shutdown similarity search if it exists
+    if (this.services?.similaritySearch) {
+      await this.services.similaritySearch.shutdown();
+    }
     
     // Indexer will handle its own cleanup including file watcher
     // Additional cleanup can be added here as needed

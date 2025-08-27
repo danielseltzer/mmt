@@ -5,8 +5,8 @@ export type VaultStatus = 'initializing' | 'ready' | 'error';
 
 export interface VaultServices {
   indexer: VaultIndexer;
-  // watcher will be exposed from indexer
-  // similaritySearch will be added when that service is vault-aware
+  // watcher is exposed from indexer
+  similaritySearch?: any; // Will be SimilaritySearchService once imported
 }
 
 export interface Vault {

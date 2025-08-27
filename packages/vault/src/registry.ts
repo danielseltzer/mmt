@@ -87,7 +87,7 @@ export class VaultRegistry {
 
     // Initialize default vault synchronously (blocking)
     const [defaultVaultConfig] = config.vaults;
-    const defaultVault = new Vault(defaultVaultConfig.name, defaultVaultConfig);
+    const defaultVault = new Vault(defaultVaultConfig.name, defaultVaultConfig, config);
     
     try {
       await defaultVault.initialize();
@@ -102,7 +102,7 @@ export class VaultRegistry {
     if (config.vaults.length > 1) {
       const additionalVaults = config.vaults.slice(1);
       const initPromises = additionalVaults.map(async (vaultConfig) => {
-        const vault = new Vault(vaultConfig.name, vaultConfig);
+        const vault = new Vault(vaultConfig.name, vaultConfig, config);
         try {
           await vault.initialize();
           this.vaults.set(vault.id, vault);
@@ -203,15 +203,16 @@ export class VaultRegistry {
    * 
    * USAGE: Call during application shutdown or in test cleanup
    */
-  shutdown(): void {
+  async shutdown(): Promise<void> {
     this.logger.info('Shutting down all vaults');
-    Array.from(this.vaults.values()).forEach(vault => {
+    const shutdownPromises = Array.from(this.vaults.values()).map(async vault => {
       try {
-        vault.shutdown();
+        await vault.shutdown();
       } catch (error: unknown) {
         this.logger.error(`Error shutting down vault ${vault.id}`, { error });
       }
     });
+    await Promise.all(shutdownPromises);
     this.vaults.clear();
     this.initializationPromise = undefined;
   }

@@ -32,6 +32,51 @@ const absolutePath = z.string().refine(
  * };
  * ```
  */
+/**
+ * Similarity search configuration for a specific vault or globally.
+ * Provides semantic search capabilities through vector similarity.
+ */
+export const SimilarityConfigSchema = z.object({
+  /**
+   * Whether to enable similarity search features.
+   * Requires Ollama to be installed and running.
+   */
+  enabled: z.boolean().default(false),
+  
+  /**
+   * Which similarity provider to use.
+   * Currently only 'qdrant' is supported.
+   */
+  provider: z.enum(['qdrant']).default('qdrant').optional(),
+  
+  /**
+   * URL of the Ollama API server.
+   * Default is the standard Ollama local endpoint.
+   */
+  ollamaUrl: z.string().url().default('http://localhost:11434'),
+  
+  /**
+   * Ollama model to use for generating embeddings.
+   * Must be a model that supports embeddings (e.g., nomic-embed-text).
+   */
+  model: z.string().default('nomic-embed-text'),
+  
+  /**
+   * Optional custom path for the similarity index file.
+   * If not specified, will be stored alongside the regular index.
+   */
+  indexFilename: z.string().optional().describe('Filename for similarity index (stored in indexPath directory)'),
+  
+  /**
+   * Qdrant-specific configuration.
+   */
+  qdrant: z.object({
+    url: z.string().url().default('http://localhost:6333'),
+    collectionName: z.string().default('documents'),
+    onDisk: z.boolean().default(false)
+  }).optional(),
+}).default({ enabled: false });
+
 export const VaultConfigSchema = z.object({
   /**
    * Unique name identifier for the vault.
@@ -79,9 +124,17 @@ export const VaultConfigSchema = z.object({
       'node_modules/**'
     ]),
   }).default({}).optional(),
+  
+  /**
+   * Per-vault similarity search configuration.
+   * When specified, overrides global similarity settings for this vault.
+   * Enables vault-specific vector databases and settings.
+   */
+  similarity: SimilarityConfigSchema.optional(),
 });
 
 export type VaultConfig = z.infer<typeof VaultConfigSchema>;
+export type SimilarityConfig = z.infer<typeof SimilarityConfigSchema>;
 
 /**
  * Main configuration schema for MMT.
@@ -138,50 +191,14 @@ export const ConfigSchema = z.object({
   webPort: z.number().int().min(1).max(65535).describe('Port for the web server'),
   
   /**
-   * Similarity search configuration using Ollama embeddings.
-   * When enabled, provides semantic search capabilities through vector similarity.
-   * Currently applies globally to all vaults.
+   * Global similarity search configuration.
+   * Can be overridden per-vault for vault-specific settings.
+   * When both global and per-vault configs exist, per-vault takes precedence.
+   * 
+   * @deprecated In favor of per-vault similarity configuration.
+   * This field is maintained for backward compatibility but will be removed in v4.
    */
-  similarity: z.object({
-    /**
-     * Whether to enable similarity search features.
-     * Requires Ollama to be installed and running.
-     */
-    enabled: z.boolean().default(false),
-    
-    /**
-     * Which similarity provider to use.
-     * Currently only 'qdrant' is supported.
-     */
-    provider: z.enum(['qdrant']).default('qdrant').optional(),
-    
-    /**
-     * URL of the Ollama API server.
-     * Default is the standard Ollama local endpoint.
-     */
-    ollamaUrl: z.string().url().default('http://localhost:11434'),
-    
-    /**
-     * Ollama model to use for generating embeddings.
-     * Must be a model that supports embeddings (e.g., nomic-embed-text).
-     */
-    model: z.string().default('nomic-embed-text'),
-    
-    /**
-     * Optional custom path for the similarity index file.
-     * If not specified, will be stored alongside the regular index.
-     */
-    indexFilename: z.string().optional().describe('Filename for similarity index (stored in indexPath directory)'),
-    
-    /**
-     * Qdrant-specific configuration.
-     */
-    qdrant: z.object({
-      url: z.string().url().default('http://localhost:6333'),
-      collectionName: z.string().default('documents'),
-      onDisk: z.boolean().default(false)
-    }).optional(),
-  }).default({ enabled: false }).optional(),
+  similarity: SimilarityConfigSchema.optional(),
 }).strict();
 
 export type Config = z.infer<typeof ConfigSchema>;

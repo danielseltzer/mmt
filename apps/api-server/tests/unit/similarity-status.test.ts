@@ -3,7 +3,7 @@ import request from 'supertest';
 import express from 'express';
 import { similarityRouter } from '../../src/routes/similarity';
 import type { Context } from '../../src/context';
-import { SimilaritySearchService } from '../../src/services/similarity-search';
+// import { SimilaritySearchService } from '@mmt/vault'; // Service moved to vault package
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';

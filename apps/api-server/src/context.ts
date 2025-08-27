@@ -5,15 +5,13 @@ import { ConfigService } from '@mmt/config';
 import type { Config } from '@mmt/entities';
 import { NodeFileSystem } from '@mmt/filesystem-access';
 import { vaultRegistry } from '@mmt/vault';
-import { SimilaritySearchService } from './services/similarity-search.js';
 
 export interface Context {
   config: Config;
-  indexer: VaultIndexer;
+  indexer: VaultIndexer; // Legacy: for backward compatibility
   fileRelocator: FileRelocator;
   operationRegistry: OperationRegistry;
   fs: NodeFileSystem;
-  similaritySearch?: SimilaritySearchService;
   vaultRegistry: typeof vaultRegistry;
 }
 
@@ -46,13 +44,8 @@ export async function createContext(config: Config): Promise<Context> {
   // OperationRegistry already has default operations registered
   const operationRegistry = new OperationRegistry();
   
-  // Initialize similarity search if enabled
-  let similaritySearch: SimilaritySearchService | undefined;
-  if (config.similarity?.enabled) {
-    // Use the default vault for similarity search (for now)
-    similaritySearch = new SimilaritySearchService(config, defaultVault.name, defaultVault.path);
-    await similaritySearch.initialize();
-  }
+  // Note: Similarity search is now initialized per-vault in the Vault class
+  // Access via: vaultRegistry.getVault(vaultId).similaritySearch
   
   return {
     config,
@@ -60,7 +53,6 @@ export async function createContext(config: Config): Promise<Context> {
     fileRelocator,
     operationRegistry,
     fs,
-    similaritySearch,
     vaultRegistry,
   };
 }
