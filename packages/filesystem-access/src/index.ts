@@ -7,6 +7,15 @@
 export { FileWatcher } from './file-watcher.js';
 export type { FileWatcherOptions, FileChangeEvent } from './file-watcher.js';
 
+// Export file revealer functionality
+export { 
+  FileRevealer,
+  FileRevealStrategy,
+  SystemFileRevealStrategy,
+  TestFileRevealStrategy,
+  DryRunFileRevealStrategy
+} from './file-revealer.js';
+
 import {
   readFile as fsReadFile,
   writeFile as fsWriteFile,

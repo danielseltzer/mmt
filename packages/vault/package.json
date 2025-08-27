@@ -21,16 +21,15 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@mmt/entities": "workspace:*",
-    "@mmt/indexer": "workspace:*",
     "@mmt/config": "workspace:*",
+    "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
+    "@mmt/indexer": "workspace:*",
     "@mmt/logger": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
     "typescript": "^5.3.3",
-    "vitest": "^1.2.1",
-    "eslint": "^8.57.1"
+    "vitest": "^1.2.1"
   }
 }

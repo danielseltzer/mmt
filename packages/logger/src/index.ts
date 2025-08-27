@@ -1,61 +1,37 @@
 /**
- * Centralized Winston Logger Configuration for MMT
+ * Centralized loglevel Logger Configuration for MMT
  * 
  * Provides structured logging with appropriate levels and formatting
- * for all MMT components and services.
+ * for all MMT components and services. Uses loglevel for lightweight,
+ * browser-compatible logging without Winston's bundle overhead.
  */
 
-import winston from 'winston';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import log from 'loglevel';
 
-const { combine, timestamp, printf, colorize, errors, json } = winston.format;
-
-// Log levels following Winston defaults
+// Log levels matching loglevel's defaults (and compatible with Winston)
 export const LogLevel = {
   ERROR: 'error',
   WARN: 'warn',
   INFO: 'info',
-  HTTP: 'http',
-  VERBOSE: 'verbose',
   DEBUG: 'debug',
-  SILLY: 'silly'
+  TRACE: 'trace',
+  // Winston compatibility - map verbose and silly to debug/trace
+  HTTP: 'debug',
+  VERBOSE: 'debug',
+  SILLY: 'trace'
 } as const;
 
 export type LogLevelType = typeof LogLevel[keyof typeof LogLevel];
 
-// Custom format for console output - matches existing MMT log format
-const consoleFormat = printf(({ level, message, timestamp, component, ...metadata }) => {
-  let output = '';
-  
-  // Add component prefix if provided
-  if (component) {
-    output += `[${component}] `;
-  }
-  
-  // Add message
-  output += message;
-  
-  // Add metadata if present (excluding error stack for cleaner output)
-  if (Object.keys(metadata).length > 0 && !metadata.stack) {
-    const metaStr = Object.entries(metadata)
-      .filter(([key]) => key !== 'error') // Error is handled separately
-      .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
-      .join(' ');
-    if (metaStr) {
-      output += ` ${metaStr}`;
-    }
-  }
-  
-  return output;
-});
-
-// File format with full JSON for debugging
-const fileFormat = combine(
-  timestamp(),
-  errors({ stack: true }),
-  json()
-);
+// Color codes for console output
+const colors = {
+  error: '\x1b[31m', // red
+  warn: '\x1b[33m',  // yellow
+  info: '\x1b[36m',  // cyan
+  debug: '\x1b[90m', // gray
+  trace: '\x1b[90m', // gray
+  reset: '\x1b[0m'
+};
 
 interface LoggerOptions {
   component?: string;
@@ -66,62 +42,142 @@ interface LoggerOptions {
 }
 
 /**
- * Creates a Winston logger instance with consistent configuration
+ * Logger wrapper that provides Winston-compatible API using loglevel
  */
-export function createLogger(options: LoggerOptions = {}): winston.Logger {
-  const {
-    component,
-    logLevel = process.env.LOG_LEVEL || 'info',
-    logToFile = process.env.LOG_TO_FILE === 'true',
-    logFilePath = process.env.LOG_FILE_PATH || '/tmp/mmt.log',
-    silent = false
-  } = options;
+export class Logger {
+  private component: string | undefined;
+  private logger: log.Logger;
+  private silent: boolean;
 
-  const transports: winston.transport[] = [];
+  constructor(options: LoggerOptions = {}) {
+    const {
+      component,
+      logLevel = (typeof process !== 'undefined' && process.env?.LOG_LEVEL) || 'info',
+      silent = false
+    } = options;
 
-  // Console transport
-  if (!silent) {
-    transports.push(
-      new winston.transports.Console({
-        level: logLevel,
-        format: combine(
-          colorize({ level: true }),
-          timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-          consoleFormat
-        )
-      })
-    );
+    this.component = component;
+    this.silent = silent;
+    
+    // Create a namespaced logger for this component
+    this.logger = component ? log.getLogger(component) : log;
+    
+    // Map Winston levels to loglevel levels
+    const mappedLevel = this.mapLogLevel(logLevel);
+    this.logger.setLevel(mappedLevel as log.LogLevelDesc);
+
+    // Override console methods to add formatting
+    if (!silent) {
+      this.setupConsoleFormatting();
+    }
   }
 
-  // File transport (optional)
-  if (logToFile && logFilePath) {
-    transports.push(
-      new winston.transports.File({
-        filename: logFilePath,
-        level: logLevel,
-        format: fileFormat
-      })
-    );
+  private mapLogLevel(level: string): string {
+    // Map Winston-specific levels to loglevel equivalents
+    const levelMap: Record<string, string> = {
+      'error': 'error',
+      'warn': 'warn',
+      'info': 'info',
+      'http': 'debug',
+      'verbose': 'debug',
+      'debug': 'debug',
+      'silly': 'trace'
+    };
+    return levelMap[level.toLowerCase()] || 'info';
   }
 
-  const logger = winston.createLogger({
-    level: logLevel,
-    defaultMeta: component ? { component } : {},
-    transports,
-    // Handle uncaught exceptions and rejections
-    exceptionHandlers: logToFile ? [
-      new winston.transports.File({ 
-        filename: logFilePath.replace('.log', '-exceptions.log')
-      })
-    ] : [],
-    rejectionHandlers: logToFile ? [
-      new winston.transports.File({ 
-        filename: logFilePath.replace('.log', '-rejections.log')
-      })
-    ] : []
-  });
+  private setupConsoleFormatting() {
+    const originalFactory = this.logger.methodFactory;
+    const component = this.component;
+    const silent = this.silent;
+    const isBrowser = typeof globalThis !== 'undefined' && 'window' in globalThis;
 
-  return logger;
+    this.logger.methodFactory = function(methodName: any, logLevel: any, loggerName: any) {
+      const rawMethod = originalFactory(methodName, logLevel, loggerName);
+      
+      return function(...args: any[]) {
+        if (silent) return;
+        
+        // In browser environments, don't use ANSI color codes
+        if (isBrowser) {
+          if (component) {
+            // Prepend component name without color codes
+            if (typeof args[0] === 'string') {
+              args[0] = `[${component}] ${args[0]}`;
+            } else {
+              args.unshift(`[${component}]`);
+            }
+          }
+        } else {
+          // In Node.js, use color codes
+          const levelName = methodName as keyof typeof colors;
+          const color = colors[levelName] || colors.reset;
+          
+          let prefix = color;
+          if (component) {
+            prefix += `[${component}] `;
+          }
+          prefix += colors.reset;
+          
+          if (typeof args[0] === 'string') {
+            args[0] = prefix + args[0];
+          } else {
+            args.unshift(prefix);
+          }
+        }
+        
+        rawMethod.apply(undefined, args);
+      };
+    };
+
+    // Re-apply the level to use the new factory
+    this.logger.setLevel(this.logger.getLevel());
+  }
+
+  // Winston-compatible logging methods
+  error(message: string, ...args: any[]) {
+    if (!this.silent) this.logger.error(message, ...args);
+  }
+
+  warn(message: string, ...args: any[]) {
+    if (!this.silent) this.logger.warn(message, ...args);
+  }
+
+  info(message: string, ...args: any[]) {
+    if (!this.silent) this.logger.info(message, ...args);
+  }
+
+  http(message: string, ...args: any[]) {
+    if (!this.silent) this.logger.debug(message, ...args);
+  }
+
+  verbose(message: string, ...args: any[]) {
+    if (!this.silent) this.logger.debug(message, ...args);
+  }
+
+  debug(message: string, ...args: any[]) {
+    if (!this.silent) this.logger.debug(message, ...args);
+  }
+
+  silly(message: string, ...args: any[]) {
+    if (!this.silent) this.logger.trace(message, ...args);
+  }
+
+  // Additional Winston compatibility
+  log(level: string, message: string, ...args: any[]) {
+    const method = (this as any)[level];
+    if (method) {
+      method.call(this, message, ...args);
+    }
+  }
+}
+
+/**
+ * Creates a loglevel logger instance with consistent configuration
+ * Maintains backward compatibility with Winston interface
+ */
+export function createLogger(options: LoggerOptions = {}): Logger {
+  return new Logger(options);
 }
 
 /**
@@ -129,9 +185,9 @@ export function createLogger(options: LoggerOptions = {}): winston.Logger {
  * Creates loggers with predefined component names for consistent tagging
  */
 export class ComponentLogger {
-  private static instances = new Map<string, winston.Logger>();
+  private static instances = new Map<string, Logger>();
   
-  static get(component: string, options?: Omit<LoggerOptions, 'component'>): winston.Logger {
+  static get(component: string, options?: Omit<LoggerOptions, 'component'>): Logger {
     const key = `${component}-${JSON.stringify(options || {})}`;
     
     if (!this.instances.has(key)) {
@@ -181,10 +237,6 @@ export const Loggers = {
   default: () => ComponentLogger.get('MMT')
 };
 
-// Export Winston types for convenience
-export type Logger = winston.Logger;
-export { winston };
-
 // Helper function to format error objects for logging
 export function formatError(error: unknown): object {
   if (error instanceof Error) {
@@ -198,5 +250,12 @@ export function formatError(error: unknown): object {
   return { error: String(error) };
 }
 
-// Re-export common Winston methods for convenience
-export const { transports, format } = winston;
+// Export winston type aliases for backward compatibility
+// This allows existing code using winston.Logger to continue working
+export { Logger as winston };
+export type { Logger as WinstonLogger };
+
+// Re-export transports and format as no-ops for compatibility
+// These are Winston-specific concepts that don't apply to loglevel
+export const transports = {};
+export const format = {};

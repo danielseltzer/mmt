@@ -34,7 +34,7 @@ export interface FileChangeEvent {
  */
 export class FileWatcher extends EventEmitter {
   private watcher?: FSWatcher;
-  private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+  private debounceTimers = new Map<string, NodeJS.Timeout>();
   private isRunning = false;
 
   constructor(private options: FileWatcherOptions) {
@@ -45,7 +45,13 @@ export class FileWatcher extends EventEmitter {
    * Register a callback to be called when a file changes
    */
   onFileChange(callback: (event: FileChangeEvent) => void | Promise<void>): void {
-    this.on('change', callback);
+    this.on('change', (event: FileChangeEvent) => {
+      // Properly handle promise return without blocking
+      const result = callback(event);
+      if (result && typeof result.catch === 'function') {
+        result.catch((error: unknown) => this.emit('error', error));
+      }
+    });
   }
 
   /**
@@ -71,14 +77,17 @@ export class FileWatcher extends EventEmitter {
 
     // Set up event handlers
     this.watcher
-      .on('add', (path: string) => this.handleFileEvent('created', path))
-      .on('change', (path: string) => this.handleFileEvent('modified', path))
-      .on('unlink', (path: string) => this.handleFileEvent('deleted', path))
+      .on('add', (path: string) => { this.handleFileEvent('created', path); })
+      .on('change', (path: string) => { this.handleFileEvent('modified', path); })
+      .on('unlink', (path: string) => { this.handleFileEvent('deleted', path); })
       .on('error', (error: Error) => this.emit('error', error));
 
     // Wait for the watcher to be ready
     await new Promise<void>((resolve) => {
-      this.watcher!.once('ready', () => {
+      if (!this.watcher) {
+        throw new Error('Watcher not initialized');
+      }
+      this.watcher.once('ready', () => {
         this.isRunning = true;
         resolve();
       });

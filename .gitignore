@@ -10,6 +10,7 @@ out/
 .turbo/
 
 # Logs
+logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
@@ -101,5 +102,8 @@ personal-vault-config.yaml
 .yarn/
 .yarnrc.yml
 package-lock.json
-yarn.lockqdrant_storage/
+yarn.lock
+
+# Data directories
+data/
 qdrant_storage/

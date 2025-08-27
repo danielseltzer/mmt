@@ -16,8 +16,12 @@ describe('Reveal in Finder Endpoint', () => {
   let tempDir: string;
   let testFilePath: string;
   let vaultRegistry: VaultRegistry;
+  let originalNodeEnv: string | undefined;
 
   beforeEach(async () => {
+    // Set test environment to use TestFileRevealStrategy
+    originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'test';
     // Create a real temporary directory and file for testing
     tempDir = await fs.mkdtemp(join(tmpdir(), 'reveal-finder-test-'));
     testFilePath = join(tempDir, 'document.md');
@@ -56,6 +60,12 @@ describe('Reveal in Finder Endpoint', () => {
     });
 
     app.use('/api/vaults/:vaultId/documents', documentsRouter(testContext));
+    
+    // Add error handler to capture any errors
+    app.use((err: any, req: any, res: any, next: any) => {
+      console.error('Test error handler caught:', err);
+      res.status(500).json({ error: err.message || 'Internal server error' });
+    });
   });
 
   afterEach(async () => {
@@ -68,6 +78,13 @@ describe('Reveal in Finder Endpoint', () => {
 
     // Reset vault registry
     vaultRegistry.shutdown();
+    
+    // Restore original NODE_ENV
+    if (originalNodeEnv !== undefined) {
+      process.env.NODE_ENV = originalNodeEnv;
+    } else {
+      delete process.env.NODE_ENV;
+    }
   });
 
   it('should accept POST request with filePath', async () => {
