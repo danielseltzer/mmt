@@ -1,112 +1,167 @@
 import { Router } from 'express';
+import type { Request, Response } from 'express';
 import type { Context } from '../context.js';
 import type { Document } from '@mmt/entities';
 import { Loggers, type Logger } from '@mmt/logger';
 
 const logger: Logger = Loggers.api();
 
+// Extend Express Request to include vaultId from route params
+interface VaultRequest extends Request {
+  params: {
+    vaultId: string;
+    [key: string]: string;
+  };
+}
+
 export function similarityRouter(context: Context): Router {
   const router = Router();
   
-  // GET /api/similarity/status - Get current indexing status (new format for issue #221)
-  router.get('/status', async (req, res) => {
+  // GET /api/vaults/:vaultId/similarity/status - Get current indexing status
+  router.get('/status', async (req: VaultRequest, res: Response) => {
     try {
-      // Check if similarity search is configured
-      if (!context.similaritySearch) {
+      const { vaultId } = req.params;
+      
+      // Get the vault and its similarity service
+      const vault = context.vaultRegistry.getVault(vaultId);
+      const similaritySearch = vault.similaritySearch;
+      
+      // Check if similarity search is configured for this vault
+      if (!similaritySearch) {
         return res.json({
           status: 'not_configured',
           totalDocuments: 0,
           indexedDocuments: 0,
           percentComplete: 0,
-          estimatedTimeRemaining: null
+          estimatedTimeRemaining: null,
+          message: `Similarity search is not configured for vault ${vaultId}`
         });
       }
       
-      const status = await context.similaritySearch.getIndexingStatus();
-      res.json(status);
+      const status = await similaritySearch.getStatus();
+      res.json({
+        vaultId,
+        ...status
+      });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Check if it's a vault not found error
+      if (errorMessage.includes('Vault not found')) {
+        return res.status(404).json({
+          error: 'Vault not found',
+          message: errorMessage
+        });
+      }
+      
       res.status(500).json({
         error: 'Failed to get similarity search status',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: errorMessage
       });
     }
   });
   
-  // GET /api/similarity/events - Server-sent events for status updates
-  router.get('/events', (req, res) => {
-    if (!context.similaritySearch) {
-      return res.status(501).json({
-        error: 'Similarity search is not configured',
-        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
-      });
-    }
-    
-    // Set up SSE
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*'
-    });
-    
-    // Send initial status
-    context.similaritySearch!.getStatus().then(status => {
-      res.write(`data: ${JSON.stringify({
-        event: 'status',
-        data: status
-      })}\n\n`);
-    });
-    
-    // Set up event listeners
-    const statusChangeHandler = (data: unknown) => {
-      res.write(`data: ${JSON.stringify({
-        event: 'status-changed',
-        data
-      })}\n\n`);
-    };
-    
-    const progressHandler = (data: unknown) => {
-      res.write(`data: ${JSON.stringify({
-        event: 'progress',
-        data
-      })}\n\n`);
-    };
-    
-    context.similaritySearch!.on('status-changed', statusChangeHandler);
-    context.similaritySearch!.on('progress', progressHandler);
-    
-    // Keep connection alive
-    const keepAlive = setInterval(() => {
-      res.write(':keepalive\n\n');
-    }, 30000);
-    
-    // Clean up on disconnect
-    req.on('close', () => {
-      clearInterval(keepAlive);
-      context.similaritySearch!.off('status-changed', statusChangeHandler);
-      context.similaritySearch!.off('progress', progressHandler);
-    });
-  });
-  
-  // POST /api/similarity/search - Search for similar documents
-  router.post('/search', async (req, res) => {
-    if (!context.similaritySearch) {
-      return res.status(501).json({
-        error: 'Similarity search is not configured',
-        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
-      });
-    }
-    
-    const { documentPath, query, limit = 10, includeExcerpt = true } = req.body;
-    
-    if (!documentPath && !query) {
-      return res.status(400).json({
-        error: 'Missing required parameter',
-        message: 'Either documentPath or query must be provided'
-      });
-    }
+  // GET /api/vaults/:vaultId/similarity/events - Server-sent events for status updates
+  router.get('/events', (req: VaultRequest, res: Response) => {
+    const { vaultId } = req.params;
     
     try {
+      const vault = context.vaultRegistry.getVault(vaultId);
+      const similaritySearch = vault.similaritySearch;
+      
+      if (!similaritySearch) {
+        return res.status(501).json({
+          error: 'Similarity search is not configured',
+          message: `To enable similarity search for vault ${vaultId}, add a similarity configuration to the vault`
+        });
+      }
+      
+      // Set up SSE
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      
+      // Send initial status
+      similaritySearch.getStatus().then(status => {
+        res.write(`data: ${JSON.stringify({
+          event: 'status',
+          data: { vaultId, ...status }
+        })}\n\n`);
+      });
+      
+      // Set up event listeners
+      const statusChangeHandler = (data: unknown) => {
+        res.write(`data: ${JSON.stringify({
+          event: 'status-changed',
+          data: { vaultId, ...data as any }
+        })}\n\n`);
+      };
+      
+      const progressHandler = (data: unknown) => {
+        res.write(`data: ${JSON.stringify({
+          event: 'progress',
+          data: { vaultId, ...data as any }
+        })}\n\n`);
+      };
+      
+      similaritySearch.on('status-changed', statusChangeHandler);
+      similaritySearch.on('indexing-progress', progressHandler);
+      
+      // Keep connection alive
+      const keepAlive = setInterval(() => {
+        res.write(':keepalive\n\n');
+      }, 30000);
+      
+      // Clean up on disconnect
+      req.on('close', () => {
+        clearInterval(keepAlive);
+        similaritySearch.off('status-changed', statusChangeHandler);
+        similaritySearch.off('indexing-progress', progressHandler);
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('Vault not found')) {
+        return res.status(404).json({
+          error: 'Vault not found',
+          message: errorMessage
+        });
+      }
+      
+      res.status(500).json({
+        error: 'Failed to set up event stream',
+        message: errorMessage
+      });
+    }
+  });
+  
+  // POST /api/vaults/:vaultId/similarity/search - Search for similar documents
+  router.post('/search', async (req: VaultRequest, res: Response) => {
+    const { vaultId } = req.params;
+    
+    try {
+      const vault = context.vaultRegistry.getVault(vaultId);
+      const similaritySearch = vault.similaritySearch;
+      
+      if (!similaritySearch) {
+        return res.status(501).json({
+          error: 'Similarity search is not configured',
+          message: `To enable similarity search for vault ${vaultId}, add a similarity configuration to the vault`
+        });
+      }
+      
+      const { documentPath, query, limit = 10 } = req.body;
+      
+      if (!documentPath && !query) {
+        return res.status(400).json({
+          error: 'Missing required parameter',
+          message: 'Either documentPath or query must be provided'
+        });
+      }
+      
       let searchQuery = query;
       
       // If documentPath is provided, use the document content as the query
@@ -115,105 +170,141 @@ export function similarityRouter(context: Context): Router {
         searchQuery = content;
       }
       
-      const results = await context.similaritySearch!.search(searchQuery, {
-        limit,
-        includeExcerpt
-      });
+      const results = await similaritySearch.search(searchQuery, limit);
       
       res.json({
+        vaultId,
         query: query || documentPath,
         results
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('Vault not found')) {
+        return res.status(404).json({
+          error: 'Vault not found',
+          message: errorMessage
+        });
+      }
+      
       res.status(500).json({
         error: 'Search failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: errorMessage
       });
     }
   });
   
-  // POST /api/similarity/reindex - Manually trigger reindexing
-  router.post('/reindex', async (req, res) => {
-    if (!context.similaritySearch) {
-      return res.status(501).json({
-        error: 'Similarity search is not configured',
-        message: 'To enable similarity search, add a similarity provider (e.g., Qdrant) to your configuration file'
-      });
-    }
-    
-    const { force = false } = req.body;
+  // POST /api/vaults/:vaultId/similarity/reindex - Manually trigger reindexing
+  router.post('/reindex', async (req: VaultRequest, res: Response) => {
+    const { vaultId } = req.params;
     
     try {
+      const vault = context.vaultRegistry.getVault(vaultId);
+      const similaritySearch = vault.similaritySearch;
+      
+      if (!similaritySearch) {
+        return res.status(501).json({
+          error: 'Similarity search is not configured',
+          message: `To enable similarity search for vault ${vaultId}, add a similarity configuration to the vault`
+        });
+      }
+      
+      const { force = false } = req.body;
+      
       // Check current status
-      const status = await context.similaritySearch!.getStatus();
+      const status = await similaritySearch.getStatus();
       if (status.indexStatus === 'indexing' && !force) {
         return res.status(409).json({
           error: 'Indexing already in progress',
-          message: 'Use force=true to restart indexing'
+          message: 'Use force: true to restart indexing'
         });
       }
       
-      // Start reindexing in the background
-      const vault = (req as any).vault;
-      if (!vault) {
-        return res.status(400).json({
-          error: 'Vault not found in request'
-        });
-      }
-      
-      // Get all documents from the indexer
+      // Get all documents from the vault's indexer
       const documents = await vault.indexer.getAllDocuments();
-      const docsWithContent = await Promise.all(
-        documents.map(async (doc: Document) => {
-          try {
-            const content = await context.fs.readFile(doc.path);
-            return {
-              path: doc.path,  // Use the absolute path
-              content: content,
-              // Include metadata from the indexed document (PageMetadata structure)
-              metadata: {
-                title: (doc.metadata.frontmatter?.title as string) || doc.metadata.name,
-                modified: doc.metadata.modified ? doc.metadata.modified.toISOString() : undefined,
-                size: doc.metadata.size,
-                tags: doc.metadata.tags || []
-              }
-            };
-          } catch (error) {
-            logger.warn(`Failed to read file ${doc.path} during reindex:`, {
-              error: error instanceof Error ? error.message : String(error),
-              path: doc.path
-            });
-            return {
-              path: doc.path,  // Use the absolute path
-              content: '',
-              metadata: {
-                title: (doc.metadata.frontmatter?.title as string) || doc.metadata.name,
-                modified: doc.metadata.modified ? doc.metadata.modified.toISOString() : undefined,
-                size: doc.metadata.size,
-                tags: doc.metadata.tags || []
-              }
-            };
-          }
-        })
-      );
       
-      context.similaritySearch!.reindexAll(docsWithContent)
-        .catch((error) => {
-          logger.error('Background reindexing failed', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-            documentCount: docsWithContent.length
-          });
-        });
+      // Convert to the format expected by similarity service
+      const documentsToIndex = documents.map(doc => ({
+        id: doc.path,
+        content: doc.content || '',
+        metadata: {
+          title: doc.title,
+          tags: doc.tags,
+          modified: doc.modified,
+          size: doc.size
+        }
+      }));
+      
+      // Start reindexing (async)
+      similaritySearch.indexDocuments(documentsToIndex).then(result => {
+        logger.info(`Similarity reindex completed for vault ${vaultId}`, result);
+      }).catch(error => {
+        logger.error(`Similarity reindex failed for vault ${vaultId}`, { error });
+      });
       
       res.json({
         message: 'Reindexing started',
-        status: 'indexing'
+        vaultId,
+        documentCount: documents.length
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('Vault not found')) {
+        return res.status(404).json({
+          error: 'Vault not found',
+          message: errorMessage
+        });
+      }
+      
       res.status(500).json({
         error: 'Failed to start reindexing',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: errorMessage
+      });
+    }
+  });
+  
+  // GET /api/vaults/:vaultId/similarity/health - Check similarity service health
+  router.get('/health', async (req: VaultRequest, res: Response) => {
+    const { vaultId } = req.params;
+    
+    try {
+      const vault = context.vaultRegistry.getVault(vaultId);
+      const similaritySearch = vault.similaritySearch;
+      
+      if (!similaritySearch) {
+        return res.json({
+          vaultId,
+          healthy: false,
+          configured: false,
+          message: `Similarity search is not configured for vault ${vaultId}`
+        });
+      }
+      
+      const status = await similaritySearch.getStatus();
+      
+      res.json({
+        vaultId,
+        healthy: status.available && status.ollamaHealthy,
+        configured: true,
+        ollamaHealthy: status.ollamaHealthy,
+        indexStatus: status.indexStatus,
+        documentsIndexed: status.stats.documentsIndexed,
+        lastUpdated: status.stats.lastUpdated
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('Vault not found')) {
+        return res.status(404).json({
+          error: 'Vault not found',
+          message: errorMessage
+        });
+      }
+      
+      res.status(500).json({
+        error: 'Health check failed',
+        message: errorMessage
       });
     }
   });

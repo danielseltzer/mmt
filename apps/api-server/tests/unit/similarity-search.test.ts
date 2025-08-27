@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { SimilaritySearchService } from '../../src/services/similarity-search.js';
+// import { SimilaritySearchService } from '@mmt/vault'; // Service moved to vault package
 import type { Config } from '@mmt/entities';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
 describe.skip('SimilaritySearchService', () => {
-  let service: SimilaritySearchService;
+  // let service: SimilaritySearchService; // Service moved to vault package
   let testDir: string;
   let config: Config;
 

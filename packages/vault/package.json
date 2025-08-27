@@ -25,7 +25,9 @@
     "@mmt/entities": "workspace:*",
     "@mmt/filesystem-access": "workspace:*",
     "@mmt/indexer": "workspace:*",
-    "@mmt/logger": "workspace:*"
+    "@mmt/logger": "workspace:*",
+    "@mmt/similarity-provider": "workspace:*",
+    "@mmt/similarity-provider-qdrant": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",

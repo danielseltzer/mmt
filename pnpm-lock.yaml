@@ -696,6 +696,12 @@ importers:
       '@mmt/logger':
         specifier: workspace:*
         version: link:../logger
+      '@mmt/similarity-provider':
+        specifier: workspace:*
+        version: link:../similarity-provider
+      '@mmt/similarity-provider-qdrant':
+        specifier: workspace:*
+        version: link:../similarity-provider-qdrant
     devDependencies:
       '@types/node':
         specifier: ^20.11.5
