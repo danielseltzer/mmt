@@ -57,7 +57,7 @@ export type SimilarityStatus = z.infer<typeof SimilarityStatusSchema>;
 
 // Configuration schema
 export const SimilarityConfigSchema = z.object({
-  provider: z.string().default('orama'),
+  provider: z.string().default('qdrant'),
   ollamaUrl: z.string().optional(),
   model: z.string().optional(),
   
@@ -66,11 +66,6 @@ export const SimilarityConfigSchema = z.object({
     url: z.string().default('http://localhost:6333'),
     collectionName: z.string().default('documents'),
     onDisk: z.boolean().default(false)
-  }).optional(),
-  
-  orama: z.object({
-    indexFilename: z.string().default('similarity-index.msp'),
-    maxDepth: z.number().default(100)
   }).optional()
 });
 

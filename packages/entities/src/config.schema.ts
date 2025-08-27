@@ -150,10 +150,10 @@ export const ConfigSchema = z.object({
     enabled: z.boolean().default(false),
     
     /**
-     * Which similarity provider to use (orama or qdrant).
-     * Default is 'orama' for compatibility.
+     * Which similarity provider to use.
+     * Currently only 'qdrant' is supported.
      */
-    provider: z.enum(['orama', 'qdrant']).default('orama').optional(),
+    provider: z.enum(['qdrant']).default('qdrant').optional(),
     
     /**
      * URL of the Ollama API server.
@@ -172,14 +172,6 @@ export const ConfigSchema = z.object({
      * If not specified, will be stored alongside the regular index.
      */
     indexFilename: z.string().optional().describe('Filename for similarity index (stored in indexPath directory)'),
-    
-    /**
-     * Orama-specific configuration.
-     */
-    orama: z.object({
-      indexFilename: z.string().default('similarity-index.msp'),
-      maxDepth: z.number().default(100)
-    }).optional(),
     
     /**
      * Qdrant-specific configuration.

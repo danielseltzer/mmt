@@ -12,14 +12,12 @@ import {
   SearchResult,
   IndexingResult as ProviderIndexingResult
 } from '@mmt/similarity-provider';
-import { OramaProvider } from '@mmt/similarity-provider-orama';
 import { QdrantProvider } from '@mmt/similarity-provider-qdrant';
 import crypto from 'crypto';
 import path from 'path';
 import { Loggers, formatError, type Logger } from '@mmt/logger';
 
 // Register providers with the factory
-SimilarityProviderFactory.register('orama', () => new OramaProvider());
 SimilarityProviderFactory.register('qdrant', () => new QdrantProvider());
 
 export interface SimilaritySearchResult {

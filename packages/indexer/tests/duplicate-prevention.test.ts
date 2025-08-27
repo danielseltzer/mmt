@@ -51,7 +51,10 @@ This is update number ${i}.`);
   });
 
   it('should handle file watcher events without creating duplicates', async () => {
-    // GIVEN: A vault with file watching enabled
+    // GIVEN: A vault with an existing file and file watching enabled
+    const watchedFilePath = join(testVaultPath, 'watched-doc.md');
+    writeFileSync(watchedFilePath, '# Watched Document\nInitial content');
+    
     const watchingIndexer = new VaultIndexer({
       vaultPath: testVaultPath,
       fileSystem: fs,
@@ -63,20 +66,24 @@ This is update number ${i}.`);
     
     await watchingIndexer.initialize();
     
-    // WHEN: A file is modified multiple times (simulating file watcher events)
-    const filePath = join(testVaultPath, 'watched-doc.md');
+    // Verify the file was indexed initially
+    const initialDocs = await watchingIndexer.getAllDocuments();
+    const initialWatchedDocs = initialDocs.filter(doc => doc.relativePath === 'watched-doc.md');
+    expect(initialWatchedDocs).toHaveLength(1);
     
-    // Create and modify file
-    writeFileSync(filePath, '# Watched Document\nInitial content');
+    // WHEN: The file is modified multiple times (simulating file watcher events)
+    await new Promise(resolve => setTimeout(resolve, 100)); // Give watcher time to start
+    
+    writeFileSync(watchedFilePath, '# Watched Document\nModified content 1');
     await new Promise(resolve => setTimeout(resolve, 100)); // Wait for watcher
     
-    writeFileSync(filePath, '# Watched Document\nModified content');
+    writeFileSync(watchedFilePath, '# Watched Document\nModified content 2');
     await new Promise(resolve => setTimeout(resolve, 100)); // Wait for watcher
     
-    writeFileSync(filePath, '# Watched Document\nFinal content');
-    await new Promise(resolve => setTimeout(resolve, 100)); // Wait for watcher
+    writeFileSync(watchedFilePath, '# Watched Document\nFinal content');
+    await new Promise(resolve => setTimeout(resolve, 150)); // Wait for final processing
     
-    // THEN: There should be only one entry
+    // THEN: There should still be only one entry (no duplicates)
     const allDocs = await watchingIndexer.getAllDocuments();
     const watchedDocs = allDocs.filter(doc => doc.relativePath === 'watched-doc.md');
     
