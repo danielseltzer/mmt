@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { Context } from '../context.js';
-import { Document, FilterCollection, FilterCondition } from '@mmt/entities';
+import { FilterCollection, FilterCondition } from '@mmt/entities';
+import type { PageMetadata } from '@mmt/indexer';
 import { validate } from '../middleware/validate.js';
 import { Loggers } from '@mmt/logger';
 import { 
@@ -14,8 +15,9 @@ import {
   parseSizeExpression,
 } from '@mmt/entities';
 
-// Helper function to apply filters to documents
-function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath: string): Document[] {
+// DEPRECATED: This function is not used - filtering is done via indexer.query() and applyDeclarativeFilters()
+// Keeping for reference but should be removed in cleanup
+function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: string): any[] {
   let filtered = [...documents];
   
   if (filters.name) {
@@ -153,8 +155,8 @@ function applyFilters(documents: Document[], filters: FilterCriteria, vaultPath:
 }
 
 
-// Apply declarative filters to documents
-function applyDeclarativeFilters(documents: Document[], filterCollection: FilterCollection, vaultPath: string): Document[] {
+// Apply declarative filters to documents (using PageMetadata from indexer)
+function applyDeclarativeFilters(documents: PageMetadata[], filterCollection: FilterCollection, vaultPath: string): PageMetadata[] {
   return documents.filter(doc => {
     const results = filterCollection.conditions.map(condition => 
       evaluateFilter(doc, condition, vaultPath)
@@ -170,12 +172,12 @@ function applyDeclarativeFilters(documents: Document[], filterCollection: Filter
   });
 }
 
-// Evaluate a single filter condition
-function evaluateFilter(doc: Document, filter: FilterCondition, vaultPath: string): boolean {
+// Evaluate a single filter condition (using PageMetadata from indexer)
+function evaluateFilter(doc: PageMetadata, filter: FilterCondition, vaultPath: string): boolean {
   switch (filter.field) {
     case 'name': {
       const textFilter = filter as any;
-      const searchIn = doc.metadata.name || '';
+      const searchIn = doc.basename || '';
       return evaluateTextOperator(searchIn, textFilter.operator, textFilter.value, textFilter.caseSensitive);
     }
     
@@ -183,11 +185,11 @@ function evaluateFilter(doc: Document, filter: FilterCondition, vaultPath: strin
       const textFilter = filter as any;
       // For now, search in multiple fields since we don't have full content
       const searchableText = [
-        doc.metadata.frontmatter?.title as string | undefined,
-        doc.metadata.name,
+        doc.frontmatter?.title as string | undefined,
+        doc.basename,
         doc.path,
-        ...((doc.metadata.frontmatter?.aliases as string[] | undefined) || []),
-        ...(doc.metadata.tags || [])
+        ...((doc.frontmatter?.aliases as string[] | undefined) || []),
+        ...(doc.tags || [])
       ].filter(Boolean).join(' ');
       return evaluateTextOperator(searchableText, textFilter.operator, textFilter.value, textFilter.caseSensitive);
     }
@@ -217,28 +219,28 @@ function evaluateFilter(doc: Document, filter: FilterCondition, vaultPath: strin
     
     case 'tags': {
       const tagFilter = filter as any;
-      const docTags = doc.metadata.tags || [];
+      const docTags = doc.tags || [];
       return evaluateArrayOperator(docTags, tagFilter.operator, tagFilter.value);
     }
     
     case 'metadata': {
       const metaFilter = filter as any;
-      if (!doc.metadata.frontmatter) return false;
-      const metaValue = doc.metadata.frontmatter[metaFilter.key];
+      if (!doc.frontmatter) return false;
+      const metaValue = doc.frontmatter[metaFilter.key];
       // MVP: only equals operator for metadata
       return metaValue === metaFilter.value;
     }
     
     case 'modified': {
       const dateFilter = filter as any;
-      if (!doc.metadata.modified) return false;
-      const docDate = new Date(doc.metadata.modified);
+      if (!doc.mtime) return false;
+      const docDate = new Date(doc.mtime);
       return evaluateDateOperator(docDate, dateFilter.operator, dateFilter.value);
     }
     
     case 'size': {
       const sizeFilter = filter as any;
-      return evaluateSizeOperator(doc.metadata.size || 0, sizeFilter.operator, sizeFilter.value);
+      return evaluateSizeOperator(doc.size || 0, sizeFilter.operator, sizeFilter.value);
     }
     
     default:
@@ -442,13 +444,13 @@ export function documentsRouter(context: Context): Router {
             
             if (sortBy === 'name') {
               aVal = a.basename;
-              bVal = b.metadata.name;
+              bVal = b.basename; // Fixed: PageMetadata uses basename directly
             } else if (sortBy === 'modified') {
-              aVal = a.metadata.modified ? a.metadata.modified.getTime() : undefined;
-              bVal = b.metadata.modified ? b.metadata.modified.getTime() : undefined;
+              aVal = a.mtime; // PageMetadata uses mtime (already a timestamp)
+              bVal = b.mtime;
             } else if (sortBy === 'size') {
-              aVal = a.metadata.size;
-              bVal = b.metadata.size;
+              aVal = a.size; // PageMetadata has size directly
+              bVal = b.size;
             } else if (sortBy === 'path') {
               aVal = a.path;
               bVal = b.path;
@@ -472,11 +474,11 @@ export function documentsRouter(context: Context): Router {
         const end = validatedOffset + validatedLimit;
         const paginatedDocs = results.slice(start, end);
         
-        // Format response
+        // Format response - map PageMetadata to Document format
         const response = DocumentsResponseSchema.parse({
-          documents: paginatedDocs.map((doc: Document) => {
-            // Process path to show "/" for root files and remove common root folder
-            let displayPath = (doc as any).relativePath || '/';
+          documents: paginatedDocs.map((doc: any) => {
+            // PageMetadata has relativePath directly, not under metadata
+            let displayPath = doc.relativePath || '/';
             
             // For display, we want to show the folder path, not the file path
             // Files in "Personal-sync" root folder should show "/"
@@ -505,11 +507,11 @@ export function documentsRouter(context: Context): Router {
               path: displayPath, // Show cleaned path for display
               fullPath: doc.path, // Keep the full path for unique identification
               metadata: {
-                name: doc.metadata.name,
-                modified: doc.metadata.modified.toISOString(),
-                size: doc.metadata.size,
-                frontmatter: doc.metadata.frontmatter || {},
-                tags: doc.metadata.tags || [],
+                name: doc.basename, // PageMetadata uses basename, not metadata.name
+                modified: new Date(doc.mtime).toISOString(), // mtime is timestamp in ms
+                size: doc.size,
+                frontmatter: doc.frontmatter || {},
+                tags: doc.tags || [],
                 links: [], // TODO: get links from indexer
               },
             };
@@ -534,7 +536,7 @@ export function documentsRouter(context: Context): Router {
       const path = fullPath.substring('/by-path/'.length);
       
       const documents = await (req as any).vault.indexer.getAllDocuments();
-      const document = documents.find((d: Document) => d.path === path || (d as any).relativePath === path);
+      const document = documents.find((d: PageMetadata) => d.path === path || d.relativePath === path);
       
       if (!document) {
         return res.status(404).json({ error: 'Document not found' });
@@ -574,12 +576,12 @@ export function documentsRouter(context: Context): Router {
           // Generate CSV
           const selectedColumns = columns || ['path', 'name', 'modified', 'size'];
           const headers = selectedColumns.join(',');
-          const rows = results.map((doc: Document) => {
+          const rows = results.map((doc: PageMetadata) => {
             return selectedColumns.map((col: string) => {
               if (col === 'path') return doc.path;
-              if (col === 'name') return doc.metadata.name;
-              if (col === 'modified') return doc.metadata.modified.toISOString();
-              if (col === 'size') return doc.metadata.size.toString();
+              if (col === 'name') return doc.basename; // PageMetadata uses basename
+              if (col === 'modified') return new Date(doc.mtime).toISOString(); // mtime is timestamp
+              if (col === 'size') return doc.size.toString();
               return '';
             }).join(',');
           });

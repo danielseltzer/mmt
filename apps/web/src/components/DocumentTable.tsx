@@ -54,14 +54,14 @@ export function DocumentTable() {
   // Use EnhancedDocumentTable for similarity mode, standard TableView otherwise
   if (searchMode === 'similarity') {
     return (
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden" data-testid="document-table">
         <EnhancedDocumentTable documents={filteredDocuments} />
       </div>
     );
   }
   
   return (
-    <div className="flex-1 overflow-hidden">
+    <div className="flex-1 overflow-hidden" data-testid="document-table">
       <TableView 
         documents={filteredDocuments}
         onSelectionChange={(selectedIds) => {

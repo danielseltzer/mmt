@@ -80,6 +80,21 @@ interface TabState {
  * - "at least 1gb", "at most 500k" - Inclusive size boundaries
  * - Size units: b/bytes, k/kb, m/mb, g/gb
  */
+// Vault index status interface
+export interface VaultIndexStatus {
+  status: 'ready' | 'indexing' | 'not_indexed' | 'error' | 'initializing';
+  documentCount: number;
+  totalDocuments?: number;
+  lastIndexed?: string;
+  indexProgress?: number;
+  error?: string;
+  similarityStatus?: {
+    available: boolean;
+    status: string;
+    ollamaConnected?: boolean;
+  };
+}
+
 interface DocumentStoreState {
   // Tab management
   tabs: TabState[];
@@ -89,6 +104,7 @@ interface DocumentStoreState {
   vaults: Vault[];
   isLoadingVaults: boolean;
   similarityAvailable: boolean;
+  vaultStatuses: Map<string, VaultIndexStatus>;
   
   // Tab management actions
   createTab: (vaultId: string) => void;
@@ -112,6 +128,8 @@ interface DocumentStoreState {
   
   // Vault actions
   loadVaults: () => Promise<void>;
+  updateVaultStatus: (vaultId: string, status: VaultIndexStatus) => void;
+  getVaultStatus: (vaultId: string) => VaultIndexStatus | undefined;
 }
 
 // Local storage keys
@@ -186,6 +204,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
   vaults: [],
   isLoadingVaults: false,
   similarityAvailable: false,
+  vaultStatuses: new Map(),
   
   // Tab management actions
   createTab: (vaultId: string) => {
@@ -690,6 +709,17 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       });
     }
   },
+  
+  // Vault status management
+  updateVaultStatus: (vaultId: string, status: VaultIndexStatus) => {
+    const statuses = new Map(get().vaultStatuses);
+    statuses.set(vaultId, status);
+    set({ vaultStatuses: statuses });
+  },
+  
+  getVaultStatus: (vaultId: string) => {
+    return get().vaultStatuses.get(vaultId);
+  }
 }));
 
 // For backward compatibility, expose commonly used getters at the top level

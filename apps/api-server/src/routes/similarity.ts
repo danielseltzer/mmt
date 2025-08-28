@@ -224,13 +224,15 @@ export function similarityRouter(context: Context): Router {
       const documents = await vault.indexer.getAllDocuments();
       
       // Convert to the format expected by similarity service
+      // Note: PageMetadata doesn't include content, so we need to read files for similarity indexing
       const documentsToIndex = documents.map(doc => ({
         id: doc.path,
-        content: doc.content || '',
+        path: doc.path,
+        content: '', // Content needs to be loaded separately for similarity indexing
         metadata: {
           title: doc.title,
           tags: doc.tags,
-          modified: doc.modified,
+          modified: new Date(doc.mtime).toISOString(),
           size: doc.size
         }
       }));

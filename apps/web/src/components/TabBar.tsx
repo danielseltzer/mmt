@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { X, Plus, Loader2 } from 'lucide-react';
+import { VaultStatusIndicator } from './VaultStatusIndicator';
 
 export function TabBar() {
   const {
@@ -59,7 +60,7 @@ export function TabBar() {
   };
 
   return (
-    <div className="flex items-end border-b bg-muted/20">
+    <div className="flex items-end border-b bg-muted/20" data-testid="tab-bar">
       {/* Tab list */}
       <div className="flex items-end overflow-x-auto">
         {tabs.map((tab) => {
@@ -78,21 +79,25 @@ export function TabBar() {
                   : "bg-muted/40 border-muted-foreground/20 hover:bg-muted/60 hover:border-muted-foreground/30"
               )}
               onClick={() => switchTab(tab.tabId)}
+              data-testid={`tab-trigger-${tab.vaultId}`}
             >
               {/* Tab content */}
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                {vault?.status === 'initializing' && (
-                  <Loader2 className="h-3 w-3 animate-spin shrink-0" />
-                )}
                 <span className={cn(
                   "text-sm truncate",
                   isActive ? "font-medium" : ""
                 )}>
                   {tab.tabName}
                 </span>
-                {vault?.status === 'error' && (
-                  <span className="text-xs text-destructive">(Error)</span>
-                )}
+                
+                {/* Compact status indicator */}
+                <div data-testid={`tab-status-${tab.vaultId}`}>
+                  <VaultStatusIndicator 
+                    vaultId={tab.vaultId}
+                    compact={true}
+                    className="ml-auto"
+                  />
+                </div>
               </div>
               
               {/* Close button - only show if more than one tab */}

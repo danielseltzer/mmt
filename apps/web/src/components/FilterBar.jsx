@@ -229,7 +229,7 @@ export function FilterBar() {
       />
       
       {/* Active filter summary */}
-      <span className="text-sm text-muted-foreground ml-auto">
+      <span className="text-sm text-muted-foreground ml-auto" data-testid="document-count">
         {filteredDocuments.length}/{vaultTotal} docs{getFilterSummary()}
       </span>
     </div>
