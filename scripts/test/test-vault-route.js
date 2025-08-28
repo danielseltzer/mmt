@@ -4,7 +4,7 @@ import { ConfigService } from '@mmt/config';
 import { vaultRegistry } from '@mmt/vault';
 
 async function testVaultRoute() {
-  const configPath = '/Users/danielseltzer/code/mmt/personal-vault-similarity-config.yaml';
+  const configPath = '/Users/danielseltzer/code/mmt/config/personal-vault-qdrant.yaml';
   console.log('Loading config...');
   
   const configService = new ConfigService();
