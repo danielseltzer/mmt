@@ -73,7 +73,7 @@ export function PreviewModal({
         }
       };
 
-      const response = await fetch('/api/pipelines/execute', {
+      const response = await fetch('http://localhost:3001/api/pipelines/execute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

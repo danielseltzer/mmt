@@ -15,7 +15,7 @@ interface VaultRequest extends Request {
 }
 
 export function similarityRouter(context: Context): Router {
-  const router = Router();
+  const router = Router({ mergeParams: true });
   
   // GET /api/vaults/:vaultId/similarity/status - Get current indexing status
   router.get('/status', async (req: VaultRequest, res: Response) => {
@@ -224,13 +224,15 @@ export function similarityRouter(context: Context): Router {
       const documents = await vault.indexer.getAllDocuments();
       
       // Convert to the format expected by similarity service
+      // Note: PageMetadata doesn't include content, so we need to read files for similarity indexing
       const documentsToIndex = documents.map(doc => ({
         id: doc.path,
-        content: doc.content || '',
+        path: doc.path,
+        content: '', // Content needs to be loaded separately for similarity indexing
         metadata: {
           title: doc.title,
           tags: doc.tags,
-          modified: doc.modified,
+          modified: new Date(doc.mtime).toISOString(),
           size: doc.size
         }
       }));
