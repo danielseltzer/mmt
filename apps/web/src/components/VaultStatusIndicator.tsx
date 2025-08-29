@@ -57,12 +57,12 @@ export function VaultStatusIndicator({
     if (!vaultId) return;
     
     try {
-      const response = await fetch(`/api/vaults/${vaultId}/index/status`);
+      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/status`);
       
       if (!response.ok) {
         if (response.status === 404) {
           // Try basic vault status endpoint
-          const vaultResponse = await fetch(`/api/vaults/${vaultId}/status`);
+          const vaultResponse = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/status`);
           if (vaultResponse.ok) {
             const vaultData = await vaultResponse.json();
             setStatus({
@@ -99,7 +99,7 @@ export function VaultStatusIndicator({
     // Set up SSE connection for real-time updates
     const setupSSE = () => {
       try {
-        const es = new EventSource(`/api/vaults/${vaultId}/index/events`);
+        const es = new EventSource(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/events`);
         
         es.onmessage = (event) => {
           try {
@@ -126,7 +126,7 @@ export function VaultStatusIndicator({
     };
 
     // Only set up SSE if endpoint exists (may not be available yet)
-    fetch(`/api/vaults/${vaultId}/index/events`, { method: 'HEAD' })
+    fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/events`, { method: 'HEAD' })
       .then(res => {
         if (res.ok || res.status === 405) { // 405 means endpoint exists but HEAD not allowed
           setupSSE();
@@ -149,7 +149,7 @@ export function VaultStatusIndicator({
   const handleReindex = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch(`/api/vaults/${vaultId}/index/refresh`, {
+      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/refresh`, {
         method: 'POST'
       });
       

@@ -22,11 +22,11 @@ export function TabBar() {
     closeTab,
     loadVaults,
   } = useDocumentStore();
+  
+  console.log('[TabBar] Vaults:', vaults.length, 'Tabs:', tabs.length);
 
-  // Load vaults on mount
-  useEffect(() => {
-    loadVaults();
-  }, [loadVaults]);
+  // Note: loadVaults is already called in App.tsx, so we don't need to call it here
+  // This was causing duplicate calls and race conditions
 
   // Don't show tab bar if no vaults available
   if (!vaults || vaults.length === 0) {
@@ -41,7 +41,8 @@ export function TabBar() {
     return null;
   }
 
-  // If single vault and no tabs, hide tab bar
+  // Only hide tab bar if there's a single vault with single tab
+  // With multiple vaults, always show tab bar so users can create tabs for other vaults
   if (vaults.length === 1 && tabs.length <= 1) {
     return null;
   }

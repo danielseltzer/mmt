@@ -28,7 +28,7 @@ export function FilterBar() {
   
   // Fetch vault path from API on mount
   useEffect(() => {
-    fetch('/api/config')
+    fetch('http://localhost:3001/api/config')
       .then(res => res.json())
       .then(data => setVaultPath(data.vaultPath))
       .catch(err => logger.error('Failed to fetch vault config:', err));

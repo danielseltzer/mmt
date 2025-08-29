@@ -15,7 +15,7 @@ interface VaultRequest extends Request {
 }
 
 export function similarityRouter(context: Context): Router {
-  const router = Router();
+  const router = Router({ mergeParams: true });
   
   // GET /api/vaults/:vaultId/similarity/status - Get current indexing status
   router.get('/status', async (req: VaultRequest, res: Response) => {

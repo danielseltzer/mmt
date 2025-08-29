@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Open the test harness in the default browser
+# This script assumes the app is already running
+
+PORT=${MMT_WEB_PORT:-5173}
+URL="http://localhost:${PORT}/test-harness"
+
+echo "Opening MMT Test Harness at ${URL}"
+
+# Check if the server is running
+if ! curl -s "http://localhost:${PORT}" > /dev/null 2>&1; then
+    echo "Error: MMT web server is not running on port ${PORT}"
+    echo "Please start the application first with: ./bin/mmt start --config <config-file>"
+    exit 1
+fi
+
+# Open in default browser based on OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    open "${URL}"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux
+    xdg-open "${URL}"
+elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    # Windows
+    start "${URL}"
+else
+    echo "Please open ${URL} in your browser"
+fi

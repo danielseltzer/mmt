@@ -40,7 +40,7 @@ export function SimilarityStatusIndicator() {
     if (!vaultId) return;
     
     try {
-      const response = await fetch(`/api/vaults/${vaultId}/similarity/status`);
+      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/status`);
       
       if (!response.ok) {
         if (response.status === 404 || response.status === 501) {
@@ -173,7 +173,7 @@ export function SimilarityIndexingWarning() {
     if (!vaultId) return;
     
     try {
-      const response = await fetch(`/api/vaults/${vaultId}/similarity/status`);
+      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/status`);
       
       if (!response.ok) {
         setStatus(null);

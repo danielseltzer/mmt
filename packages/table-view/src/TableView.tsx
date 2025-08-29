@@ -572,34 +572,51 @@ export function TableView({
                     // Find the document by matching the ID (which is fullPath or path)
                     const doc = documents.find(d => (d.fullPath || d.path) === targetRowId);
                     if (doc) {
-                      // The vault name in Obsidian is "Personal-sync"
-                      const vaultName = 'Personal-sync';
-                      
                       // Get the document's full path
                       const fullPath = doc.fullPath || doc.path;
                       
-                      // Extract the path relative to the vault
-                      // The fullPath is like: /Users/danielseltzer/Notes/Personal-sync/Making/Code/file.md
-                      // We want: /Making/Code/file.md
+                      // Extract vault name and relative path from the full path
+                      // The fullPath is like: /Users/danielseltzer/Notes/Personal-sync-250813/Making/Code/file.md
+                      let vaultName = '';
                       let filePath = fullPath;
                       
-                      // Remove everything up to and including "Personal-sync/"
-                      const vaultMarker = '/Personal-sync/';
-                      const vaultIndex = filePath.indexOf(vaultMarker);
-                      if (vaultIndex !== -1) {
-                        filePath = '/' + filePath.substring(vaultIndex + vaultMarker.length);
-                      } else if (filePath.includes('/Notes/')) {
-                        // Fallback: remove up to /Notes/
-                        filePath = filePath.substring(filePath.indexOf('/Notes/') + 7);
-                        // Remove Personal-sync/ if it's at the beginning
-                        if (filePath.startsWith('Personal-sync/')) {
-                          filePath = '/' + filePath.substring('Personal-sync/'.length);
+                      if (filePath.includes('/Notes/')) {
+                        // Find the position after /Notes/ to get the vault folder and file path
+                        const notesIndex = filePath.indexOf('/Notes/');
+                        const afterNotes = filePath.substring(notesIndex + 7); // Skip "/Notes/"
+                        
+                        // The first segment after /Notes/ is the vault folder
+                        const firstSlashIndex = afterNotes.indexOf('/');
+                        if (firstSlashIndex !== -1) {
+                          // Extract vault folder name
+                          const vaultFolder = afterNotes.substring(0, firstSlashIndex);
+                          
+                          // Try to determine the Obsidian vault name from the folder name
+                          // Remove date suffixes like -250813 and -sync
+                          vaultName = vaultFolder
+                            .replace(/-\d{6}$/, '') // Remove date suffix like -250813
+                            .replace(/-sync$/, '');  // Remove -sync suffix
+                          
+                          // Get just the file path relative to the vault
+                          filePath = afterNotes.substring(firstSlashIndex + 1);
+                        } else {
+                          // File is at the root of the vault
+                          vaultName = afterNotes.replace(/-\d{6}$/, '').replace(/-sync$/, '');
+                          filePath = '';
                         }
+                      }
+                      
+                      // If we couldn't determine the vault name, show an error
+                      if (!vaultName) {
+                        logger.error('Could not determine Obsidian vault name from path:', fullPath);
+                        alert('Could not determine Obsidian vault name. The file may not be in an Obsidian vault.');
+                        setContextMenu({ x: 0, y: 0, type: null });
+                        return;
                       }
                       
                       // Build Obsidian URI
                       const obsidianUri = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
-                      logger.debug('Opening in Obsidian:', obsidianUri);
+                      logger.debug('Opening in Obsidian:', { vaultName, filePath, obsidianUri });
                       
                       // Open in Obsidian
                       window.open(obsidianUri, '_blank');
@@ -617,7 +634,8 @@ export function TableView({
                   if (contextMenu.rowId) {
                     const row = table.getRowModel().rowsById[contextMenu.rowId];
                     if (row && row.original) {
-                      const fullPath = row.original.path;
+                      // Use fullPath if available (contains actual file path), otherwise fall back to path
+                      const fullPath = row.original.fullPath || row.original.path;
                       
                       // Get the current vault ID from the URL
                       const pathSegments = window.location.pathname.split('/');
@@ -626,7 +644,7 @@ export function TableView({
                       
                       if (vaultId) {
                         try {
-                          const response = await fetch(`/api/vaults/${vaultId}/documents/reveal-in-finder`, {
+                          const response = await fetch(`http://localhost:3001/api/vaults/${vaultId}/documents/reveal-in-finder`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
@@ -648,6 +666,46 @@ export function TableView({
                 }}
               >
                 Reveal in Finder
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-muted"
+                onClick={async () => {
+                  // Get the right-clicked row's data
+                  if (contextMenu.rowId) {
+                    const row = table.getRowModel().rowsById[contextMenu.rowId];
+                    if (row && row.original) {
+                      // Use fullPath if available (contains actual file path), otherwise fall back to path
+                      const fullPath = row.original.fullPath || row.original.path;
+                      
+                      // Get the current vault ID from the URL
+                      const pathSegments = window.location.pathname.split('/');
+                      const vaultIndex = pathSegments.indexOf('vaults');
+                      const vaultId = vaultIndex !== -1 ? pathSegments[vaultIndex + 1] : null;
+                      
+                      if (vaultId) {
+                        try {
+                          const response = await fetch(`http://localhost:3001/api/vaults/${vaultId}/documents/quicklook`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ filePath: fullPath }),
+                          });
+                          
+                          if (!response.ok) {
+                            const error = await response.json();
+                            logger.error('Failed to preview file:', error);
+                          }
+                        } catch (error) {
+                          logger.error('Error previewing file:', error);
+                        }
+                      }
+                    }
+                  }
+                  setContextMenu({ x: 0, y: 0, type: null });
+                }}
+              >
+                Preview (QuickLook)
               </button>
               <button
                 className="w-full px-4 py-2 text-left hover:bg-muted"

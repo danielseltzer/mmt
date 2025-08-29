@@ -20,6 +20,9 @@ export function DocumentTable() {
   const searchMode = currentTab?.searchMode || 'text';
   const searchQuery = currentTab?.searchQuery || '';
   
+  console.log('[DocumentTable] Current tab:', currentTab);
+  console.log('[DocumentTable] Loading:', loading, 'Documents:', filteredDocuments.length);
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
