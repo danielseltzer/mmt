@@ -1,7 +1,8 @@
 const puppeteer = require('puppeteer');
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false });
+  // Run in headless mode by default, use PWDEBUG=1 to see the browser
+  const browser = await puppeteer.launch({ headless: !process.env.PWDEBUG });
   const page = await browser.newPage();
   
   // Set up console logging

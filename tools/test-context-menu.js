@@ -5,7 +5,8 @@ import { chromium } from 'playwright';
 async function testContextMenu() {
   console.log('=== Testing Context Menu ===\n');
   
-  const browser = await chromium.launch({ headless: false }); // Run with UI to see what's happening
+  // Run in headless mode by default, use PWDEBUG=1 to see the browser
+  const browser = await chromium.launch({ headless: !process.env.PWDEBUG });
   const page = await browser.newPage();
   
   try {

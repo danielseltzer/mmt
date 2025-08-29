@@ -32,6 +32,9 @@ export default defineConfig({
     
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
+    
+    /* Run in headless mode by default, override with PWDEBUG=1 for debugging */
+    headless: !process.env.PWDEBUG,
   },
 
   /* Configure different test scenarios as projects */
@@ -41,7 +44,7 @@ export default defineConfig({
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        headless: true
+        headless: !process.env.PWDEBUG
       },
     },
 
@@ -53,7 +56,7 @@ export default defineConfig({
       testDir: './e2e/web',
       use: {
         ...devices['Desktop Chrome'],
-        headless: true,
+        headless: !process.env.PWDEBUG,
         video: 'retain-on-failure',
         screenshot: 'only-on-failure',
       },
@@ -72,7 +75,7 @@ export default defineConfig({
       testMatch: '**/simple-app.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
-        headless: true,
+        headless: !process.env.PWDEBUG,
         video: 'on-first-retry',
         screenshot: 'only-on-failure',
       },
