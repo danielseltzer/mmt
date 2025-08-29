@@ -1,8 +1,23 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Consolidated Playwright configuration for MMT E2E tests
- * See https://playwright.dev/docs/test-configuration
+ * Playwright Configuration for MMT E2E Tests
+ * ==========================================
+ * 
+ * Running Tests:
+ * --------------
+ * Default (headless):           pnpm test:e2e
+ * With browser visible:         PWDEBUG=1 pnpm test:e2e
+ * Debug specific test:          pnpm test:e2e --project=chromium-debug
+ * Run specific test file:       pnpm test:e2e path/to/test.spec.ts
+ * 
+ * Headless Mode Behavior:
+ * -----------------------
+ * - Tests run headless by default for speed and CI compatibility
+ * - Set PWDEBUG=1 environment variable to show browser window
+ * - The chromium-debug project always shows browser (for debugging)
+ * 
+ * See https://playwright.dev/docs/test-configuration for more details
  */
 export default defineConfig({
   testDir: './e2e',
@@ -33,88 +48,75 @@ export default defineConfig({
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
     
-    /* Run in headless mode by default, override with PWDEBUG=1 for debugging */
-    headless: !process.env.PWDEBUG,
+    /* Screenshot on failure for debugging */
+    screenshot: 'only-on-failure',
   },
 
   /* Configure different test scenarios as projects */
   projects: [
-    // Default: Full test suite with standard settings
+    /**
+     * Default Project: chromium
+     * -------------------------
+     * Standard test configuration for CI and local development
+     * Runs headless by default, respects PWDEBUG environment variable
+     */
     {
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        headless: !process.env.PWDEBUG
+        // Headless mode controlled by PWDEBUG environment variable
+        headless: process.env.PWDEBUG !== '1',
       },
     },
 
-    // Simple: Non-parallel execution for debugging
-    // NOTE: This configuration appears to be unused currently
-    // Originally from playwright-simple.config.ts
+    /**
+     * Debug Project: chromium-debug
+     * ------------------------------
+     * For interactive debugging with visible browser
+     * Use: pnpm test:e2e --project=chromium-debug
+     * Features:
+     * - Browser always visible
+     * - Video recording on failure
+     * - Single worker, no parallel execution
+     * - Extended timeout for debugging
+     */
     {
       name: 'chromium-debug',
-      testDir: './e2e/web',
       use: {
         ...devices['Desktop Chrome'],
-        headless: !process.env.PWDEBUG,
+        headless: false,  // Always show browser for debugging
         video: 'retain-on-failure',
-        screenshot: 'only-on-failure',
+        launchOptions: {
+          slowMo: 100,  // Slow down actions by 100ms for visibility
+        },
       },
       fullyParallel: false,
       workers: 1,
       retries: 0,
-      timeout: 30000,
+      timeout: 60000,  // 60 second timeout for debugging
     },
 
-    // Web-specific: Used by scripts/test-web-e2e.js for specific test file
-    // NOTE: This configuration may be unused - originally filtered for simple-app.spec.ts
-    // Originally from playwright-web.config.ts
-    {
-      name: 'chromium-web',
-      testDir: './e2e/web',
-      testMatch: '**/simple-app.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-        headless: !process.env.PWDEBUG,
-        video: 'on-first-retry',
-        screenshot: 'only-on-failure',
-      },
-      fullyParallel: false,
-      workers: 1,
-      retries: 0,
-      timeout: 30000,
-    },
-
-    // Additional browser testing (commented out by default)
-    /* Uncomment to test on other browsers:
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    */
-
-    /* Test against mobile viewports */
+    /**
+     * Additional Browser Projects (Uncomment to enable)
+     * --------------------------------------------------
+     */
+    
+    // Firefox testing
     // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
+    //   name: 'firefox',
+    //   use: { 
+    //     ...devices['Desktop Firefox'],
+    //     headless: process.env.PWDEBUG !== '1',
+    //   },
     // },
+    
+    // WebKit/Safari testing
     // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    //   name: 'webkit',
+    //   use: { 
+    //     ...devices['Desktop Safari'],
+    //     headless: process.env.PWDEBUG !== '1',
+    //   },
     // },
   ],
   
