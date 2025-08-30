@@ -57,55 +57,34 @@ export function VaultStatusIndicator({
     if (!vaultId) return;
     
     try {
-      const response = await fetch(`/api/vaults/${vaultId}/index/status`);
+      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/status`);
       
       if (!response.ok) {
         if (response.status === 404) {
           // Try basic vault status endpoint
-          const vaultResponse = await fetch(`/api/vaults/${vaultId}/status`);
+          const vaultResponse = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/status`);
           if (vaultResponse.ok) {
             const vaultData = await vaultResponse.json();
             setStatus({
-              status: vaultData.status === 'ready' ? 'ready' : 
-                      vaultData.status === 'error' ? 'error' : 'initializing',
+              status: vaultData.status === 'ready' ? 'ready' : 'initializing',
               documentCount: 0,
-              lastIndexed: vaultData.timestamp,
-              error: vaultData.error
+              lastIndexed: vaultData.timestamp
             });
-          } else {
-            const errorText = await vaultResponse.text();
-            console.error(`Failed to fetch vault status for '${vaultId}':`, errorText);
-            throw new Error(`Vault status check failed: ${vaultResponse.status}`);
           }
         } else {
-          const errorText = await response.text();
-          console.error(`Failed to fetch index status for '${vaultId}':`, errorText);
-          throw new Error(`Index status check failed: ${response.status}`);
+          throw new Error(`Status check failed: ${response.status}`);
         }
         return;
       }
       
       const data = await response.json();
-      // Ensure we have valid status data before setting
-      if (data && typeof data.status === 'string') {
-        setStatus(data);
-      } else {
-        console.error(`Invalid status data received for vault '${vaultId}':`, data);
-        // Set a default status to prevent infinite loading
-        setStatus({
-          status: 'initializing',
-          documentCount: 0,
-          error: 'Invalid status response from server'
-        });
-      }
+      setStatus(data);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed to fetch vault status for '${vaultId}':`, error);
       logger.error('Failed to fetch vault status:', error);
       setStatus({
         status: 'error',
         documentCount: 0,
-        error: errorMsg
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }, [vaultId]);
@@ -114,35 +93,19 @@ export function VaultStatusIndicator({
   useEffect(() => {
     if (!vaultId) return;
 
-    // Initial fetch with timeout to prevent hanging
-    const timeoutId = setTimeout(() => {
-      if (!status) {
-        console.warn(`Status fetch timeout for vault '${vaultId}', setting error state`);
-        setStatus({
-          status: 'error',
-          documentCount: 0,
-          error: 'Status fetch timeout'
-        });
-      }
-    }, 5000); // 5 second timeout
-    
-    fetchStatus().finally(() => {
-      clearTimeout(timeoutId);
-    });
+    // Initial fetch
+    fetchStatus();
 
     // Set up SSE connection for real-time updates
     const setupSSE = () => {
       try {
-        const es = new EventSource(`/api/vaults/${vaultId}/index/events`);
+        const es = new EventSource(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/events`);
         
         es.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             if (data.event === 'status-changed' || data.event === 'index-update') {
-              // Validate data before setting
-              if (data.data && typeof data.data.status === 'string') {
-                setStatus(data.data);
-              }
+              setStatus(data.data);
             }
           } catch (err) {
             logger.error('Failed to parse SSE message:', err);
@@ -150,7 +113,6 @@ export function VaultStatusIndicator({
         };
 
         es.onerror = (err) => {
-          console.warn(`SSE connection error for vault '${vaultId}', will retry in 5 seconds`);
           logger.error('SSE connection error:', err);
           es.close();
           // Retry after 5 seconds
@@ -164,17 +126,16 @@ export function VaultStatusIndicator({
     };
 
     // Only set up SSE if endpoint exists (may not be available yet)
-    let cleanupInterval: NodeJS.Timeout | undefined;
-    fetch(`/api/vaults/${vaultId}/index/events`, { method: 'HEAD' })
+    fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/events`, { method: 'HEAD' })
       .then(res => {
         if (res.ok || res.status === 405) { // 405 means endpoint exists but HEAD not allowed
           setupSSE();
         }
       })
-      .catch((err) => {
+      .catch(() => {
         // SSE not available, fall back to polling
-        console.log(`SSE not available for vault '${vaultId}', falling back to polling`);
-        cleanupInterval = setInterval(fetchStatus, 10000); // Poll every 10 seconds
+        const interval = setInterval(fetchStatus, 10000); // Poll every 10 seconds
+        return () => clearInterval(interval);
       });
 
     return () => {
@@ -182,32 +143,24 @@ export function VaultStatusIndicator({
         eventSource.close();
         setEventSource(null);
       }
-      if (cleanupInterval) {
-        clearInterval(cleanupInterval);
-      }
     };
   }, [vaultId, fetchStatus]);
 
   const handleReindex = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch(`/api/vaults/${vaultId}/index/refresh`, {
+      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/index/refresh`, {
         method: 'POST'
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Failed to trigger re-index for vault '${vaultId}':`, errorText);
-        throw new Error(`Failed to trigger re-index: ${errorText}`);
+        throw new Error('Failed to trigger re-index');
       }
       
       // Refresh status
       await fetchStatus();
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Failed to re-index vault:', error);
       logger.error('Failed to re-index vault:', error);
-      alert(`Failed to re-index vault: ${errorMsg}`);
     } finally {
       setIsRefreshing(false);
     }
@@ -302,7 +255,7 @@ export function VaultStatusIndicator({
       case 'not_indexed':
         return 'Not indexed';
       case 'error':
-        return status.error || 'Unknown error';
+        return `Error: ${status.error || 'Unknown error'}`;
       case 'initializing':
         return 'Initializing...';
       default:

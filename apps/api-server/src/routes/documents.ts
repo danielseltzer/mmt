@@ -477,31 +477,9 @@ export function documentsRouter(context: Context): Router {
         // Format response - map PageMetadata to Document format
         const response = DocumentsResponseSchema.parse({
           documents: paginatedDocs.map((doc: any) => {
-            // PageMetadata has relativePath directly, not under metadata
-            let displayPath = doc.relativePath || '/';
-            
-            // For display, we want to show the folder path, not the file path
-            // Files in "Personal-sync" root folder should show "/"
-            // Files in subfolders should show the subfolder path
-            
-            // First, get the folder part (everything before the last slash)
-            const lastSlash = displayPath.lastIndexOf('/');
-            let folderPath = lastSlash === -1 ? '' : displayPath.substring(0, lastSlash);
-            
-            // Now process the folderPath to remove "Personal-sync" prefix
-            if (folderPath === 'Personal-sync' || folderPath === '') {
-              // File is in the root (Personal-sync folder itself or no folder)
-              displayPath = '/';
-            } else if (folderPath.startsWith('Personal-sync/')) {
-              // File is in a subfolder of Personal-sync
-              displayPath = '/' + folderPath.substring('Personal-sync/'.length);
-            } else if (!folderPath.includes('/')) {
-              // Single folder that's not Personal-sync
-              displayPath = '/';
-            } else {
-              // File is in some other structure, just ensure leading slash
-              displayPath = '/' + folderPath;
-            }
+            // PageMetadata has a folderPath field that contains the folder path relative to vault root
+            // This is exactly what we need for the display path
+            let displayPath = doc.folderPath || '/';
             
             return {
               path: displayPath, // Show cleaned path for display
@@ -608,6 +586,52 @@ export function documentsRouter(context: Context): Router {
         });
         
         res.json(response);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+  
+  // Preview file using QuickLook (macOS)
+  router.post('/quicklook',
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { filePath } = req.body;
+        
+        if (!filePath) {
+          return res.status(400).json({ error: 'File path is required' });
+        }
+        
+        // Check if file exists
+        const { existsSync } = await import('fs');
+        if (!existsSync(filePath)) {
+          return res.status(404).json({ error: `File not found: ${filePath}` });
+        }
+        
+        // Use spawn for better handling of paths with spaces
+        const { spawn } = await import('child_process');
+        
+        try {
+          // qlmanage -p opens QuickLook preview
+          const qlProcess = spawn('qlmanage', ['-p', filePath], {
+            detached: true,
+            stdio: 'ignore'
+          });
+          
+          // Detach the process so it runs independently
+          qlProcess.unref();
+          
+          res.json({ success: true, message: 'File preview opened' });
+        } catch (error) {
+          // Check if qlmanage is available (macOS only)
+          if (error instanceof Error && error.message.includes('command not found')) {
+            return res.status(501).json({ 
+              error: 'QuickLook preview is only available on macOS',
+              message: 'qlmanage command not found'
+            });
+          }
+          throw error;
+        }
       } catch (error) {
         next(error);
       }

@@ -94,6 +94,7 @@ export function vaultsRouter(context: Context): Router {
       let documentCount = 0;
       let lastIndexed: string | undefined;
       let indexStatus: string = vault.status;
+      let indexError: string | undefined;
       
       if (vault.indexer) {
         try {
@@ -105,8 +106,10 @@ export function vaultsRouter(context: Context): Router {
             lastIndexed = new Date().toISOString(); // Use current time as last indexed
           }
         } catch (err) {
-          // Indexer might not be ready
-          indexStatus = 'initializing';
+          // Log the actual error and include it in response
+          context.logger.error(`Failed to get documents from indexer for vault ${vaultId}:`, err);
+          indexStatus = 'error';
+          indexError = err instanceof Error ? err.message : 'Failed to access indexer';
         }
       }
 
@@ -121,10 +124,12 @@ export function vaultsRouter(context: Context): Router {
             ollamaConnected: simStatus.available // Use available as a proxy for Ollama connection
           };
         } catch (err) {
-          // Similarity might not be available
+          // Log the actual error but don't fail - similarity is optional
+          context.logger.warn(`Failed to get similarity status for vault ${vaultId}:`, err);
           similarityStatus = {
             available: false,
-            status: 'not_configured'
+            status: 'error',
+            error: err instanceof Error ? err.message : 'Failed to access similarity search'
           };
         }
       }
@@ -136,7 +141,8 @@ export function vaultsRouter(context: Context): Router {
         documentCount,
         lastIndexed,
         similarityStatus,
-        ...(vault.error && { error: vault.error.message })
+        ...(vault.error && { error: vault.error.message }),
+        ...(indexError && { indexError })
       });
     } catch (err) {
       next(err);
@@ -218,7 +224,8 @@ export function vaultsRouter(context: Context): Router {
             const documents = vault.indexer.getAllDocuments();
             documentCount = documents.length;
           } catch (err) {
-            // Indexer might not be ready
+            // Log error but continue - SSE should keep working
+            context.logger.warn(`SSE: Failed to get documents for vault ${vaultId}:`, err);
           }
         }
         

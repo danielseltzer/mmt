@@ -7,9 +7,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { X, Plus, Loader2, AlertTriangle } from 'lucide-react';
+import { X, Plus, Loader2 } from 'lucide-react';
 import { VaultStatusIndicator } from './VaultStatusIndicator';
 
 export function TabBar() {
@@ -23,23 +22,11 @@ export function TabBar() {
     closeTab,
     loadVaults,
   } = useDocumentStore();
+  
+  console.log('[TabBar] Vaults:', vaults.length, 'Tabs:', tabs.length);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('TabBar - vaults:', vaults);
-    console.log('TabBar - vaults length:', vaults?.length);
-    console.log('TabBar - isLoadingVaults:', isLoadingVaults);
-    if (vaults) {
-      vaults.forEach(v => {
-        console.log(`TabBar - Vault: id=${v.id}, name=${v.name}, status=${v.status}`);
-      });
-    }
-  }, [vaults, isLoadingVaults]);
-
-  // Load vaults on mount
-  useEffect(() => {
-    loadVaults();
-  }, [loadVaults]);
+  // Note: loadVaults is already called in App.tsx, so we don't need to call it here
+  // This was causing duplicate calls and race conditions
 
   // Don't show tab bar if no vaults available
   if (!vaults || vaults.length === 0) {
@@ -54,7 +41,8 @@ export function TabBar() {
     return null;
   }
 
-  // If single vault and no tabs, hide tab bar
+  // Only hide tab bar if there's a single vault with single tab
+  // With multiple vaults, always show tab bar so users can create tabs for other vaults
   if (vaults.length === 1 && tabs.length <= 1) {
     return null;
   }
@@ -131,8 +119,8 @@ export function TabBar() {
           );
         })}
 
-        {/* Add new tab button with vault picker dropdown - show ALL vaults */}
-        {vaults.length > 0 && (
+        {/* Add new tab button with vault picker dropdown */}
+        {vaults.some(v => v.status === 'ready') && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div
@@ -146,8 +134,7 @@ export function TabBar() {
                 <Plus className="h-4 w-4 text-muted-foreground" />
               </div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
-              {/* Ready vaults */}
+            <DropdownMenuContent align="start" className="w-48">
               {vaults
                 .filter(v => v.status === 'ready')
                 .map((vault) => (
@@ -158,49 +145,9 @@ export function TabBar() {
                   >
                     <div className="flex items-center gap-2">
                       <span>{vault.name}</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-              
-              {/* Show separator if there are both ready and non-ready vaults */}
-              {vaults.some(v => v.status === 'ready') && vaults.some(v => v.status !== 'ready') && (
-                <DropdownMenuSeparator />
-              )}
-              
-              {/* Initializing vaults */}
-              {vaults
-                .filter(v => v.status === 'initializing')
-                .map((vault) => (
-                  <DropdownMenuItem
-                    key={vault.id}
-                    disabled
-                    className="opacity-50"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>{vault.name} (initializing...)</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-              
-              {/* Error vaults - allow clicking to see the error */}
-              {vaults
-                .filter(v => v.status === 'error')
-                .map((vault) => (
-                  <DropdownMenuItem
-                    key={vault.id}
-                    onClick={() => {
-                      // Create tab anyway to show error state
-                      handleCreateTab(vault.id);
-                    }}
-                    className="cursor-pointer text-destructive"
-                  >
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-3 w-3" />
-                      <div className="flex flex-col">
-                        <span>{vault.name}</span>
-                        <span className="text-xs opacity-70">{vault.error || 'Failed to load'}</span>
-                      </div>
+                      {vault.status === 'initializing' && (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
                     </div>
                   </DropdownMenuItem>
                 ))}

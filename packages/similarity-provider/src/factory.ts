@@ -56,7 +56,7 @@ export class SimilarityProviderFactory {
       );
     }
     
-    // Use vault-specific key to prevent conflicts between vaults
+    // Use vault-specific key for multi-vault support
     const instanceKey = options.vaultId ? `${name}-${options.vaultId}` : name;
     
     // Cleanup existing instance if any
