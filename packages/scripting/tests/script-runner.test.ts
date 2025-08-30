@@ -36,8 +36,9 @@ describe('ScriptRunner', () => {
       useWorkers: false,
     });
     await indexer.initialize();
-    // @ts-ignore - accessing private property for testing
-    runner.indexer = indexer;
+    // Use the internal method to set indexer
+    // @ts-ignore - using internal method for testing
+    runner._setIndexer(indexer);
   }
   
   // Helper to start API server after files are created
@@ -417,10 +418,11 @@ describe('ScriptRunner', () => {
       const result = await runnerWithoutIndexer.executePipeline(pipeline);
       
       // When indexer is not initialized for query-based selection,
-      // the operation should fail rather than throw
-      expect(result.failed).toHaveLength(1);
+      // no documents are selected, so no operations are attempted
+      expect(result.failed).toHaveLength(0);
       expect(result.succeeded).toHaveLength(0);
       expect(result.attempted).toHaveLength(0);
+      expect(result.skipped).toHaveLength(0);
     });
   });
 

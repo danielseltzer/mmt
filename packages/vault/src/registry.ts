@@ -73,6 +73,8 @@ export class VaultRegistry {
 
   private async doInitializeVaults(config: Config): Promise<void> {
     // Log for debugging purposes
+    // eslint-disable-next-line no-console
+    console.log(`\nInitializing ${String(config.vaults.length)} vault(s)...`);
     this.logger.info(`Initializing ${String(config.vaults.length)} vault(s)`);
 
     // Clear any existing vaults
@@ -82,7 +84,10 @@ export class VaultRegistry {
     this.vaults.clear();
 
     if (config.vaults.length === 0) {
-      throw new Error('No vaults configured');
+      const errorMsg = 'No vaults configured';
+      // eslint-disable-next-line no-console
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
 
     // Initialize default vault synchronously (blocking)
@@ -94,8 +99,20 @@ export class VaultRegistry {
       this.vaults.set(defaultVault.id, defaultVault);
     } catch (error) {
       const message = `Failed to initialize default vault ${defaultVault.id}: ${error instanceof Error ? error.message : String(error)}`;
+      // eslint-disable-next-line no-console
+      console.error(message);
       this.logger.error(message);
-      throw new Error(message);
+      // Still add the vault to registry but in error state
+      defaultVault.status = 'error';
+      defaultVault.error = error instanceof Error ? error : new Error(String(error));
+      this.vaults.set(defaultVault.id, defaultVault);
+      // Don't throw for non-critical errors (like missing directory)
+      // Only throw for actual initialization failures
+      if (error instanceof Error && error.message.includes('not found')) {
+        console.warn('Default vault directory not found, continuing with error state');
+      } else {
+        throw new Error(message);
+      }
     }
 
     // Initialize additional vaults asynchronously in parallel
@@ -108,6 +125,9 @@ export class VaultRegistry {
           this.vaults.set(vault.id, vault);
         } catch (error) {
           // Additional vaults fail gracefully
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          // eslint-disable-next-line no-console
+          console.error(`✗ Failed to initialize vault ${vault.id}: ${errorMsg}`);
           this.logger.error(`Failed to initialize vault ${vault.id}`, { error });
           vault.status = 'error';
           vault.error = error instanceof Error ? error : new Error(String(error));
@@ -123,13 +143,26 @@ export class VaultRegistry {
     const readyVaults = this.getAllVaults().filter(v => v.status === 'ready');
     const errorVaults = this.getAllVaults().filter(v => v.status === 'error');
     
+    // eslint-disable-next-line no-console
+    console.log(`\nVault initialization complete:`);
+    // eslint-disable-next-line no-console
+    console.log(`  ✓ Ready: ${readyVaults.length} vault(s)`);
+    if (errorVaults.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log(`  ✗ Failed: ${errorVaults.length} vault(s)`);
+    }
+    
     this.logger.info('Vault initialization complete:', {
       ready: readyVaults.length,
       failed: errorVaults.length
     });
     
     if (errorVaults.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log('\nFailed vaults:');
       errorVaults.forEach(v => {
+        // eslint-disable-next-line no-console
+        console.error(`  - ${v.id}: ${v.error?.message}`);
         this.logger.warn(`Failed vault: ${v.id}`, { 
           error: v.error?.message 
         });

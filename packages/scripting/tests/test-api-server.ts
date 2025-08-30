@@ -22,22 +22,19 @@ export async function createTestApiServer(options: TestApiServerOptions): Promis
   process: ChildProcess;
   close: () => Promise<void>;
 }> {
-  // Create config file for the API server
+  // Create config file for the API server (using new vaults format)
   const configPath = join(options.vaultPath, '.mmt-config.yaml');
-  const config = {
-    vaultPath: options.vaultPath,
-    indexPath: options.indexPath,
-    apiPort: options.port,
-    webPort: 3000, // Not used but required by schema
-  };
   
   // Ensure directories exist
   mkdirSync(options.vaultPath, { recursive: true });
   mkdirSync(options.indexPath, { recursive: true });
   
-  // Write config file
-  writeFileSync(configPath, `vaultPath: ${options.vaultPath}
-indexPath: ${options.indexPath}
+  // Write config file with proper vaults array format
+  writeFileSync(configPath, `vaults:
+  - name: TestVault
+    path: ${options.vaultPath}
+    indexPath: ${options.indexPath}
+
 apiPort: ${options.port}
 webPort: 3000
 `);

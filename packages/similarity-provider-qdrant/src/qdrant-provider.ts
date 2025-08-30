@@ -28,6 +28,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
   protected async doInitialize(options: ProviderInitOptions): Promise<void> {
     const { config } = options;
     
+    this.logger.info('Starting Qdrant provider initialization', {
+      vaultId: options.vaultId,
+      hasConfig: !!config,
+      hasQdrantConfig: !!config.qdrant
+    });
+    
     // Get Qdrant configuration
     const qdrantConfig = config.qdrant || {
       url: 'http://localhost:6333',
@@ -40,17 +46,33 @@ export class QdrantProvider extends BaseSimilarityProvider {
     this.model = config.model;
     this.collectionName = qdrantConfig.collectionName;
     
+    this.logger.info('Creating Qdrant client', {
+      url: qdrantConfig.url,
+      collectionName: this.collectionName,
+      ollamaUrl: this.ollamaUrl,
+      model: this.model
+    });
+    
     // Initialize Qdrant client
     this.client = new QdrantClient({
       url: qdrantConfig.url,
       timeout: 30000 // 30 second timeout
     });
     
+    this.logger.info('Qdrant client created, ensuring collection exists');
+    
     // Ensure collection exists
     await this.ensureCollection();
     
     // Get initial document count
     await this.updateDocumentCount();
+    
+    this.logger.info('Qdrant provider initialization complete', {
+      collectionName: this.collectionName,
+      documentCount: this.documentCount,
+      initialized: this.initialized,
+      hasClient: !!this.client
+    });
   }
   
   protected async doShutdown(): Promise<void> {
@@ -495,6 +517,18 @@ export class QdrantProvider extends BaseSimilarityProvider {
   }
   
   async search(query: string, options?: SearchOptions): Promise<SearchResult[]> {
+    // Add detailed logging to debug the issue
+    this.logger.debug('Search called', {
+      initialized: this.initialized,
+      hasClient: !!this.client,
+      collectionName: this.collectionName,
+      queryLength: query.length
+    });
+    
+    if (!this.initialized) {
+      throw new Error('Qdrant provider not initialized');
+    }
+    
     if (!this.client) {
       throw new Error('Qdrant client not initialized');
     }

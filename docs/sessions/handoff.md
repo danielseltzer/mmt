@@ -51,7 +51,7 @@ git checkout -b fix/error-handling-standardization
 - `packages/scripting/tests/result-formatter.test.ts` - Debug output → logger.debug()
 - `packages/indexer/tests/indexer.test.ts` - Performance logging → logger.info()
 - `tools/generate-operations-report.ts` - Report generation → logger.info()
-- `tools/control-manager/src/docker-manager.ts` - Docker operations → logger.info() (partial)
+- `apps/control-manager/src/docker-manager.ts` - Docker operations → logger.info() (partial)
 
 #### Session 2 (10 files):
 **Web Components (8 files)**:
@@ -65,8 +65,8 @@ git checkout -b fix/error-handling-standardization
 - `packages/table-view/src/TableView.tsx` - Debug logging for Obsidian URLs
 
 **Control Manager (2 files)**:
-- `tools/control-manager/src/cli.ts` - Complete replacement of all console statements
-- `tools/control-manager/src/docker-manager.ts` - Complete replacement of all console statements
+- `apps/control-manager/src/cli.ts` - Complete replacement of all console statements
+- `apps/control-manager/src/docker-manager.ts` - Complete replacement of all console statements
 
 #### Session 3 (2 files):
 **Final Production Code Files**:

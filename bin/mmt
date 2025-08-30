@@ -1,4 +1,4 @@
 #!/usr/bin/env -S npx tsx
 
 // Direct execution of the control manager CLI
-import '../tools/control-manager/src/cli.ts';
+import '../apps/control-manager/src/cli.ts';

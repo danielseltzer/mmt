@@ -4,7 +4,7 @@
  * Inspired by QM's control manager patterns
  */
 
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import net from 'net';
 import path from 'path';
 import fs from 'fs';
@@ -118,35 +118,180 @@ export class MMTControlManager {
   }
   
   /**
+   * Find and kill process using a specific port
+   */
+  private static killProcessByPort(port: number): boolean {
+    const logger = Loggers.control();
+    try {
+      // Use lsof to find process using the port on macOS
+      // The -t flag returns only the PID
+      const pid = execSync(`lsof -ti:${port} 2>/dev/null`, { 
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'] // Suppress stderr
+      }).trim();
+      
+      if (pid) {
+        // May have multiple PIDs if there are child processes
+        const pids = pid.split('\n').filter(p => p);
+        const killedPids: string[] = [];
+        
+        for (const p of pids) {
+          try {
+            const pidNum = parseInt(p);
+            // Check if process exists before trying to kill
+            process.kill(pidNum, 0);
+            
+            logger.info(`Killing process ${p} using port ${port}`);
+            process.kill(pidNum, 'SIGTERM');
+            killedPids.push(p);
+          } catch (err: any) {
+            if (err.code === 'ESRCH') {
+              // Process doesn't exist, skip
+              logger.debug(`Process ${p} doesn't exist`);
+            } else if (err.code === 'EPERM') {
+              // Don't have permission
+              logger.warn(`No permission to kill process ${p}`);
+            } else {
+              logger.debug(`Could not kill process ${p}: ${err}`);
+            }
+          }
+        }
+        
+        // Give killed processes a moment to die, then force kill if needed
+        if (killedPids.length > 0) {
+          setTimeout(() => {
+            for (const p of killedPids) {
+              try {
+                const pidNum = parseInt(p);
+                process.kill(pidNum, 0); // Check if still alive
+                logger.info(`Force killing stubborn process ${p}`);
+                process.kill(pidNum, 'SIGKILL'); // Force kill if still alive
+              } catch {
+                // Already dead, good
+              }
+            }
+          }, 1000);
+        }
+        
+        return killedPids.length > 0;
+      }
+    } catch (err: any) {
+      // lsof returns non-zero exit code if no process found, which is fine
+      if (err.code !== 'ENOENT' && !err.message?.includes('Command failed')) {
+        logger.debug(`Error checking port ${port}: ${err.message}`);
+      }
+    }
+    return false;
+  }
+  
+  /**
+   * Try to read ports from a config file
+   */
+  private static tryReadPortsFromConfig(): { apiPort?: number; webPort?: number } {
+    const logger = Loggers.control();
+    const result: { apiPort?: number; webPort?: number } = {};
+    
+    // Try to find a recently used config file by checking common locations
+    const possibleConfigs = [
+      path.join(rootDir, 'config/daniel-vaults.yaml'),
+      path.join(rootDir, 'multi-vault-test-config.yaml'),
+      path.join(rootDir, 'config/test/dev-config.yaml'),
+    ];
+    
+    for (const configPath of possibleConfigs) {
+      if (fs.existsSync(configPath)) {
+        try {
+          const content = fs.readFileSync(configPath, 'utf-8');
+          const apiMatch = content.match(/apiPort:\s*(\d+)/);
+          const webMatch = content.match(/webPort:\s*(\d+)/);
+          
+          if (apiMatch) result.apiPort = parseInt(apiMatch[1], 10);
+          if (webMatch) result.webPort = parseInt(webMatch[1], 10);
+          
+          if (result.apiPort || result.webPort) {
+            logger.debug(`Found ports in config ${configPath}: api=${result.apiPort}, web=${result.webPort}`);
+            break;
+          }
+        } catch {
+          // Ignore read errors
+        }
+      }
+    }
+    
+    return result;
+  }
+  
+  /**
    * Stop running instance by PID
    */
   static async stopByPid(): Promise<void> {
+    const logger = Loggers.control();
+    
+    // Try to determine ports from config or use defaults
+    const { apiPort = 3001, webPort = 5173 } = this.tryReadPortsFromConfig();
+    
+    // First, try to kill processes by known ports
+    // This ensures we clean up child processes that may have been orphaned
+    const webPortKilled = this.killProcessByPort(webPort);
+    const apiPortKilled = this.killProcessByPort(apiPort);
+    
+    if (webPortKilled) {
+      logger.info(`Stopped web server on port ${webPort}`);
+    }
+    if (apiPortKilled) {
+      logger.info(`Stopped API server on port ${apiPort}`);
+    }
+    
+    // Give processes a moment to clean up
+    if (webPortKilled || apiPortKilled) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Now handle the main control manager process
     try {
       if (!fs.existsSync(pidFile)) {
-        throw new Error('No MMT instance is running (PID file not found)');
+        // No PID file, but we may have killed orphaned processes above
+        if (!webPortKilled && !apiPortKilled) {
+          throw new Error('No MMT instance is running (PID file not found)');
+        }
+        return;
       }
       
       const pid = parseInt(fs.readFileSync(pidFile, 'utf-8'));
       
-      // Send SIGTERM
-      process.kill(pid, 'SIGTERM');
-      
-      // Wait for process to exit (up to 5 seconds)
-      let attempts = 0;
-      while (attempts < 50) {
-        try {
-          process.kill(pid, 0); // Check if still alive
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        } catch {
-          // Process is gone
-          break;
+      // Check if the process exists
+      try {
+        process.kill(pid, 0);
+        
+        // Send SIGTERM
+        process.kill(pid, 'SIGTERM');
+        logger.info(`Stopping control manager process ${pid}`);
+        
+        // Wait for process to exit (up to 5 seconds)
+        let attempts = 0;
+        while (attempts < 50) {
+          try {
+            process.kill(pid, 0); // Check if still alive
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          } catch {
+            // Process is gone
+            break;
+          }
         }
-      }
-      
-      // If still running, force kill
-      if (attempts >= 50) {
-        process.kill(pid, 'SIGKILL');
+        
+        // If still running, force kill
+        if (attempts >= 50) {
+          logger.info('Force killing control manager process');
+          process.kill(pid, 'SIGKILL');
+        }
+      } catch (err: any) {
+        if (err.code === 'ESRCH') {
+          // Process doesn't exist
+          logger.debug('Control manager process already gone');
+        } else {
+          throw err;
+        }
       }
       
       // Clean up PID file
@@ -306,7 +451,8 @@ export class MMTControlManager {
     const apiProcess = spawn('node', args, {
       cwd: rootDir,
       env,
-      stdio: ['ignore', 'pipe', 'pipe'] // Capture stdout and stderr
+      stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
+      detached: false // Keep attached to parent process group
     });
     
     // Log API server output
@@ -384,7 +530,7 @@ export class MMTControlManager {
         FORCE_COLOR: '1' // Ensure colored output from Vite
       },
       stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
-      shell: true,
+      shell: true, // pnpm requires shell
       detached: false // Don't detach - we want to manage the process lifecycle
     });
     
@@ -491,7 +637,25 @@ export class MMTControlManager {
     }
     
     this.log(`Stopping ${managed.name}...`);
-    managed.process.kill();
+    
+    // Try to kill gracefully first
+    managed.process.kill('SIGTERM');
+    
+    // Give it a moment to clean up
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Force kill if still alive
+    if (!managed.process.killed) {
+      managed.process.kill('SIGKILL');
+    }
+    
+    // Also try to kill by port in case there are orphaned processes
+    try {
+      MMTControlManager.killProcessByPort(managed.port);
+    } catch {
+      // Ignore errors - process might already be dead
+    }
+    
     this.processes.delete(service);
   }
   
@@ -530,6 +694,9 @@ export class MMTControlManager {
       }
       this.processes.delete(name);
     }
+    
+    // Clean up PID file
+    this.removePidFile();
   }
   
   /**

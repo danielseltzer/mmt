@@ -18,12 +18,18 @@ export function similarityRouter(context: Context): Router {
   const router = Router({ mergeParams: true });
   
   // GET /api/vaults/:vaultId/similarity/status - Get current indexing status
-  router.get('/status', async (req: VaultRequest, res: Response) => {
+  router.get('/status', async (req: Request, res: Response) => {
     try {
-      const { vaultId } = req.params;
+      // Get vault from request (attached by middleware)
+      const vault = (req as any).vault;
+      const vaultId = (req as any).vaultId;
       
-      // Get the vault and its similarity service
-      const vault = context.vaultRegistry.getVault(vaultId);
+      if (!vault) {
+        return res.status(404).json({
+          error: 'Vault not found',
+          message: `Vault not found: ${vaultId}`
+        });
+      }
       const similaritySearch = vault.similaritySearch;
       
       // Check if similarity search is configured for this vault
@@ -62,12 +68,12 @@ export function similarityRouter(context: Context): Router {
   });
   
   // GET /api/vaults/:vaultId/similarity/events - Server-sent events for status updates
-  router.get('/events', (req: VaultRequest, res: Response) => {
-    const { vaultId } = req.params;
+  router.get('/events', (req: Request, res: Response) => {
+    const vaultId = (req as any).vaultId;
     
     try {
-      const vault = context.vaultRegistry.getVault(vaultId);
-      const similaritySearch = vault.similaritySearch;
+      const vault = (req as any).vault;
+      const similaritySearch = vault?.similaritySearch;
       
       if (!similaritySearch) {
         return res.status(501).json({
@@ -85,7 +91,7 @@ export function similarityRouter(context: Context): Router {
       });
       
       // Send initial status
-      similaritySearch.getStatus().then(status => {
+      similaritySearch.getStatus().then((status: any) => {
         res.write(`data: ${JSON.stringify({
           event: 'status',
           data: { vaultId, ...status }
@@ -139,12 +145,12 @@ export function similarityRouter(context: Context): Router {
   });
   
   // POST /api/vaults/:vaultId/similarity/search - Search for similar documents
-  router.post('/search', async (req: VaultRequest, res: Response) => {
-    const { vaultId } = req.params;
+  router.post('/search', async (req: Request, res: Response) => {
+    const vaultId = (req as any).vaultId;
     
     try {
-      const vault = context.vaultRegistry.getVault(vaultId);
-      const similaritySearch = vault.similaritySearch;
+      const vault = (req as any).vault;
+      const similaritySearch = vault?.similaritySearch;
       
       if (!similaritySearch) {
         return res.status(501).json({
@@ -195,12 +201,12 @@ export function similarityRouter(context: Context): Router {
   });
   
   // POST /api/vaults/:vaultId/similarity/reindex - Manually trigger reindexing
-  router.post('/reindex', async (req: VaultRequest, res: Response) => {
-    const { vaultId } = req.params;
+  router.post('/reindex', async (req: Request, res: Response) => {
+    const vaultId = (req as any).vaultId;
     
     try {
-      const vault = context.vaultRegistry.getVault(vaultId);
-      const similaritySearch = vault.similaritySearch;
+      const vault = (req as any).vault;
+      const similaritySearch = vault?.similaritySearch;
       
       if (!similaritySearch) {
         return res.status(501).json({
@@ -225,7 +231,7 @@ export function similarityRouter(context: Context): Router {
       
       // Convert to the format expected by similarity service
       // Note: PageMetadata doesn't include content, so we need to read files for similarity indexing
-      const documentsToIndex = documents.map(doc => ({
+      const documentsToIndex = documents.map((doc: any) => ({
         id: doc.path,
         path: doc.path,
         content: '', // Content needs to be loaded separately for similarity indexing
@@ -238,9 +244,9 @@ export function similarityRouter(context: Context): Router {
       }));
       
       // Start reindexing (async)
-      similaritySearch.indexDocuments(documentsToIndex).then(result => {
+      similaritySearch.indexDocuments(documentsToIndex).then((result: any) => {
         logger.info(`Similarity reindex completed for vault ${vaultId}`, result);
-      }).catch(error => {
+      }).catch((error: any) => {
         logger.error(`Similarity reindex failed for vault ${vaultId}`, { error });
       });
       
@@ -267,12 +273,12 @@ export function similarityRouter(context: Context): Router {
   });
   
   // GET /api/vaults/:vaultId/similarity/health - Check similarity service health
-  router.get('/health', async (req: VaultRequest, res: Response) => {
-    const { vaultId } = req.params;
+  router.get('/health', async (req: Request, res: Response) => {
+    const vaultId = (req as any).vaultId;
     
     try {
-      const vault = context.vaultRegistry.getVault(vaultId);
-      const similaritySearch = vault.similaritySearch;
+      const vault = (req as any).vault;
+      const similaritySearch = vault?.similaritySearch;
       
       if (!similaritySearch) {
         return res.json({

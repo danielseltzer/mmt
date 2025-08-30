@@ -11,6 +11,7 @@ import { existsSync } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { dirname, basename } from 'path';
+import { ComponentLogger } from '@mmt/logger';
 
 const execAsync = promisify(exec);
 
@@ -85,7 +86,8 @@ export class TestFileRevealStrategy implements FileRevealStrategy {
 
     // Log the action for test verification
     this.revealedFiles.push(filePath);
-    console.log(`[TEST MODE] Would reveal file: ${filePath}`);
+    const logger = ComponentLogger.get('FileRevealer');
+    logger.debug(`[TEST MODE] Would reveal file: ${filePath}`);
   }
 
   /**
@@ -118,7 +120,8 @@ export class DryRunFileRevealStrategy implements FileRevealStrategy {
 
     // Log what would happen
     const platform = process.platform;
-    console.log(`[DRY RUN] Would reveal file on ${platform}: ${filePath}`);
+    const logger = ComponentLogger.get('FileRevealer');
+    logger.info(`[DRY RUN] Would reveal file on ${platform}: ${filePath}`);
   }
 }
 

@@ -8,7 +8,7 @@
 - **VIOLATION**: Uses `process.env.PORT || 3001`
 - **Fix Required**: Port should come from config file, not env var or default
 
-#### Control Manager (tools/control-manager/src/control-manager.ts)
+#### Control Manager (apps/control-manager/src/control-manager.ts)
 - Uses `process.env` but only to pass environment to child processes
 - Sets `PORT` in environment for spawned processes
 - **Partial Issue**: Still propagating PORT env var
@@ -51,5 +51,5 @@
 ## Files Needing Updates
 
 1. `/apps/api-server/src/server.js` - Remove PORT env var
-2. `/tools/control-manager/src/control-manager.ts` - Remove default ports
+2. `/apps/control-manager/src/control-manager.ts` - Remove default ports
 3. `/packages/entities/src/config.schema.ts` - Add port configuration

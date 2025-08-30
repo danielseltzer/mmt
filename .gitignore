@@ -62,9 +62,6 @@ desktop.ini
 .tmp/
 .temp/
 
-# Electron
-.electron/
-electron-builder.yml
 
 # MMT specific
 .snapshots/
