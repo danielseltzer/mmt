@@ -20,16 +20,12 @@ const checkBrowserHealth = async (url = 'http://localhost:5173', options = {}) =
     
     if (type === 'error') {
       const location = msg.location();
-      // Ignore expected 501 errors for similarity when not configured
-      const isExpected501 = (text.includes('501') || text.includes('Failed to load resource')) && 
-                           location?.url?.includes('similarity');
-      // Ignore React DevTools suggestion  
+      // Report ALL errors - no filtering
+      // The only exception is the React DevTools suggestion which is not an actual error
       const isDevToolsSuggestion = text.includes('React DevTools');
       
-      if (!isExpected501 && !isDevToolsSuggestion) {
+      if (!isDevToolsSuggestion) {
         errors.push({ text, location });
-      } else if (verbose) {
-        warnings.push(`Expected: ${text}`);
       }
     } else if (type === 'warning') {
       warnings.push(text);

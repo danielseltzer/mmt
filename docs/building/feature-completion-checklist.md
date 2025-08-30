@@ -79,7 +79,7 @@ curl -N http://localhost:3001/api/vaults/Personal/index/events
 ### 5. Multi-Vault Testing 🔄
 ```bash
 # Start with multi-vault config
-./bin/mmt start --config config/personal-vault-qdrant.yaml
+./bin/mmt start --config config/daniel-vaults.yaml
 
 # Verify feature works across vaults
 # - Switch between vaults in UI
@@ -167,7 +167,7 @@ echo "4️⃣ Building project..."
 pnpm build || exit 1
 
 echo "5️⃣ Starting services..."
-./bin/mmt start --config config/personal-vault-qdrant.yaml &
+./bin/mmt start --config config/daniel-vaults.yaml &
 SERVER_PID=$!
 sleep 10
 

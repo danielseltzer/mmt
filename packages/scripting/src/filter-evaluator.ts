@@ -17,10 +17,10 @@ export class FilterEvaluator {
       // Apply logic (AND/OR)
       if (filterCollection.logic === 'OR') {
         return results.some(r => r);
-      } else {
+      } 
         // Default to AND
         return results.every(r => r);
-      }
+      
     });
   }
 
@@ -36,23 +36,23 @@ export class FilterEvaluator {
       case 'content':
       case 'search': {
         const text = this.getSearchableText(doc, field);
-        return this.evaluateTextOperator(text, operator, value as string, caseSensitive);
+        return this.evaluateTextOperator(text, operator, value, caseSensitive);
       }
       
       
       case 'folders': {
         const docFolder = doc.path.substring(0, doc.path.lastIndexOf('/'));
         if (operator === 'in') {
-          return (value as string[]).some((folder: string) => docFolder.startsWith(folder));
-        } else {
+          return (value).some((folder: string) => docFolder.startsWith(folder));
+        } 
           // not_in
-          return !(value as string[]).some((folder: string) => docFolder.startsWith(folder));
-        }
+          return !(value).some((folder: string) => docFolder.startsWith(folder));
+        
       }
       
       case 'tags': {
         const tags = doc.metadata?.tags ?? [];
-        return this.evaluateArrayOperator(tags, operator, value as string[]);
+        return this.evaluateArrayOperator(tags, operator, value);
       }
       
       case 'metadata': {

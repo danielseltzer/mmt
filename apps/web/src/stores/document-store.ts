@@ -239,9 +239,12 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     set({ activeTabId: tabId });
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabId);
     
-    // If tab has no documents yet, fetch them
+    // If tab has no documents yet and not loading, fetch them
+    // Use setTimeout to avoid state conflicts
     if (tab.documents.length === 0 && !tab.loading) {
-      get().fetchDocuments();
+      setTimeout(() => {
+        get().fetchDocuments();
+      }, 0);
     }
   },
   
@@ -330,12 +333,21 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     set({ tabs: updatedTabs });
     
     // Trigger a new fetch with the updated sort
-    get().fetchDocuments();
+    // Use setTimeout to avoid state update conflicts
+    setTimeout(() => {
+      get().fetchDocuments();
+    }, 0);
   },
   
   fetchDocuments: async () => {
     const currentTab = get().getCurrentTab();
     if (!currentTab) return;
+    
+    // Prevent multiple concurrent fetches
+    if (currentTab.loading) {
+      console.log(`Already loading documents for tab ${currentTab.tabId}`);
+      return;
+    }
     
     // Update loading state for current tab
     set({
@@ -348,6 +360,12 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     
     try {
       const { searchQuery, filters, sortBy, sortOrder, vaultId } = currentTab;
+      
+      // Check if vault is in error state
+      const vault = get().vaults.find(v => v.id === vaultId);
+      if (vault?.status === 'error') {
+        throw new Error(`Vault '${vault.name || vaultId}' is in error state: ${vault.error || 'Unknown error'}`);
+      }
       const limit = 500;
       
       // Build URL with query parameters
@@ -367,9 +385,18 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         params.append('filters', JSON.stringify(filters));
       }
       
-      // Use vault-aware endpoint
+      // Use vault-aware endpoint with timeout
       const url = `/api/vaults/${vaultId}/documents?${params.toString()}`;
-      const response = await fetch(url);
+      
+      // Add timeout to prevent indefinite hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(url, {
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -377,28 +404,41 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       
       const data = await response.json();
       
+      // Validate response data
+      if (!data || !Array.isArray(data.documents)) {
+        throw new Error('Invalid response format from server');
+      }
+      
       // Update tab with fetched documents
       set({
         tabs: get().tabs.map(tab =>
           tab.tabId === currentTab.tabId 
             ? { 
                 ...tab,
-                documents: data.documents,
-                filteredDocuments: data.documents,
-                totalCount: data.total,
-                vaultTotal: data.vaultTotal,
-                loading: false
+                documents: data.documents || [],
+                filteredDocuments: data.documents || [],
+                totalCount: data.total || 0,
+                vaultTotal: data.vaultTotal || 0,
+                loading: false,
+                error: null
               }
             : tab
         )
       });
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`Failed to fetch documents for vault '${currentTab.vaultId}':`, error);
+      
+      // Always ensure loading is set to false on error
       set({
         tabs: get().tabs.map(tab =>
           tab.tabId === currentTab.tabId 
             ? { 
                 ...tab,
-                error: error instanceof Error ? error.message : 'Unknown error',
+                documents: [],
+                filteredDocuments: [],
+                totalCount: 0,
+                error: errorMsg,
                 loading: false
               }
             : tab
@@ -637,11 +677,27 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     try {
       const response = await fetch('/api/vaults');
       if (!response.ok) {
-        throw new Error(`Failed to load vaults: ${response.status}`);
+        const errorText = await response.text();
+        const errorMsg = `Failed to load vaults: ${response.status} - ${errorText}`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
       }
       
       const data = await response.json();
       const vaults = data.vaults || [];
+      
+      // Log vault information for debugging
+      console.log('API response vaults:', JSON.stringify(vaults));
+      console.log('Loaded vaults:', vaults);
+      console.log('Number of vaults:', vaults.length);
+      
+      // Log any vaults with errors
+      vaults.forEach((vault: Vault) => {
+        console.log(`Vault ${vault.id}: status=${vault.status}, name=${vault.name}`);
+        if (vault.status === 'error' && vault.error) {
+          console.error(`Vault '${vault.name || vault.id}' failed to load:`, vault.error);
+        }
+      });
       
       // Check if similarity search is available
       // Try to get similarity status from the first vault
@@ -651,13 +707,20 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
           const statusResponse = await fetch(`/api/vaults/${vaults[0].id}/similarity/status`);
           // 501 means not configured, which is fine - not an error
           similarityAvailable = statusResponse.ok && statusResponse.status !== 501;
-        } catch {
+        } catch (err) {
           // Network error or other issue - assume not available
+          console.warn('Could not check similarity status:', err);
           similarityAvailable = false;
         }
       }
       
+      console.log('Setting vaults in store:', vaults);
       set({ vaults, isLoadingVaults: false, similarityAvailable });
+      
+      // Verify what was set
+      const storeVaults = get().vaults;
+      console.log('Vaults in store after set:', storeVaults);
+      console.log('Store vaults length:', storeVaults.length);
       
       // Initialize tabs if needed
       const { tabs } = get();
@@ -666,7 +729,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         const storedTabs = loadTabsFromStorage();
         
         if (storedTabs.length > 0) {
-          // Validate stored tabs against available vaults
+          // Validate stored tabs against available vaults - include error vaults
           const validTabs = storedTabs.filter(tab => 
             vaults.some((v: Vault) => v.id === tab.vaultId)
           ).map(stored => ({
@@ -697,16 +760,28 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         }
         
         // No valid stored tabs, create default tab for first vault
-        const firstReadyVault = vaults.find((v: Vault) => v.status === 'ready') || vaults[0];
-        if (firstReadyVault) {
-          get().createTab(firstReadyVault.id);
+        // Include ALL vaults, not just ready ones
+        const firstVault = vaults.find((v: Vault) => v.status === 'ready') || vaults[0];
+        if (firstVault) {
+          console.log(`Creating default tab for vault: ${firstVault.name || firstVault.id}`);
+          get().createTab(firstVault.id);
+        } else {
+          console.warn('No vaults available to create default tab');
         }
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to load vaults:', error);
       logger.error('Failed to load vaults:', error);
+      
+      // Still set loading to false and show empty vaults array
       set({ 
-        isLoadingVaults: false 
+        isLoadingVaults: false,
+        vaults: [] 
       });
+      
+      // Show error to user
+      alert(`Failed to load vaults: ${errorMsg}`);
     }
   },
   

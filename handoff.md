@@ -1,108 +1,149 @@
-# Project Handoff - 2024-11-27 Evening
+# Handoff Document - MMT Project Status
 
-## Session Achievements
+## Date: 2025-01-29
 
-### ✅ Completed: Per-Vault Similarity Configuration (#224)
-**PR #242 - MERGED**
-- Moved `SimilaritySearchService` from api-server to vault package
-- Each vault can now have its own similarity configuration and Qdrant collection
-- API routes are now vault-aware (`/api/vaults/:vaultId/similarity/*`)
-- Backward compatible - falls back to global config if per-vault not specified
-- **Key benefit**: Proper vault isolation, no cross-contamination in vector searches
+## Current State
 
-### ✅ Completed: Config Cleanup
-**PR #243 - MERGED**
-- Removed unused test configs that used deprecated global similarity format
-- Updated dev/test scripts to use `config/personal-vault-qdrant.yaml`
-- Main config already properly uses per-vault similarity with unique collections
+### ✅ Completed Work (This Session)
 
-## Current Project State
-✅ **All tests passing**
-✅ **Build successful**
-✅ **Per-vault similarity architecture complete**
-✅ **Clean codebase** - removed deprecated configs
+#### High Priority Tasks
+1. **#234 - TableView Testing Strategy (P1)** ✅
+   - Refactored 675-line component to 213 lines
+   - Created TableCore class for business logic
+   - Added 19 comprehensive headless tests
+   - All tests passing without mocks
 
-## Next Priority Issues
+2. **#150 - Preview API Migration (P0)** ✅
+   - Moved preview functionality from client to server
+   - Created `/api/vaults/:vaultId/documents/preview/:path` endpoint
+   - Works correctly with all vaults
 
-### 🔴 Critical Path for Multi-Vault MVP
+3. **#225 - Code Review Cleanup** ✅
+   - Refactored script-runner.ts from 744 to 213 lines (71% reduction)
+   - Removed all console.log statements from production code
+   - Fixed async/promise handling in tests
 
-#### 1. **#178 - Vault index status indicators** ⭐ HIGHEST PRIORITY
-- **Why critical**: Users can't see which vaults are indexing/ready
-- **Location**: Web UI components
-- **Scope**: Add status badges to vault selector showing:
-  - Indexing progress (files processed, percentage)
-  - Ready/error states
-  - Document counts per vault
-- **Milestone**: V3 Core Features
+4. **#223 - TypeScript Cleanup** ✅
+   - Fixed all TypeScript compilation errors
+   - All packages type-check successfully
 
-#### 2. **#202 - Notification queue system** ⭐ HIGH PRIORITY  
-- **Why critical**: No user feedback for operations across vaults
-- **Scope**: Implement toast notifications or status bar for:
-  - Indexing progress
-  - Operation success/failure
-  - Error messages
-- **Milestone**: Should be added to V3 Core Features
+5. **#246 - Remove Electron References** ✅
+   - Deleted unused Electron scripts
+   - Cleaned configuration files
+   - Clarified as pure web application
 
-#### 3. **#219 - Investigate duplicate entries issue**
-- **Context**: May already be fixed with multi-vault implementation
-- **Action**: Create automated test to verify no duplicates occur
-- **Milestone**: Bug Fixes & Performance
+6. **Stop Command Fix** ✅
+   - Now properly kills all processes (web on 5173, API on 3001)
+   - No orphaned processes left behind
 
-### 📝 Other Open Issues to Review
+7. **Similarity Endpoint Fix** ✅
+   - Fixed 404 errors on `/api/vaults/:vaultId/similarity/status`
+   - Added `mergeParams: true` to router
+   - Fixed middleware vault access pattern
+   - Browser health check now shows HEALTHY
 
-#### UI/UX Issues
-- **#176 & #177** - Similarity search UI review
-  - UI already exists, needs assessment of what improvements needed
-  - Low priority - functionality works
+### 🔴 Critical Issues Remaining
 
-#### Nice-to-Have Features  
-- **#220** - Feature enhancements (not critical path)
-- **#234, #210** - Testing strategies (not milestone-worthy)
+#### 1. Playwright Tests Opening Browser Windows (HIGH PRIORITY)
+**Problem**: Despite headless configuration, tests still open browser tabs
+- Config has `headless: process.env.PWDEBUG !== '1'` 
+- Tests ignore this setting and open browser windows anyway
+- Disrupts development workflow
 
-## Technical Context for Next Session
+**Files to Check**:
+- `/tests/playwright.config.ts` - Configuration already updated but not working
+- `/tests/e2e/global-setup.ts` - May be overriding headless setting
+- Check if there's a hidden `--headed` flag being passed somewhere
 
-### Vault Status Implementation Notes
-For #178, the key integration points are:
-- `VaultRegistry.getAllVaults()` - Returns all vault instances with status
-- Each vault has `.status` property: 'initializing' | 'ready' | 'error'
-- Vault indexer has document count via `vault.indexer.getDocumentCount()`
-- File watcher status available through indexer
+#### 2. Only Personal Vault Showing in UI
+**Problem**: UI only displays "Personal" vault, missing "InD BizDev" and "Work"
+- API correctly returns all 3 vaults at `/api/vaults`
+- No error messages shown to user
+- Missing vaults should appear grayed out if unavailable (not happening)
+- Tab bar component may not be rendering all vaults
 
-### Notification System Architecture
-For #202, consider:
-- Event-driven from vault/indexer services
-- Web UI subscribes to SSE endpoint for real-time updates
-- Store notification queue in document store
-- Could use existing SSE pattern from similarity routes
+**Investigation Needed**:
+- `/apps/web/src/components/TabBar.tsx` - Check vault rendering logic
+- `/apps/web/src/stores/document-store.ts` - Check vault loading
+- Test shows 0 instances of "InD BizDev" and "Work" in DOM
 
-## Configuration Status
-- **Active config**: `config/personal-vault-qdrant.yaml`
-- Uses proper per-vault similarity configuration
-- Three vaults configured with unique Qdrant collections:
-  - Personal → personal-documents
-  - InD BizDev → ind-bizdev-documents  
-  - Work → work-documents
+### 🎯 Application Status
+- **API Server**: ✅ Running correctly on port 3001
+- **Web UI**: ✅ Running on port 5173
+- **Browser Health**: ✅ HEALTHY (no console errors)
+- **Vaults Loaded**: 
+  - Personal: 5,992 docs ✅
+  - InD BizDev: 165 docs (API ✅, UI ❌)
+  - Work: 5,126 docs (API ✅, UI ❌)
 
-## Commands for Next Session
+## Next Priority Actions
+
+### 1. Fix Playwright Headless Issue (URGENT)
+**Why**: Tests keep opening browser windows, disrupting workflow
+
+**Approach**:
+1. Check if global-setup.ts is forcing headed mode
+2. Look for any CLI flags or environment variables overriding config
+3. Consider adding explicit `--headless` flag to test command
+4. May need to use `headless: true` (explicit boolean) instead of conditional
+
+### 2. Fix Missing Vaults in UI
+**Why**: Users can only see 1 of 3 configured vaults
+
+**Approach**:
+1. Debug TabBar component vault rendering
+2. Check if vaults are being filtered somewhere
+3. Verify vault store is loading all vaults
+4. Ensure grayed-out state works for unavailable vaults
+5. Add user-visible error messages if vault loading fails
+
+### 3. Lower Priority Issues
+- **#228** - Refactor remaining large files
+- **#149** - Move control-manager to /apps
+- **#132** - Remove hard-coded URLs/ports
+
+## Commands Reference
+
 ```bash
-# Verify project health
-pnpm test:unit
-pnpm build
+# Start application
+./bin/mmt start --config config/daniel-vaults.yaml
 
-# Start development
-pnpm dev
+# Check status
+./bin/mmt status
 
-# Test multi-vault setup
-./bin/mmt start --config config/personal-vault-qdrant.yaml
+# Stop application (now properly kills all processes)
+./bin/mmt stop
+
+# Run tests (WARNING: Opens browser windows currently)
+pnpm test:e2e
+
+# Browser health check (headless, works correctly)
+node tools/check-browser-health.js
+
+# Build API server
+pnpm --filter @mmt/api-server build
+
+# Type check
+pnpm type-check
 ```
 
-## Architecture Decisions Made
-1. **Similarity service lives in vault package** - Better encapsulation
-2. **Per-vault configuration with fallback** - Backward compatible migration path
-3. **Vault-aware API routes** - Consistent `/api/vaults/:vaultId/...` pattern
+## Test Files Created
+- `/tests/e2e/similarity-status.test.ts` - Captures similarity endpoint and vault display issues
+
+## Key Fixes Applied
+- Similarity router: Added `mergeParams: true` and fixed vault access pattern
+- Stop command: Now kills processes by port (5173, 3001)
+- TableView: Refactored with TableCore for testability
+- All TypeScript errors resolved
+- Console.logs removed from production
+
+## Known Issues
+- **Playwright headless not working** - Tests open browser despite config
+- **Vaults missing from UI** - Only Personal shows, no error messages
+- **YAML parsing errors** - 11 files in InD BizDev vault have frontmatter issues (non-blocking)
 
 ## Notes for Next Session
-- Focus on #178 first - it's the most visible UX improvement
-- #202 pairs well with #178 - both involve status communication
-- Consider implementing both together for consistent UX patterns
-- Tests are passing but similarity tests are skipped - not urgent since feature works
+1. **PRIORITY**: Fix Playwright headless - it's disrupting development
+2. Then fix vault display - users need to see all configured vaults
+3. Consider adding explicit error UI when vaults fail to load
+4. All core functionality is working, just UI/testing issues remain

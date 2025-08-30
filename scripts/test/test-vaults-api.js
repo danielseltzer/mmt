@@ -58,7 +58,7 @@ app.get('/test-vaults', async (req, res) => {
 });
 
 async function start() {
-  const configPath = '/Users/danielseltzer/code/mmt/config/personal-vault-qdrant.yaml';
+  const configPath = '/Users/danielseltzer/code/mmt/config/daniel-vaults.yaml';
   console.log('Loading config...');
   
   const configService = new ConfigService();

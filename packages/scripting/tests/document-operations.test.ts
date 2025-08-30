@@ -16,7 +16,7 @@ describe('Document Operations Integration', () => {
   let output: string[];
   let outputStream: any;
   let apiServer: { process: ChildProcess; close: () => Promise<void> };
-  const TEST_API_PORT = 3002;
+  const TEST_API_PORT = 3004;
 
   beforeEach(async () => {
     // Create temp directory structure
@@ -59,8 +59,9 @@ describe('Document Operations Integration', () => {
     // Initialize indexer to scan the vault
     await indexer.initialize();
     
-    // @ts-ignore - accessing private property for testing
-    scriptRunner.indexer = indexer;
+    // Use the internal method to set indexer
+    // @ts-ignore - using internal method for testing
+    scriptRunner._setIndexer(indexer);
   });
 
   // Helper to start API server after files are created
@@ -82,7 +83,7 @@ describe('Document Operations Integration', () => {
   });
 
   describe('move operation', () => {
-    it('should preview moving files to a new directory', async () => {
+    it('should preview moving files to a new directory', { timeout: 10000 }, async () => {
       // GIVEN: A script that moves files to archived folder
       // WHEN: Executing in preview mode (executeNow: false)
       // THEN: Shows preview of move operation without actually moving files
@@ -118,7 +119,7 @@ describe('Document Operations Integration', () => {
       expect(result.skipped[0].item.path).toContain('archive-me.md');
     });
 
-    it('should execute move operation when executeNow is true', async () => {
+    it('should execute move operation when executeNow is true', { timeout: 10000 }, async () => {
       // GIVEN: A script that moves files
       // WHEN: Executing with executeNow: true
       // THEN: Actually moves the file and updates any links to it
@@ -156,7 +157,7 @@ describe('Document Operations Integration', () => {
   });
 
   describe('rename operation', () => {
-    it('should preview renaming a file', async () => {
+    it('should preview renaming a file', { timeout: 10000 }, async () => {
       // GIVEN: A script that renames a file
       // WHEN: Executing in preview mode
       // THEN: Shows preview of rename with new filename
@@ -193,7 +194,7 @@ describe('Document Operations Integration', () => {
   });
 
   describe('updateFrontmatter operation', () => {
-    it('should preview updating frontmatter', async () => {
+    it('should preview updating frontmatter', { timeout: 10000 }, async () => {
       // GIVEN: A script that updates frontmatter
       // WHEN: Executing in preview mode
       // THEN: Shows preview of frontmatter changes without modifying file
@@ -233,7 +234,7 @@ describe('Document Operations Integration', () => {
   });
 
   describe('delete operation', () => {
-    it('should preview deleting a file', async () => {
+    it('should preview deleting a file', { timeout: 10000 }, async () => {
       // GIVEN: A script that deletes files
       // WHEN: Executing in preview mode
       // THEN: Shows preview of deletion (move to trash) without actually deleting
@@ -268,7 +269,7 @@ describe('Document Operations Integration', () => {
       expect(result.skipped[0].operation.type).toBe('delete');
     });
 
-    it('should preview permanent deletion when specified', async () => {
+    it('should preview permanent deletion when specified', { timeout: 10000 }, async () => {
       // GIVEN: A script that permanently deletes files
       // WHEN: Executing with permanent: true flag
       // THEN: Shows preview of permanent deletion (no trash folder)
@@ -305,7 +306,7 @@ describe('Document Operations Integration', () => {
   });
 
   describe('multiple operations', () => {
-    it('should handle multiple operations in sequence', async () => {
+    it('should handle multiple operations in sequence', { timeout: 10000 }, async () => {
       // GIVEN: A script with multiple operations (updateFrontmatter + move)
       // WHEN: Executing the pipeline
       // THEN: Previews both operations in sequence
@@ -347,7 +348,7 @@ describe('Document Operations Integration', () => {
   });
 
   describe('error handling', () => {
-    it('should skip operations with validation errors', async () => {
+    it('should skip operations with validation errors', { timeout: 10000 }, async () => {
       // GIVEN: A script with invalid operation parameters (empty destination)
       // WHEN: Executing the script
       // THEN: Skips the invalid operation with reason

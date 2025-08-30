@@ -5,7 +5,7 @@ import { ConfigService } from '@mmt/config';
 
 console.log('Starting vault initialization debug...');
 
-const configPath = '/Users/danielseltzer/code/mmt/config/personal-vault-qdrant.yaml';
+const configPath = '/Users/danielseltzer/code/mmt/config/daniel-vaults.yaml';
 console.log('Loading config from:', configPath);
 
 try {

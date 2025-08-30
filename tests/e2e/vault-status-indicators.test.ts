@@ -2,6 +2,17 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Vault Status Indicators', () => {
   test('status indicators appear and show content', async ({ page }) => {
+    // Track console errors
+    const consoleErrors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        // Skip React DevTools suggestion as it's not a real error
+        if (!msg.text().includes('React DevTools')) {
+          consoleErrors.push(msg.text());
+        }
+      }
+    });
+    
     // Navigate to the app
     await page.goto('http://localhost:5173');
     
@@ -51,9 +62,24 @@ test.describe('Vault Status Indicators', () => {
     if (buttonCount > 0) {
       await expect(reindexButton.first()).toBeVisible();
     }
+    
+    // Verify no console errors occurred
+    expect(consoleErrors, `Console errors found: ${consoleErrors.join(', ')}`).toHaveLength(0);
+    
+    // Verify documents actually loaded (not stuck on "Loading documents...")
+    const loadingText = page.locator('text="Loading documents..."');
+    await expect(loadingText).not.toBeVisible({ timeout: 5000 });
   });
   
   test('status appears in tab bar', async ({ page }) => {
+    // Track console errors
+    const consoleErrors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error' && !msg.text().includes('React DevTools')) {
+        consoleErrors.push(msg.text());
+      }
+    });
+    
     await page.goto('http://localhost:5173');
     
     // Wait for app to load - look for document table which should always be present
@@ -75,5 +101,8 @@ test.describe('Vault Status Indicators', () => {
     const text = await firstTabStatus.textContent();
     expect(text, 'Tab status should have content').toBeTruthy();
     expect(text?.trim().length, 'Tab status text should not be empty').toBeGreaterThan(0);
+    
+    // Verify no console errors occurred
+    expect(consoleErrors, `Console errors found: ${consoleErrors.join(', ')}`).toHaveLength(0);
   });
 });

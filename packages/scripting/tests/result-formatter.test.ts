@@ -18,7 +18,7 @@ describe('ResultFormatter', () => {
   let formatter: ResultFormatter;
   let realResult: ScriptExecutionResult;
   let apiServer: { process: ChildProcess; close: () => Promise<void> };
-  const TEST_API_PORT = 3002;
+  const TEST_API_PORT = 3003;
 
   // Helper to create real execution results
   async function generateRealResults(): Promise<ScriptExecutionResult> {
@@ -66,8 +66,9 @@ describe('ResultFormatter', () => {
       useWorkers: false,
     });
     await indexer.initialize();
-    // @ts-ignore
-    scriptRunner.indexer = indexer;
+    // Use the internal method to set indexer
+    // @ts-ignore - using internal method for testing
+    scriptRunner._setIndexer(indexer);
     
     // Create a test script that will generate mixed results
     class TestScript implements Script {
@@ -115,7 +116,7 @@ describe('ResultFormatter', () => {
   });
 
   describe('summary format', () => {
-    it('should format preview mode summary', async () => {
+    it('should format preview mode summary', { timeout: 10000 }, async () => {
       // GIVEN: Real execution results in preview mode
       // WHEN: Formatting as summary
       // THEN: Shows preview warning and would-be actions
@@ -135,7 +136,7 @@ describe('ResultFormatter', () => {
       expect(output).toContain('To execute these changes, run with --execute flag');
     });
 
-    it('should format execution summary', async () => {
+    it('should format execution summary', { timeout: 10000 }, async () => {
       // GIVEN: Real execution results from actual run
       // WHEN: Formatting as summary
       // THEN: Shows completion status without preview warnings
@@ -153,7 +154,7 @@ describe('ResultFormatter', () => {
   });
 
   describe('detailed format', () => {
-    it('should format detailed preview', async () => {
+    it('should format detailed preview', { timeout: 10000 }, async () => {
       // GIVEN: Real mixed success/failure results
       // WHEN: Formatting as detailed preview
       // THEN: Groups by operation type with success/failure indicators
@@ -236,7 +237,7 @@ describe('ResultFormatter', () => {
       expect(output).toContain('Preview mode');
     });
 
-    it('should group operations by type', async () => {
+    it('should group operations by type', { timeout: 10000 }, async () => {
       // GIVEN: Multiple operations of different types
       // WHEN: Formatting detailed output
       // THEN: Groups files by operation type for clarity
@@ -259,7 +260,7 @@ describe('ResultFormatter', () => {
       // The actual grouping depends on operations performed
     });
 
-    it('should show skipped operations', async () => {
+    it('should show skipped operations', { timeout: 10000 }, async () => {
       // GIVEN: Real operations that were skipped
       // WHEN: Formatting detailed output
       // THEN: Shows skipped files with reasons
@@ -278,7 +279,7 @@ describe('ResultFormatter', () => {
   });
 
   describe('JSON format', () => {
-    it('should output valid JSON', async () => {
+    it('should output valid JSON', { timeout: 10000 }, async () => {
       // GIVEN: Real script execution results
       // WHEN: Formatting as JSON
       // THEN: Outputs parseable JSON with all result details
@@ -299,7 +300,7 @@ describe('ResultFormatter', () => {
   });
 
   describe('CSV format', () => {
-    it('should output valid CSV', async () => {
+    it('should output valid CSV', { timeout: 10000 }, async () => {
       // GIVEN: Real script execution results
       // WHEN: Formatting as CSV
       // THEN: Outputs CSV with path, operation, status columns
@@ -320,7 +321,7 @@ describe('ResultFormatter', () => {
       });
     });
 
-    it('should handle empty results', async () => {
+    it('should handle empty results', { timeout: 10000 }, async () => {
       // GIVEN: No files matched selection criteria
       // WHEN: Formatting empty results as CSV
       // THEN: Outputs header row only

@@ -11,50 +11,62 @@ import {
   ColumnOrderState,
   ColumnSizingState,
 } from '@tanstack/react-table';
-import type { Document as BaseDocument } from '@mmt/entities';
 import { Loggers } from '@mmt/logger';
-
-const logger = Loggers.web();
-
-// Extend Document type to include fullPath for unique identification
-type Document = BaseDocument & {
-  fullPath?: string;
-};
 import { clsx } from 'clsx';
 import { ColumnConfig } from './ColumnConfig.js';
 import { SortConfig } from './SortConfig.js';
+import { TableCore } from './core/TableCore.js';
+import type { Document, ContextMenuState } from './core/types.js';
+import { 
+  getRelativePath, 
+  formatDate, 
+  formatFileSize, 
+  getDocumentId, 
+  buildObsidianUri, 
+  getMetadataDisplay, 
+  compareDates 
+} from './core/utils.js';
+
+const logger = Loggers.web();
 
 export interface TableViewProps {
+  vaultId?: string;
   documents: Document[];
   onSelectionChange?: (selectedPaths: string[]) => void;
   onOperationRequest?: (request: { operation: string; documentPaths: string[] }) => void;
-  onLoadContent?: (path: string) => Promise<string>;
   initialColumns?: string[];
   currentSort?: { field: string; order: 'asc' | 'desc' };
   onSortChange?: (field: string, order: 'asc' | 'desc') => void;
 }
 
-interface ContextMenuState {
-  x: number;
-  y: number;
-  type: 'column' | 'row' | null;
-  columnId?: string;
-  rowId?: string;
-}
-
 
 export function TableView({
+  vaultId,
   documents,
   onSelectionChange,
   onOperationRequest,
-  onLoadContent,
   initialColumns = ['name', 'path', 'modified', 'size', 'tags'],
   currentSort,
   onSortChange,
 }: TableViewProps) {
   const totalCount = documents.length;
+  
+  // Initialize TableCore for business logic
+  const [tableCore] = useState(() => new TableCore({
+    documents,
+    initialColumns,
+    initialSort: currentSort ? { field: currentSort.field, order: currentSort.order } : null,
+    onSelectionChange,
+    onSortChange,
+    onOperationRequest
+  }));
+  
+  // Update TableCore when documents change
+  useEffect(() => {
+    tableCore.updateDocuments(documents);
+  }, [documents, tableCore]);
 
-  // Table state
+  // UI-specific state (kept in component)
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
@@ -68,60 +80,63 @@ export function TableView({
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ x: 0, y: 0, type: null });
   const [contentCache, setContentCache] = useState<Record<string, string>>({});
-  
-  // Track last selected index for shift-click
-  const lastSelectedIndex = React.useRef<number>(-1);
 
-  // Sync external sort with internal table state
+  // Sync external sort with internal table state and TableCore
   useEffect(() => {
     if (currentSort) {
       setSorting([{
         id: currentSort.field,
         desc: currentSort.order === 'desc'
       }]);
+      tableCore.setSorting(currentSort.field, currentSort.order);
     } else {
       setSorting([]);
+      tableCore.setSorting(null);
     }
-  }, [currentSort]);
+  }, [currentSort, tableCore]);
+  
+  // Sync TableCore selection with React Table state
+  // Note: Selection sync removed to prevent infinite loops - selection is managed directly through event handlers
 
   // Load content when preview column is visible
   useEffect(() => {
-    if (columnVisibility.preview && onLoadContent) {
+    if (columnVisibility.preview && vaultId) {
+      // Use a local set to track which paths we're already loading
+      const loadingPaths = new Set<string>();
+      
       documents.forEach(async (doc) => {
-        if (!contentCache[doc.path]) {
-          const content = await onLoadContent(doc.path);
-          setContentCache((prev) => ({ ...prev, [doc.path]: content }));
+        // Check both cache and loading state to prevent duplicate fetches
+        if (!contentCache[doc.path] && !loadingPaths.has(doc.path)) {
+          loadingPaths.add(doc.path);
+          try {
+            // Fetch preview from API
+            const response = await fetch(`/api/vaults/${vaultId}/documents/preview/${encodeURIComponent(doc.path)}`);
+            if (response.ok) {
+              const data = await response.json();
+              setContentCache((prev) => ({ ...prev, [doc.path]: data.preview }));
+            } else {
+              setContentCache((prev) => ({ ...prev, [doc.path]: 'Failed to load preview' }));
+            }
+          } catch (error) {
+            setContentCache((prev) => ({ ...prev, [doc.path]: 'Error loading preview' }));
+          }
         }
       });
     }
-  }, [columnVisibility.preview, documents, onLoadContent, contentCache]);
+    // Note: contentCache is intentionally not in dependencies to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnVisibility.preview, documents, vaultId]);
 
-  // Handle row click with shift support
+  // Handle row click with shift support (delegates to TableCore)
   const handleRowClick = useCallback((index: number, shiftKey: boolean) => {
-    if (shiftKey && lastSelectedIndex.current !== -1) {
-      // Shift-click: select range
-      const start = Math.min(index, lastSelectedIndex.current);
-      const end = Math.max(index, lastSelectedIndex.current);
-      const newSelection: RowSelectionState = {};
-      
-      for (let i = start; i <= end; i++) {
-        const rowId = documents[i]?.path;
-        if (rowId) newSelection[rowId] = true;
-      }
-      
-      setRowSelection((prev) => ({ ...prev, ...newSelection }));
-    } else {
-      // Regular click
-      const rowId = documents[index]?.path;
-      if (rowId) {
-        setRowSelection((prev) => ({
-          ...prev,
-          [rowId]: !prev[rowId],
-        }));
-      }
-    }
-    lastSelectedIndex.current = index;
-  }, [documents]);
+    tableCore.handleRowClick(index, shiftKey);
+    // Update React Table state
+    const newSelection: RowSelectionState = {};
+    tableCore.getSelectedPaths().forEach(path => {
+      newSelection[path] = true;
+    });
+    setRowSelection(newSelection);
+  }, [tableCore]);
 
   // Column definitions
   const columns = useMemo<ColumnDef<Document>[]>(
@@ -155,8 +170,14 @@ export function TableView({
                 if (e.nativeEvent instanceof MouseEvent && e.nativeEvent.shiftKey) {
                   handleRowClick(index, true);
                 } else {
-                  row.getToggleSelectedHandler()(e);
-                  lastSelectedIndex.current = index;
+                  const docId = getDocumentId(row.original);
+                  tableCore.toggleRowSelection(docId);
+                  // Update React Table state
+                  const newSelection: RowSelectionState = {};
+                  tableCore.getSelectedPaths().forEach(path => {
+                    newSelection[path] = true;
+                  });
+                  setRowSelection(newSelection);
                 }
               }}
             />
@@ -188,18 +209,7 @@ export function TableView({
         size: 300,
         cell: ({ getValue }) => {
           const fullPath = getValue() as string;
-          // Remove vault root path but keep the leading slash
-          let relativePath = fullPath
-            .replace(/^\/Users\/danielseltzer\/Notes\/Personal-sync-250710/, '')
-            .replace(/^\/Users\/[^/]+\/[^/]+\/[^/]+\/test-vault/, '')
-            .replace(/^.*\/test-vault/, '')
-            .replace(/^.*\/vault/, '');
-          
-          // Ensure leading slash
-          if (!relativePath.startsWith('/')) {
-            relativePath = '/' + relativePath;
-          }
-          
+          const relativePath = getRelativePath(fullPath);
           return (
             <span className="text-xs text-muted-foreground truncate block" title={fullPath}>
               {relativePath}
@@ -214,55 +224,16 @@ export function TableView({
         size: 80,
         cell: ({ getValue }) => {
           const value = getValue() as string | Date | null | undefined;
-          let date: Date | null = null;
-          
-          // Handle string dates (from API) and Date objects
-          if (typeof value === 'string') {
-            date = new Date(value);
-          } else if (value instanceof Date) {
-            date = value;
-          }
-          
           return (
             <span data-testid="modified-cell" className="text-sm">
-              {date && !isNaN(date.getTime()) 
-                ? date.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric'
-                  })
-                : '-'
-              }
+              {formatDate(value)}
             </span>
           );
         },
         sortingFn: (rowA, rowB, columnId) => {
           const aValue = rowA.getValue(columnId) as string | Date | null | undefined;
           const bValue = rowB.getValue(columnId) as string | Date | null | undefined;
-          
-          // Convert to dates
-          let a: Date | null = null;
-          let b: Date | null = null;
-          
-          if (typeof aValue === 'string') a = new Date(aValue);
-          else if (aValue instanceof Date) a = aValue;
-          
-          if (typeof bValue === 'string') b = new Date(bValue);
-          else if (bValue instanceof Date) b = bValue;
-          
-          // Handle null/undefined dates - put them at the end
-          if (!a && !b) return 0;
-          if (!a) return 1;
-          if (!b) return -1;
-          
-          // Handle invalid dates
-          const aTime = a.getTime();
-          const bTime = b.getTime();
-          if (isNaN(aTime) && isNaN(bTime)) return 0;
-          if (isNaN(aTime)) return 1;
-          if (isNaN(bTime)) return -1;
-          
-          return aTime - bTime;
+          return compareDates(aValue, bValue);
         },
       },
       {
@@ -274,7 +245,7 @@ export function TableView({
           const size = getValue() as number;
           return (
             <span data-testid="size-cell" className="text-sm">
-              {(size / 1024).toFixed(1)}K
+              {formatFileSize(size)}
             </span>
           );
         },
@@ -287,6 +258,7 @@ export function TableView({
         cell: ({ getValue, row }) => {
           const frontmatter = getValue() as Record<string, any> | undefined;
           const tags = row.original.metadata.tags || [];
+          const { propertyNames, tooltipText } = getMetadataDisplay(frontmatter, tags);
           
           if (!frontmatter || Object.keys(frontmatter).length === 0) {
             // If no frontmatter, show tags if any
@@ -310,15 +282,6 @@ export function TableView({
             );
           }
           
-          // Show just the property names
-          const propertyNames = Object.keys(frontmatter)
-            .filter(key => {
-              const value = frontmatter[key];
-              // Skip complex values, nulls, and empty arrays
-              return value !== null && value !== undefined && 
-                     !(Array.isArray(value) && value.length === 0);
-            });
-          
           if (propertyNames.length === 0 && tags.length > 0) {
             // Fallback to showing tag count if no frontmatter
             return (
@@ -329,17 +292,6 @@ export function TableView({
               </div>
             );
           }
-          
-          const tooltipText = propertyNames.map(key => {
-            const value = frontmatter[key];
-            let displayValue = value;
-            if (Array.isArray(value)) {
-              displayValue = value.join(', ');
-            } else if (typeof value === 'object' && value !== null) {
-              displayValue = JSON.stringify(value);
-            }
-            return `${key}: ${displayValue}`;
-          }).join('\n');
           
           return (
             <div className="flex gap-1 items-center" title={tooltipText}>
@@ -374,7 +326,7 @@ export function TableView({
         },
       },
     ],
-    [contentCache, handleRowClick]
+    [contentCache, handleRowClick, tableCore]
   );
 
   // Create table instance
@@ -392,13 +344,12 @@ export function TableView({
       const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
       setSorting(newSorting);
       
-      // Notify parent component about sort changes
-      if (onSortChange && newSorting.length > 0) {
+      // Update TableCore and notify parent
+      if (newSorting.length > 0) {
         const sort = newSorting[0];
-        onSortChange(sort.id, sort.desc ? 'desc' : 'asc');
-      } else if (onSortChange && newSorting.length === 0) {
-        // Clear sorting - though this might need special handling
-        // For now, we'll keep the last sort state
+        tableCore.setSorting(sort.id, sort.desc ? 'desc' : 'asc');
+      } else {
+        tableCore.setSorting(null);
       }
     },
     onRowSelectionChange: setRowSelection,
@@ -407,7 +358,7 @@ export function TableView({
     onColumnSizingChange: setColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getRowId: (row) => row.fullPath || row.path, // Use fullPath for unique ID, fallback to path
+    getRowId: (row) => getDocumentId(row), // Use centralized ID function
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
   });
@@ -440,10 +391,9 @@ export function TableView({
   }, [contextMenu.columnId]);
 
   const handleOperation = useCallback((operation: string) => {
-    const selectedPaths = Object.keys(rowSelection).filter((key) => rowSelection[key]);
-    onOperationRequest?.({ operation, documentPaths: selectedPaths });
+    tableCore.requestOperation(operation);
     setContextMenu({ x: 0, y: 0, type: null });
-  }, [rowSelection, onOperationRequest]);
+  }, [tableCore]);
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -569,39 +519,10 @@ export function TableView({
                   // Use the row that was right-clicked (from context menu)
                   const targetRowId = contextMenu.rowId;
                   if (targetRowId) {
-                    // Find the document by matching the ID (which is fullPath or path)
-                    const doc = documents.find(d => (d.fullPath || d.path) === targetRowId);
+                    const doc = tableCore.getDocumentById(targetRowId);
                     if (doc) {
-                      // The vault name in Obsidian is "Personal-sync"
-                      const vaultName = 'Personal-sync';
-                      
-                      // Get the document's full path
-                      const fullPath = doc.fullPath || doc.path;
-                      
-                      // Extract the path relative to the vault
-                      // The fullPath is like: /Users/danielseltzer/Notes/Personal-sync/Making/Code/file.md
-                      // We want: /Making/Code/file.md
-                      let filePath = fullPath;
-                      
-                      // Remove everything up to and including "Personal-sync/"
-                      const vaultMarker = '/Personal-sync/';
-                      const vaultIndex = filePath.indexOf(vaultMarker);
-                      if (vaultIndex !== -1) {
-                        filePath = '/' + filePath.substring(vaultIndex + vaultMarker.length);
-                      } else if (filePath.includes('/Notes/')) {
-                        // Fallback: remove up to /Notes/
-                        filePath = filePath.substring(filePath.indexOf('/Notes/') + 7);
-                        // Remove Personal-sync/ if it's at the beginning
-                        if (filePath.startsWith('Personal-sync/')) {
-                          filePath = '/' + filePath.substring('Personal-sync/'.length);
-                        }
-                      }
-                      
-                      // Build Obsidian URI
-                      const obsidianUri = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`;
+                      const obsidianUri = buildObsidianUri(doc);
                       logger.debug('Opening in Obsidian:', obsidianUri);
-                      
-                      // Open in Obsidian
                       window.open(obsidianUri, '_blank');
                     }
                   }

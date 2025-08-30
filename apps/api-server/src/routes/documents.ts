@@ -615,6 +615,132 @@ export function documentsRouter(context: Context): Router {
   );
   
   // Reveal file in system file manager
+  /**
+   * Get document preview - returns formatted content for display
+   * GET /api/vaults/:vaultId/documents/preview/:path
+   */
+  router.get('/preview/:path(*)', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const documentPath = req.params.path;
+      const vault = (req as any).vault;
+      
+      logger.debug('Preview endpoint called', { documentPath, vaultPath: vault?.path });
+      
+      if (!documentPath) {
+        return res.status(400).json({ error: 'Missing document path' });
+      }
+
+      if (!vault || !vault.indexer) {
+        return res.status(503).json({ error: 'Vault not available' });
+      }
+
+      // Get the document from the index
+      const documents = await vault.indexer.getAllDocuments();
+      const document = documents.find((d: PageMetadata) => 
+        d.path === documentPath || d.relativePath === documentPath || d.basename === documentPath
+      );
+      
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      const fullPath = document.path;
+
+      // Read the file content
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      // Resolve the full path - if it's already absolute use it, otherwise make it relative to vault
+      const absolutePath = path.isAbsolute(fullPath) ? fullPath : path.join(vault.path, fullPath);
+      
+      try {
+        const content = await fs.readFile(absolutePath, 'utf-8');
+        
+        // Extract preview information
+        const lines = content.split('\n');
+        const maxLines = 20; // Maximum lines for preview
+        const maxLength = 500; // Maximum total character length
+        
+        let preview = '';
+        let charCount = 0;
+        let lineCount = 0;
+        
+        // Skip frontmatter if present
+        let inFrontmatter = false;
+        let startIndex = 0;
+        
+        if (lines[0] === '---') {
+          inFrontmatter = true;
+          for (let i = 1; i < lines.length; i++) {
+            if (lines[i] === '---') {
+              startIndex = i + 1;
+              break;
+            }
+          }
+        }
+        
+        // Build preview from content
+        for (let i = startIndex; i < lines.length && lineCount < maxLines; i++) {
+          const line = lines[i];
+          
+          // Skip empty lines at the beginning
+          if (preview === '' && line.trim() === '') {
+            continue;
+          }
+          
+          // Add line to preview
+          if (charCount + line.length > maxLength) {
+            // Truncate line if it would exceed max length
+            const remainingChars = maxLength - charCount;
+            if (remainingChars > 0) {
+              preview += line.substring(0, remainingChars) + '...';
+            }
+            break;
+          }
+          
+          preview += (preview ? '\n' : '') + line;
+          charCount += line.length;
+          lineCount++;
+        }
+        
+        // Clean up the preview
+        preview = preview.trim();
+        
+        // If we got no content after frontmatter, show a placeholder
+        if (!preview) {
+          preview = '(Empty document)';
+        }
+        
+        // Add ellipsis if content was truncated
+        if (lineCount === maxLines || charCount >= maxLength) {
+          preview += '\n...';
+        }
+        
+        res.json({
+          path: document.relativePath,
+          fullPath: fullPath,
+          preview: preview,
+          metadata: {
+            title: document.title,
+            size: document.size,
+            mtime: document.mtime,
+            tags: document.tags,
+            frontmatter: document.frontmatter
+          },
+          hasMore: lines.length > startIndex + maxLines || content.length > maxLength
+        });
+        
+      } catch (readError) {
+        logger.error(`Failed to read document content: ${absolutePath}`, readError);
+        return res.status(500).json({ error: 'Failed to read document content' });
+      }
+      
+    } catch (error) {
+      logger.error('Error in document preview:', error);
+      next(error);
+    }
+  });
+
   router.post('/reveal-in-finder',
     async (req: Request, res: Response, next: NextFunction) => {
       try {

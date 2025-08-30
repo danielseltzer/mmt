@@ -427,6 +427,9 @@ importers:
       '@mmt/entities':
         specifier: workspace:*
         version: link:../entities
+      '@mmt/logger':
+        specifier: workspace:*
+        version: link:../logger
       chokidar:
         specifier: ^3.5.3
         version: 3.6.0

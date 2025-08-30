@@ -29,7 +29,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 
 // Configuration
-const TEST_CONFIG_PATH = path.join(rootDir, 'config/personal-vault-qdrant.yaml');
+const TEST_CONFIG_PATH = path.join(rootDir, 'config/daniel-vaults.yaml');
 const API_PORT = 3001;
 const WEB_PORT = 5173;
 const INDEXING_TIMEOUT = 600000; // 10 minutes for 6k files

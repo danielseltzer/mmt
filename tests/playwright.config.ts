@@ -4,18 +4,17 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright Configuration for MMT E2E Tests
  * ==========================================
  * 
+ * HEADLESS MODE CONTROL:
+ * ----------------------
+ * The `headless: true` setting in the global `use` object below
+ * is the SINGLE control point for all test projects.
+ * Tests will ALWAYS run without visible browser windows.
+ * 
  * Running Tests:
  * --------------
  * Default (headless):           pnpm test:e2e
- * With browser visible:         PWDEBUG=1 pnpm test:e2e
- * Debug specific test:          pnpm test:e2e --project=chromium-debug
+ * With browser visible:         pnpm test:e2e:debug (uses separate config)
  * Run specific test file:       pnpm test:e2e path/to/test.spec.ts
- * 
- * Headless Mode Behavior:
- * -----------------------
- * - Tests run headless by default for speed and CI compatibility
- * - Set PWDEBUG=1 environment variable to show browser window
- * - The chromium-debug project always shows browser (for debugging)
  * 
  * See https://playwright.dev/docs/test-configuration for more details
  */
@@ -45,6 +44,9 @@ export default defineConfig({
     /* Base URL for the web app */
     baseURL: 'http://localhost:5173',
     
+    /* ALWAYS run headless - this is the single control point */
+    headless: true,
+    
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
     
@@ -58,14 +60,13 @@ export default defineConfig({
      * Default Project: chromium
      * -------------------------
      * Standard test configuration for CI and local development
-     * Runs headless by default, respects PWDEBUG environment variable
+     * Inherits headless: true from global use configuration
      */
     {
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        // Headless mode controlled by PWDEBUG environment variable
-        headless: process.env.PWDEBUG !== '1',
+        // Inherits headless: true from global config
       },
     },
 
@@ -79,22 +80,26 @@ export default defineConfig({
      * - Video recording on failure
      * - Single worker, no parallel execution
      * - Extended timeout for debugging
+     * 
+     * NOTE: This project is excluded from default test runs.
+     * Must be explicitly selected with --project=chromium-debug
      */
-    {
-      name: 'chromium-debug',
-      use: {
-        ...devices['Desktop Chrome'],
-        headless: false,  // Always show browser for debugging
-        video: 'retain-on-failure',
-        launchOptions: {
-          slowMo: 100,  // Slow down actions by 100ms for visibility
-        },
-      },
-      fullyParallel: false,
-      workers: 1,
-      retries: 0,
-      timeout: 60000,  // 60 second timeout for debugging
-    },
+    // Uncomment to enable debug project or use --project=chromium-debug
+    // {
+    //   name: 'chromium-debug',
+    //   use: {
+    //     ...devices['Desktop Chrome'],
+    //     headless: false,  // Always show browser for debugging
+    //     video: 'retain-on-failure',
+    //     launchOptions: {
+    //       slowMo: 100,  // Slow down actions by 100ms for visibility
+    //     },
+    //   },
+    //   fullyParallel: false,
+    //   workers: 1,
+    //   retries: 0,
+    //   timeout: 60000,  // 60 second timeout for debugging
+    // },
 
     /**
      * Additional Browser Projects (Uncomment to enable)

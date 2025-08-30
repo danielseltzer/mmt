@@ -56,8 +56,11 @@ export class SimilarityProviderFactory {
       );
     }
     
+    // Use vault-specific key to prevent conflicts between vaults
+    const instanceKey = options.vaultId ? `${name}-${options.vaultId}` : name;
+    
     // Cleanup existing instance if any
-    const existingInstance = this.instances.get(name);
+    const existingInstance = this.instances.get(instanceKey);
     if (existingInstance) {
       await existingInstance.shutdown();
     }
@@ -66,8 +69,8 @@ export class SimilarityProviderFactory {
     const provider = factory();
     await provider.initialize(options);
     
-    // Cache the instance
-    this.instances.set(name, provider);
+    // Cache the instance with vault-specific key
+    this.instances.set(instanceKey, provider);
     
     return provider;
   }
@@ -75,10 +78,12 @@ export class SimilarityProviderFactory {
   /**
    * Get an existing provider instance
    * @param name Provider name
+   * @param vaultId Optional vault ID for vault-specific instances
    * @returns Provider instance or undefined if not created
    */
-  static getInstance(name: string): SimilarityProvider | undefined {
-    return this.instances.get(name);
+  static getInstance(name: string, vaultId?: string): SimilarityProvider | undefined {
+    const instanceKey = vaultId ? `${name}-${vaultId}` : name;
+    return this.instances.get(instanceKey);
   }
   
   /**

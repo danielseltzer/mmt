@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@mmt/entities": "workspace:*",
+    "@mmt/logger": "workspace:*",
     "chokidar": "^3.5.3",
     "gray-matter": "^4.0.3",
     "minimatch": "^9.0.3"
