@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(pnpm:*)",
-      "Bash(pnpm run lint:*)"
-    ],
-    "deny": []
-  }
-}

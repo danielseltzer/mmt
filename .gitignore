@@ -104,3 +104,7 @@ yarn.lock
 # Data directories
 data/
 qdrant_storage/
+
+# Claude AI assistant files
+.claude/
+.claude-mpm/
