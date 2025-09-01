@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Loggers } from '@mmt/logger';
+import { API_ENDPOINTS } from '../config/api';
 
 const logger = Loggers.web();
 
@@ -40,7 +41,7 @@ export function SimilarityStatusIndicator() {
     if (!vaultId) return;
     
     try {
-      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/status`);
+      const response = await fetch(API_ENDPOINTS.similarityStatus(vaultId));
       
       if (!response.ok) {
         if (response.status === 404 || response.status === 501) {
@@ -173,7 +174,7 @@ export function SimilarityIndexingWarning() {
     if (!vaultId) return;
     
     try {
-      const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/status`);
+      const response = await fetch(API_ENDPOINTS.similarityStatus(vaultId));
       
       if (!response.ok) {
         setStatus(null);

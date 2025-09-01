@@ -6,6 +6,7 @@ import { MultiSelectDropdown } from './MultiSelectDropdown';
 import { MetadataFilter } from './MetadataFilter';
 import { parseDateExpression, parseSizeExpression } from '../utils/filter-utils';
 import { Loggers } from '@mmt/logger';
+import { useConfigStore } from '../stores/config-store';
 
 const logger = Loggers.web();
 
@@ -24,15 +25,8 @@ export function FilterBar() {
     dateExpression: '',
     sizeExpression: ''
   });
-  const [vaultPath, setVaultPath] = useState('');
-  
-  // Fetch vault path from API on mount
-  useEffect(() => {
-    fetch('http://localhost:3001/api/config')
-      .then(res => res.json())
-      .then(data => setVaultPath(data.vaultPath))
-      .catch(err => logger.error('Failed to fetch vault config:', err));
-  }, []);
+  const config = useConfigStore(state => state.config);
+  const vaultPath = config?.vaultPath || '';
   
   // Convert filter values to FilterCollection format when they change
   useEffect(() => {

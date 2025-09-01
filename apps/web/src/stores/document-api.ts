@@ -5,6 +5,7 @@
 
 import type { Document, Vault } from './types.js';
 import { Loggers } from '@mmt/logger';
+import { API_ENDPOINTS } from '../config/api';
 
 const logger = Loggers.web();
 
@@ -28,7 +29,7 @@ export async function fetchVaultDocuments(
   request: SearchRequest = {}
 ): Promise<DocumentResponse> {
   try {
-    const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/documents/search`, {
+    const response = await fetch(API_ENDPOINTS.vaultDocumentsSearch(vaultId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request)
@@ -66,7 +67,7 @@ export async function performSimilaritySearch(
   limit: number = 20
 ): Promise<Document[]> {
   try {
-    const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/search`, {
+    const response = await fetch(API_ENDPOINTS.similaritySearch(vaultId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, limit })
@@ -102,7 +103,7 @@ export async function findSimilarDocuments(
   limit: number = 10
 ): Promise<Document[]> {
   try {
-    const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/similar`, {
+    const response = await fetch(API_ENDPOINTS.similarDocuments(vaultId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ documentPath, limit })
@@ -134,7 +135,7 @@ export async function findSimilarDocuments(
  */
 export async function checkSimilarityAvailable(vaultId: string): Promise<boolean> {
   try {
-    const response = await fetch(`http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/status`);
+    const response = await fetch(API_ENDPOINTS.similarityStatus(vaultId));
     if (!response.ok) {
       return false;
     }
@@ -151,7 +152,7 @@ export async function checkSimilarityAvailable(vaultId: string): Promise<boolean
  */
 export async function loadVaults(): Promise<Vault[]> {
   try {
-    const response = await fetch('http://localhost:3001/api/vaults');
+    const response = await fetch(API_ENDPOINTS.vaults());
     if (!response.ok) {
       throw new Error(`Failed to load vaults: ${response.statusText}`);
     }
