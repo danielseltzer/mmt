@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Loggers } from '@mmt/logger';
+import { API_ENDPOINTS } from '../config/api';
 
 const logger = Loggers.web();
 
@@ -557,7 +558,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     });
     
     try {
-      const response = await fetch(`http://localhost:3001/api/vaults/${currentTab.vaultId}/similarity/search`, {
+      const response = await fetch(API_ENDPOINTS.similaritySearch(currentTab.vaultId), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -639,7 +640,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     });
     
     try {
-      const response = await fetch(`http://localhost:3001/api/vaults/${currentTab.vaultId}/similarity/search`, {
+      const response = await fetch(API_ENDPOINTS.similaritySearch(currentTab.vaultId), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -721,7 +722,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     console.log('[loadVaults] Starting vault load...');
     
     try {
-      const response = await fetch('http://localhost:3001/api/vaults');
+      const response = await fetch(API_ENDPOINTS.vaults());
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[loadVaults] API error response:', errorText);
@@ -737,7 +738,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       let similarityAvailable = false;
       if (vaults.length > 0) {
         try {
-          const statusResponse = await fetch(`http://localhost:3001/api/vaults/${vaults[0].id}/similarity/status`);
+          const statusResponse = await fetch(API_ENDPOINTS.similarityStatus(vaults[0].id));
           // 501 means not configured, which is fine - not an error
           similarityAvailable = statusResponse.ok && statusResponse.status !== 501;
         } catch {

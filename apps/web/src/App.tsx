@@ -4,6 +4,7 @@ import { QueryBar } from './components/QueryBar'
 import { DocumentTable } from './components/DocumentTable'
 import { TestHarness } from './components/TestHarness'
 import { useDocumentStore } from './stores/document-store'
+import { initializeConfig } from './stores/config-store'
 
 function App() {
   const loadVaults = useDocumentStore(state => state.loadVaults)
@@ -20,8 +21,11 @@ function App() {
     document.documentElement.classList.add('dark')
     document.body.classList.add('dark')
     
-    // Load vaults on mount (tabs will be initialized automatically)
-    loadVaults()
+    // Initialize configuration from server
+    initializeConfig().then(() => {
+      // Load vaults after config is ready
+      loadVaults()
+    })
   }, [loadVaults])
 
   // Show test harness in development mode only

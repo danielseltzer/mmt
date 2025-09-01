@@ -31,7 +31,9 @@
     "dep:summary": "depcruise --config .dependency-cruiser.cjs --output-type archi --collapse \"^(packages|apps)/[^/]+/(src|test)\" . | dot -T svg > code-analysis/dependency-summary.svg",
     "analyze:all": "node scripts/analysis/run-code-analysis.mjs",
     "analyze:packages": "node scripts/analysis/analyze-package-dependencies.mjs",
-    "validate:qdrant": "tsx tests/e2e/validate-qdrant-integration.ts"
+    "validate:qdrant": "tsx tests/e2e/validate-qdrant-integration.ts",
+    "check:compliance": "node tools/check-compliance.js",
+    "check:compliance:staged": "node tools/check-compliance.js --staged"
   },
   "dependencies": {
     "@qdrant/js-client-rest": "^1.9.0",

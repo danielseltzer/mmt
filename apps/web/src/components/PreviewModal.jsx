@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { AlertCircle, FileText, Wand2, FileOutput, Loader2 } from 'lucide-react';
 import { Loggers } from '@mmt/logger';
+import { getApiEndpoint } from '../config/api';
 
 const logger = Loggers.web();
 
@@ -73,7 +74,7 @@ export function PreviewModal({
         }
       };
 
-      const response = await fetch('http://localhost:3001/api/pipelines/execute', {
+      const response = await fetch(getApiEndpoint('/api/pipelines/execute'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

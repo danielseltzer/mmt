@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDocumentStore, VaultIndexStatus } from '../stores/document-store';
+import { API_ENDPOINTS, getApiEndpoint } from '../config/api';
 
 interface ApiCall {
   id: string;
@@ -61,7 +62,7 @@ export function TestHarness() {
   
   const handleCheckVaultStatus = async (vaultId: string) => {
     console.log('[TestHarness] Checking vault status:', vaultId);
-    const url = `http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/status`;
+    const url = API_ENDPOINTS.vaultStatus(vaultId);
     
     try {
       const response = await fetch(url);
@@ -118,7 +119,7 @@ export function TestHarness() {
     }
     
     console.log('[TestHarness] Applying filter:', filterQuery);
-    const url = `http://localhost:3001/api/vaults/${encodeURIComponent(currentTab.vaultId)}/documents/parse-query`;
+    const url = getApiEndpoint(`/api/vaults/${encodeURIComponent(currentTab.vaultId)}/documents/parse-query`);
     
     try {
       const response = await fetch(url, {
@@ -150,7 +151,7 @@ export function TestHarness() {
   // File Operations
   const handleRevealInFinder = async () => {
     console.log('[TestHarness] Revealing in finder:', testFilePath);
-    const url = `http://localhost:3001/api/files/reveal`;
+    const url = getApiEndpoint('/api/files/reveal');
     
     try {
       const response = await fetch(url, {
@@ -179,7 +180,7 @@ export function TestHarness() {
   
   const handleQuickLook = async () => {
     console.log('[TestHarness] QuickLook preview:', testFilePath);
-    const url = `http://localhost:3001/api/files/quicklook`;
+    const url = getApiEndpoint('/api/files/quicklook');
     
     try {
       const response = await fetch(url, {
@@ -229,7 +230,7 @@ export function TestHarness() {
     }
     
     console.log('[TestHarness] Similarity search:', similaritySearchQuery);
-    const url = `http://localhost:3001/api/vaults/${encodeURIComponent(currentTab.vaultId)}/similarity/search`;
+    const url = API_ENDPOINTS.similaritySearch(currentTab.vaultId);
     
     try {
       documentStore.setSearchMode('similarity');
@@ -243,7 +244,7 @@ export function TestHarness() {
   
   const handleCheckSimilarityStatus = async (vaultId: string) => {
     console.log('[TestHarness] Checking similarity status for vault:', vaultId);
-    const url = `http://localhost:3001/api/vaults/${encodeURIComponent(vaultId)}/similarity/status`;
+    const url = API_ENDPOINTS.similarityStatus(vaultId);
     
     try {
       const response = await fetch(url);

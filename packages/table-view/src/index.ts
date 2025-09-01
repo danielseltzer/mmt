@@ -3,6 +3,9 @@ export type { TableViewProps } from './TableView';
 export { SortConfig } from './SortConfig';
 export type { SortConfigProps, SortOption } from './SortConfig';
 
+// Export API configuration
+export { configureApiBaseUrl } from './config/api';
+
 // Export core logic for testing
 export { TableCore } from './core/TableCore';
 export type { 

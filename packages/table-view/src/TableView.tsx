@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import type { Document as BaseDocument } from '@mmt/entities';
 import { Loggers } from '@mmt/logger';
+import { getApiEndpoint } from './config/api';
 
 const logger = Loggers.web();
 
@@ -644,7 +645,7 @@ export function TableView({
                       
                       if (vaultId) {
                         try {
-                          const response = await fetch(`http://localhost:3001/api/vaults/${vaultId}/documents/reveal-in-finder`, {
+                          const response = await fetch(getApiEndpoint(`/api/vaults/${vaultId}/documents/reveal-in-finder`), {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
@@ -684,7 +685,7 @@ export function TableView({
                       
                       if (vaultId) {
                         try {
-                          const response = await fetch(`http://localhost:3001/api/vaults/${vaultId}/documents/quicklook`, {
+                          const response = await fetch(getApiEndpoint(`/api/vaults/${vaultId}/documents/quicklook`), {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',

@@ -16,7 +16,9 @@ export default defineConfig({
     include: [
       'tests/date-parsing.test.js',
       'tests/table-rendering.test.jsx',
-      'tests/filter-conversion.test.js'
+      'tests/filter-conversion.test.js',
+      'tests/api-config.test.js',
+      'tests/config-store.test.js'
     ],
     exclude: [
       '**/node_modules/**',
