@@ -1,8 +1,11 @@
 import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
 
 /**
- * Find old draft posts that should be archived.
- * This demonstrates the analysis -> document set -> mutation pipeline.
+ * File operations example - identifies old drafts for archiving.
+ * 
+ * Purpose: Demonstrate selection for bulk file operations
+ * Use case: Content maintenance, archiving old/stale documents
+ * Features: Date filtering, status checking, preparing for mutations
  * 
  * In a real scenario, this would be followed by:
  * ```typescript

@@ -1,8 +1,11 @@
 import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
 
 /**
- * Count files by frontmatter type field.
- * Uses Arquero to properly group and count all document types.
+ * Aggregation/statistics example - counts documents by type field.
+ * 
+ * Purpose: Generate statistical summaries of document collections
+ * Use case: Understand content distribution and vault composition
+ * Features: Grouping by frontmatter fields, counting, sorting
  * 
  * Equivalent to Dataview query:
  * ```dataview

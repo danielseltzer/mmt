@@ -1,7 +1,12 @@
 import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
 
 /**
- * Test script demonstrating multiple output destinations.
+ * Multiple output demo - shows how to export results in various formats.
+ * 
+ * Purpose: Demonstrate flexible output options for analysis results
+ * Use case: Export data for different consumers (console, CSV, JSON)
+ * Features: Multiple simultaneous outputs with different formats/limits
+ * 
  * Outputs link analysis in multiple formats:
  * 1. Console as a summary
  * 2. Console as a table (top 5)

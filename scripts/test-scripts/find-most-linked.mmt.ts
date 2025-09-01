@@ -1,8 +1,11 @@
 import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
 
 /**
- * Find the most-linked-to document by incoming link count.
- * This shows which document is referenced most often by other documents.
+ * Ranking/sorting example - finds documents with most incoming links.
+ * 
+ * Purpose: Identify hub/important documents based on reference count
+ * Use case: Discover central concepts or frequently referenced content
+ * Features: Backlink counting, sorting, and limiting results
  */
 export default class FindMostLinked implements Script {
   define(context: ScriptContext): OperationPipeline {

@@ -1,7 +1,12 @@
 import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
 
 /**
- * List all files with a specific tag.
+ * Tag-based filtering example - lists documents with specific tags.
+ * 
+ * Purpose: Demonstrate tag filtering and document selection
+ * Use case: Find all documents related to a topic/project via tags
+ * Features: Tag array filtering, sorting by date
+ * 
  * Comparable to Dataview:
  * ```dataview
  * LIST

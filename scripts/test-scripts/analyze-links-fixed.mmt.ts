@@ -2,8 +2,11 @@ import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
 import { desc } from 'arquero';
 
 /**
- * Analyze document links - find most linked-to pages.
- * Demonstrates link extraction capabilities with Arquero analysis.
+ * Main link analysis example - finds most linked-to pages in your vault.
+ * 
+ * Purpose: Demonstrates link extraction and analysis capabilities
+ * Use case: Identify important/hub documents based on incoming link count
+ * Features: Link extraction, grouping, counting, and sorting with Arquero
  */
 export default class AnalyzeLinksFixed implements Script {
   define(context: ScriptContext): OperationPipeline {
