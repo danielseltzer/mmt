@@ -1,8 +1,11 @@
 import type { Script, ScriptContext, OperationPipeline } from '@mmt/scripting';
 
 /**
- * Find orphaned documents - pages with no incoming links.
- * This helps identify disconnected content in the vault.
+ * Document discovery example - finds orphaned pages with no incoming links.
+ * 
+ * Purpose: Identify disconnected documents in your knowledge graph
+ * Use case: Find content that needs integration or might be obsolete
+ * Features: Link analysis, filtering, age calculation
  */
 export default class FindOrphans implements Script {
   define(context: ScriptContext): OperationPipeline {
