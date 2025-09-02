@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach, beforeEach } from 'vitest';
 import path from 'path';
 import fs from 'fs/promises';
 import {
@@ -40,30 +40,85 @@ interface IndexStatus {
   lastUpdated?: Date;
 }
 
+// Console capture utility
+class ConsoleCapture {
+  private originalError: typeof console.error;
+  private originalWarn: typeof console.warn;
+  private originalLog: typeof console.log;
+  private errorCalls: Array<any[]> = [];
+  private warnCalls: Array<any[]> = [];
+  private logCalls: Array<any[]> = [];
+
+  constructor() {
+    this.originalError = console.error;
+    this.originalWarn = console.warn;
+    this.originalLog = console.log;
+  }
+
+  start() {
+    this.errorCalls = [];
+    this.warnCalls = [];
+    this.logCalls = [];
+
+    console.error = (...args: any[]) => {
+      this.errorCalls.push(args);
+      // Still output to original console for debugging if tests fail
+      this.originalError.apply(console, args);
+    };
+
+    console.warn = (...args: any[]) => {
+      this.warnCalls.push(args);
+      this.originalWarn.apply(console, args);
+    };
+
+    console.log = (...args: any[]) => {
+      this.logCalls.push(args);
+      this.originalLog.apply(console, args);
+    };
+  }
+
+  stop() {
+    console.error = this.originalError;
+    console.warn = this.originalWarn;
+    console.log = this.originalLog;
+  }
+
+  getErrorCalls() {
+    return this.errorCalls;
+  }
+
+  getWarnCalls() {
+    return this.warnCalls;
+  }
+
+  getLogCalls() {
+    return this.logCalls;
+  }
+
+  hasErrorBeenCalled() {
+    return this.errorCalls.length > 0;
+  }
+}
+
 describe('Similarity Search - Error Reporting and Visibility', () => {
   let testVaultPath: string;
   let testIndexPath: string;
   let similarityService: SimilaritySearchService;
-  let consoleErrorSpy: any;
-  let consoleWarnSpy: any;
-  let consoleLogSpy: any;
+  let consoleCapture: ConsoleCapture;
 
   beforeAll(async () => {
     await requireOllama();
   });
 
   beforeEach(() => {
-    // Spy on console methods to verify error visibility
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    // Start capturing console output
+    consoleCapture = new ConsoleCapture();
+    consoleCapture.start();
   });
 
   afterEach(async () => {
-    // Restore console methods
-    consoleErrorSpy.mockRestore();
-    consoleWarnSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    // Stop capturing and restore console methods
+    consoleCapture.stop();
     
     // Cleanup
     if (similarityService) {
@@ -114,10 +169,10 @@ describe('Similarity Search - Error Reporting and Visibility', () => {
     await similarityService.indexDirectory(testVaultPath, '**/*.md');
     
     // Assert - Console errors should be logged
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(consoleCapture.hasErrorBeenCalled()).toBe(true);
     
     // Should have logged errors for empty documents
-    const errorCalls = consoleErrorSpy.mock.calls;
+    const errorCalls = consoleCapture.getErrorCalls();
     const errorMessages = errorCalls.map(call => call.join(' ')).join('\n');
     
     expect(errorMessages).toMatch(/empty\.md/);
@@ -216,7 +271,7 @@ describe('Similarity Search - Error Reporting and Visibility', () => {
     expect(error.error.toLowerCase()).toMatch(/empty|whitespace|content/);
     
     // Console error should include file path
-    const errorCalls = consoleErrorSpy.mock.calls;
+    const errorCalls = consoleCapture.getErrorCalls();
     const errorOutput = errorCalls.map(call => call.join(' ')).join('\n');
     expect(errorOutput).toContain('problematic.md');
   });

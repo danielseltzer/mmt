@@ -1,4 +1,4 @@
-import { SimilaritySearchService } from '../../src/services/similarity-search.js';
+import { SimilaritySearchService } from '@mmt/vault';
 import type { Config } from '@mmt/entities';
 
 /**
