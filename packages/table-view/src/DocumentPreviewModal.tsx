@@ -38,6 +38,7 @@ export function DocumentPreviewModal({
 
   // Fetch preview data when modal opens
   useEffect(() => {
+    console.log('[DocumentPreviewModal] Effect triggered:', { isOpen, documentPath, vaultId });
     if (isOpen && documentPath && vaultId) {
       fetchPreview();
     }
@@ -50,21 +51,22 @@ export function DocumentPreviewModal({
     try {
       // Encode the path to handle special characters
       const encodedPath = encodeURIComponent(documentPath);
-      const response = await fetch(
-        getApiEndpoint(`/api/vaults/${vaultId}/documents/preview/${encodedPath}`),
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const apiUrl = getApiEndpoint(`/api/vaults/${vaultId}/documents/preview/${encodedPath}`);
+      console.log('[DocumentPreviewModal] Fetching preview from:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch preview: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('[DocumentPreviewModal] Preview data received:', data);
       setPreviewData(data);
     } catch (err: any) {
       logger.error('Failed to fetch document preview:', err);

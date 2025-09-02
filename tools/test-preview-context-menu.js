@@ -12,7 +12,7 @@ import puppeteer from 'puppeteer';
 
 async function testPreviewContextMenu() {
   const browser = await puppeteer.launch({
-    headless: false, // Set to true for CI
+    headless: true, // Always run headless
     devtools: false,
   });
   

@@ -72,6 +72,7 @@ export function DocumentTable() {
         }}
         currentSort={sortBy ? { field: sortBy, order: sortOrder } : undefined}
         onSortChange={setSort}
+        vaultId={currentTab?.vaultId || ''}
       />
     </div>
   );

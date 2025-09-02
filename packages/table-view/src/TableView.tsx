@@ -34,6 +34,7 @@ export interface TableViewProps {
   initialColumns?: string[];
   currentSort?: { field: string; order: 'asc' | 'desc' };
   onSortChange?: (field: string, order: 'asc' | 'desc') => void;
+  vaultId?: string;
 }
 
 interface ContextMenuState {
@@ -53,6 +54,7 @@ export function TableView({
   initialColumns = ['name', 'path', 'modified', 'size', 'tags'],
   currentSort,
   onSortChange,
+  vaultId = '',
 }: TableViewProps) {
   const totalCount = documents.length;
 
@@ -535,6 +537,15 @@ export function TableView({
                     handleRowClick(index, e.shiftKey);
                   }
                 }}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  // Open Preview modal on double-click
+                  const doc = row.original;
+                  if (doc && doc.metadata?.name) {
+                    const relativePath = `${doc.metadata.name}.md`;
+                    setPreviewModal({ isOpen: true, documentPath: relativePath });
+                  }
+                }}
                 onContextMenu={(e) => handleRowContextMenu(e, row.id)}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -575,8 +586,12 @@ export function TableView({
                   // Get the right-clicked row's document path
                   if (contextMenu.rowId) {
                     const doc = documents.find(d => (d.fullPath || d.path) === contextMenu.rowId);
-                    if (doc) {
-                      setPreviewModal({ isOpen: true, documentPath: doc.fullPath || doc.path });
+                    console.log('[TableView] Preview clicked, doc found:', doc);
+                    if (doc && doc.metadata?.name) {
+                      // Extract the relative path from the document name
+                      const relativePath = `${doc.metadata.name}.md`;
+                      console.log('[TableView] Setting preview modal with path:', relativePath);
+                      setPreviewModal({ isOpen: true, documentPath: relativePath });
                     }
                   }
                   setContextMenu({ x: 0, y: 0, type: null });
@@ -757,12 +772,7 @@ export function TableView({
           isOpen={previewModal.isOpen}
           onClose={() => setPreviewModal({ isOpen: false, documentPath: null })}
           documentPath={previewModal.documentPath}
-          vaultId={(() => {
-            // Extract vault ID from the current URL
-            const pathSegments = window.location.pathname.split('/');
-            const vaultIndex = pathSegments.indexOf('vaults');
-            return vaultIndex !== -1 ? pathSegments[vaultIndex + 1] : '';
-          })()}
+          vaultId={vaultId}
         />
       )}
     </div>
