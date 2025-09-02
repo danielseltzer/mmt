@@ -2,8 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { writeFileSync, rmSync, existsSync } from 'fs'
 import { join } from 'path'
-import { QueryBar } from '../../src/components/QueryBar.jsx'
-import { DocumentTable } from '../../src/components/DocumentTable.jsx'
+import { QueryBar } from '../../src/components/QueryBar'
+import { DocumentTable } from '../../src/components/DocumentTable'
 import { useDocumentStore } from '../../src/stores/document-store'
 
 describe('Full Stack Integration Tests', () => {

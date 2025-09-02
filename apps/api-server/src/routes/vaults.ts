@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import type { Context } from '../context.js';
+import { Loggers } from '@mmt/logger';
+
+const logger = Loggers.apiRoutes();
 
 export function vaultsRouter(context: Context): Router {
   const router = Router();
@@ -107,7 +110,7 @@ export function vaultsRouter(context: Context): Router {
           }
         } catch (err) {
           // Log the actual error and include it in response
-          context.logger.error(`Failed to get documents from indexer for vault ${vaultId}:`, err);
+          logger.error(`Failed to get documents from indexer for vault ${vaultId}:`, err);
           indexStatus = 'error';
           indexError = err instanceof Error ? err.message : 'Failed to access indexer';
         }
@@ -125,7 +128,7 @@ export function vaultsRouter(context: Context): Router {
           };
         } catch (err) {
           // Log the actual error but don't fail - similarity is optional
-          context.logger.warn(`Failed to get similarity status for vault ${vaultId}:`, err);
+          logger.warn(`Failed to get similarity status for vault ${vaultId}:`, err);
           similarityStatus = {
             available: false,
             status: 'error',
@@ -225,7 +228,7 @@ export function vaultsRouter(context: Context): Router {
             documentCount = documents.length;
           } catch (err) {
             // Log error but continue - SSE should keep working
-            context.logger.warn(`SSE: Failed to get documents for vault ${vaultId}:`, err);
+            logger.warn(`SSE: Failed to get documents for vault ${vaultId}:`, err);
           }
         }
         

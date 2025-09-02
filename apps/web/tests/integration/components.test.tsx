@@ -3,8 +3,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { QueryBar } from '../../src/components/QueryBar.jsx'
-import { DocumentTable } from '../../src/components/DocumentTable.jsx'
+import { QueryBar } from '../../src/components/QueryBar'
+import { DocumentTable } from '../../src/components/DocumentTable'
 import { useDocumentStore } from '../../src/stores/document-store'
 
 describe.skip('Component Tests (No API) - SKIPPED: These should be true integration tests', () => {
