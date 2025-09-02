@@ -1,7 +1,7 @@
 # Configuration for testing multi-vault tab feature
 vaults:
   - name: 'Personal'
-    path: /Users/danielseltzer/Notes
+    path: /Users/danielseltzer/Notes/Personal-sync-250813
     indexPath: /Users/danielseltzer/code/mmt/.index-personal
     fileWatching:
       enabled: true

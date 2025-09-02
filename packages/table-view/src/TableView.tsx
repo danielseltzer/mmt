@@ -14,6 +14,7 @@ import {
 import type { Document as BaseDocument } from '@mmt/entities';
 import { Loggers } from '@mmt/logger';
 import { getApiEndpoint } from './config/api';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 const logger = Loggers.web();
 
@@ -33,6 +34,7 @@ export interface TableViewProps {
   initialColumns?: string[];
   currentSort?: { field: string; order: 'asc' | 'desc' };
   onSortChange?: (field: string, order: 'asc' | 'desc') => void;
+  vaultId?: string;
 }
 
 interface ContextMenuState {
@@ -52,6 +54,7 @@ export function TableView({
   initialColumns = ['name', 'path', 'modified', 'size', 'tags'],
   currentSort,
   onSortChange,
+  vaultId = '',
 }: TableViewProps) {
   const totalCount = documents.length;
 
@@ -69,6 +72,10 @@ export function TableView({
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ x: 0, y: 0, type: null });
   const [contentCache, setContentCache] = useState<Record<string, string>>({});
+  const [previewModal, setPreviewModal] = useState<{ isOpen: boolean; documentPath: string | null }>({ 
+    isOpen: false, 
+    documentPath: null 
+  });
   
   // Track last selected index for shift-click
   const lastSelectedIndex = React.useRef<number>(-1);
@@ -530,6 +537,15 @@ export function TableView({
                     handleRowClick(index, e.shiftKey);
                   }
                 }}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  // Open Preview modal on double-click
+                  const doc = row.original;
+                  if (doc && doc.metadata?.name) {
+                    const relativePath = `${doc.metadata.name}.md`;
+                    setPreviewModal({ isOpen: true, documentPath: relativePath });
+                  }
+                }}
                 onContextMenu={(e) => handleRowContextMenu(e, row.id)}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -564,6 +580,25 @@ export function TableView({
           )}
           {contextMenu.type === 'row' && (
             <>
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-muted"
+                onClick={() => {
+                  // Get the right-clicked row's document path
+                  if (contextMenu.rowId) {
+                    const doc = documents.find(d => (d.fullPath || d.path) === contextMenu.rowId);
+                    console.log('[TableView] Preview clicked, doc found:', doc);
+                    if (doc && doc.metadata?.name) {
+                      // Extract the relative path from the document name
+                      const relativePath = `${doc.metadata.name}.md`;
+                      console.log('[TableView] Setting preview modal with path:', relativePath);
+                      setPreviewModal({ isOpen: true, documentPath: relativePath });
+                    }
+                  }
+                  setContextMenu({ x: 0, y: 0, type: null });
+                }}
+              >
+                Preview
+              </button>
               <button
                 className="w-full px-4 py-2 text-left hover:bg-muted"
                 onClick={() => {
@@ -729,6 +764,16 @@ export function TableView({
             </>
           )}
         </div>
+      )}
+
+      {/* Document Preview Modal */}
+      {previewModal.isOpen && previewModal.documentPath && (
+        <DocumentPreviewModal
+          isOpen={previewModal.isOpen}
+          onClose={() => setPreviewModal({ isOpen: false, documentPath: null })}
+          documentPath={previewModal.documentPath}
+          vaultId={vaultId}
+        />
       )}
     </div>
   );
