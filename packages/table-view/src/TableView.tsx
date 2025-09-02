@@ -14,6 +14,7 @@ import {
 import type { Document as BaseDocument } from '@mmt/entities';
 import { Loggers } from '@mmt/logger';
 import { getApiEndpoint } from './config/api';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 const logger = Loggers.web();
 
@@ -69,6 +70,10 @@ export function TableView({
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ x: 0, y: 0, type: null });
   const [contentCache, setContentCache] = useState<Record<string, string>>({});
+  const [previewModal, setPreviewModal] = useState<{ isOpen: boolean; documentPath: string | null }>({ 
+    isOpen: false, 
+    documentPath: null 
+  });
   
   // Track last selected index for shift-click
   const lastSelectedIndex = React.useRef<number>(-1);
@@ -567,6 +572,21 @@ export function TableView({
               <button
                 className="w-full px-4 py-2 text-left hover:bg-muted"
                 onClick={() => {
+                  // Get the right-clicked row's document path
+                  if (contextMenu.rowId) {
+                    const doc = documents.find(d => (d.fullPath || d.path) === contextMenu.rowId);
+                    if (doc) {
+                      setPreviewModal({ isOpen: true, documentPath: doc.fullPath || doc.path });
+                    }
+                  }
+                  setContextMenu({ x: 0, y: 0, type: null });
+                }}
+              >
+                Preview
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-muted"
+                onClick={() => {
                   // Use the row that was right-clicked (from context menu)
                   const targetRowId = contextMenu.rowId;
                   if (targetRowId) {
@@ -729,6 +749,21 @@ export function TableView({
             </>
           )}
         </div>
+      )}
+
+      {/* Document Preview Modal */}
+      {previewModal.isOpen && previewModal.documentPath && (
+        <DocumentPreviewModal
+          isOpen={previewModal.isOpen}
+          onClose={() => setPreviewModal({ isOpen: false, documentPath: null })}
+          documentPath={previewModal.documentPath}
+          vaultId={(() => {
+            // Extract vault ID from the current URL
+            const pathSegments = window.location.pathname.split('/');
+            const vaultIndex = pathSegments.indexOf('vaults');
+            return vaultIndex !== -1 ? pathSegments[vaultIndex + 1] : '';
+          })()}
+        />
       )}
     </div>
   );
