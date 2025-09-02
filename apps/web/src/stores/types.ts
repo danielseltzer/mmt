@@ -60,3 +60,18 @@ export interface TabState {
   loadingSimilarity: boolean;
   error: string | null;
 }
+
+// Vault index status interface
+export interface VaultIndexStatus {
+  status: 'ready' | 'indexing' | 'not_indexed' | 'error' | 'initializing';
+  documentCount: number;
+  totalDocuments?: number;
+  lastIndexed?: string;
+  indexProgress?: number;
+  error?: string;
+  similarityStatus?: {
+    available: boolean;
+    status: string;
+    ollamaConnected?: boolean;
+  };
+}
