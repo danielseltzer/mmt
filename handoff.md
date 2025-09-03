@@ -1,145 +1,124 @@
 # Handoff Document - MMT Project Status
 
-## Date: 2025-08-30
+## Date: 2025-09-02
 
 ## Current State
 
-### ✅ Completed Work (This Session)
+### ✅ Most Recent Work (This Session - Issue #228)
 
-#### Critical Issues Resolved
-1. **Playwright Tests Opening Browser Windows** ✅
-   - Fixed: Set `headless: true` in global `use` object as single control point
-   - Tests now run headless by default without opening browser windows
-   - Created separate `playwright.config.debug.ts` for debugging with visible browser
-   - Verified: Tests run without disrupting development workflow
+1. **Refactored document-store.ts** (Issue #228) ✅
+   - Reduced from 926 lines to 548 lines (41% reduction)
+   - Extracted 5 new modules for better organization:
+     - `document-operations.ts` - Document fetching logic
+     - `similarity-search.ts` - Similarity search operations
+     - `vault-manager.ts` - Vault loading and status management
+     - `tab-initialization.ts` - Initial tab setup logic
+     - `document-store-types.ts` - Store interface definition
+   - All compliance checks passing
+   - Browser health check passing
+   - PR #256 created and ready for review
 
-2. **Vault Display Issue** ✅
-   - Issue was misunderstood: UI correctly shows first vault with tab, others in dropdown
-   - All 3 vaults (Personal, InD BizDev, Work) are accessible and functional
-   - Enhanced error logging and user-visible error messages for vault failures
-   - Confirmed: Personal (5,992 docs), InD BizDev (165 docs), Work (5,126 docs)
+### ✅ Completed Work (Previous Session)
 
-3. **Qdrant Similarity Search Initialization Error** ✅
-   - Fixed: Provider factory now uses vault-specific instance keys (`${name}-${vaultId}`)
-   - Each vault maintains its own Qdrant client connection
-   - Resolved conflicts when multiple vaults use same provider
-   - Similarity search now works correctly for all vaults
+#### Major Features Implemented
 
-4. **TableView Column Sorting Infinite Loop** ✅
-   - Fixed: Circular dependency in sorting state management
-   - Added change detection to prevent redundant state updates
-   - Implemented single source of truth for sorting state
-   - Added proper guards and memoization to prevent cascading updates
-   - **Verified with actual UI testing**: All column headers sort without errors
+1. **Issue #150 - Preview Feature Implementation** ✅
+   - Added "Preview" as first option in right-click context menu
+   - Created DocumentPreviewModal component displaying document content and metadata
+   - Added double-click on table row to open Preview modal
+   - Fixed issue where modal showed empty content (path was incorrectly "/" instead of filename)
+   - Full test coverage including TDD approach
+   - PR #255 merged successfully
 
-#### Previous Session Work
-1. **#234 - TableView Testing Strategy (P1)** ✅
-   - Refactored 675-line component to 213 lines
-   - Created TableCore class for business logic
-   - Added 19 comprehensive headless tests
+2. **Critical Compliance and Cleanup Work** ✅
+   - **Issues #132, #246**: Removed all hard-coded URLs and Electron references
+   - **Issue #248**: Removed .claude folders from git tracking
+   - **Issues #56, #223**: Reduced test scripts from 24 to 8, converted all JSX to TSX
+   - **Issue #250**: Achieved 100% NO MOCKS compliance
+   - Created automated compliance checker (`/tools/check-compliance.js`)
+   - All PRs merged: #251, #252, #253, #254, #255
 
-2. **#150 - Preview API Migration (P0)** ✅
-   - Moved preview functionality from client to server
-   - Created `/api/vaults/:vaultId/documents/preview/:path` endpoint
+3. **Fixed Critical NO DEFAULTS Violation** ✅
+   - Removed environment variable usage for configuration
+   - Implemented proper YAML-based configuration flow
+   - Fixed VITE_API_PORT fallback violations
+   - Compliance now enforced via pre-commit hooks
 
-3. **#225 - Code Review Cleanup** ✅
-   - Refactored script-runner.ts from 744 to 213 lines (71% reduction)
-   - Removed console.log statements from production code
+4. **Playwright Headless Mode Fixed** ✅
+   - Fixed test-preview-context-menu.js to use `headless: true`
+   - Confirmed main playwright.config.ts has proper headless configuration
+   - Tests now run without opening browser windows
 
-4. **#223 - TypeScript Cleanup** ✅
-   - Fixed all TypeScript compilation errors
-
-5. **#246 - Remove Electron References** ✅
-   - Deleted unused Electron scripts
-   - Clarified as pure web application
-
-6. **Stop Command Fix** ✅
-   - Now properly kills all processes (web on 5173, API on 3001)
-
-### 🟡 Pending User Action
-
-#### UAT (User Acceptance Testing) Required
-**Next Step**: User needs to perform comprehensive UAT pass on the web UI to verify:
-- Column sorting works correctly on all headers (Name, Vault, Modified, Size, etc.)
-- Vault switching between Personal, InD BizDev, and Work vaults
-- Similarity search functionality across all vaults
-- Document loading and filtering
-- No infinite loops or "Maximum update depth exceeded" errors
-- General UI responsiveness and functionality
-
-**Why UAT is needed**: While automated tests pass and browser health checks show no errors, the user has previously encountered issues that weren't caught by automated testing. A manual UAT pass will confirm the fixes work in real-world usage.
+#### Testing Improvements
+- Created comprehensive TDD test for Preview feature
+- Added double-click test coverage
+- All tests passing in headless mode
+- Browser health check functioning correctly
 
 ### 🎯 Application Status
 - **API Server**: ✅ Running correctly on port 3001
 - **Web UI**: ✅ Running on port 5173
 - **Browser Health**: ✅ HEALTHY (no console errors)
-- **Playwright Tests**: ✅ Running headless without opening browser windows
-- **Vaults Loaded**: 
-  - Personal: 5,992 docs ✅ (accessible via UI)
-  - InD BizDev: 165 docs ✅ (accessible via dropdown)
-  - Work: 5,126 docs ✅ (accessible via dropdown)
-- **Column Sorting**: ✅ Working without infinite loops
-- **Similarity Search**: ✅ Working across all vaults
+- **Preview Feature**: ✅ Working via both right-click and double-click
+- **Compliance**: ✅ 100% compliant (NO MOCKS, NO DEFAULTS, etc.)
+- **TypeScript**: ✅ All files migrated to TSX, no compilation errors
+- **Test Coverage**: ✅ Comprehensive tests for all new features
 
 ## Next Priority Actions
 
-### 1. User Acceptance Testing (IMMEDIATE)
-**Who**: User (danielseltzer)
-**What**: Manual testing of the web UI to verify all fixes work correctly
-**Focus Areas**:
-- Click all column headers to test sorting (Name, Vault, Modified, Size)
-- Switch between all 3 vaults (Personal, InD BizDev, Work)  
-- Test similarity search in each vault
-- Verify no "Maximum update depth exceeded" errors
-- General UI responsiveness and functionality
+### High Priority Issues
+1. **#245** - File operations (Reveal in Finder, QuickLook) not working in web UI
+2. **#174** - Create set operations panel (v3-core, v3-ui)
+3. **#153** - Implement download functionality for OUTPUT panel
 
-### 2. Lower Priority Issues (After UAT)
-- **#228** - Refactor remaining large files
-- **#149** - Move control-manager to /apps
-- **#132** - Remove hard-coded URLs/ports
+### Medium Priority
+1. **#128** - Add operation execution feedback and progress in GUI
+2. **#18** - Create Reports Package
 
 ## Commands Reference
 
 ```bash
 # Start application
-./bin/mmt start --config config/daniel-vaults.yaml
+./bin/mmt start --config config/test/multi-vault-test-config.yaml
 
-# Check status
-./bin/mmt status
-
-# Stop application (properly kills all processes)
+# Stop application
 ./bin/mmt stop
+
+# Run compliance checks
+node tools/check-compliance.js
 
 # Run tests (headless mode)
 pnpm test:e2e
 
-# Browser health check (headless, works correctly)
+# Browser health check
 node tools/check-browser-health.js
 
-# Build API server
-pnpm --filter @mmt/api-server build
+# Build all packages
+pnpm build
 
 # Type check
 pnpm type-check
 ```
 
-## Test Files Created
-- `/tests/e2e/similarity-status.test.ts` - Captures similarity endpoint and vault display issues
+## Key Features Working
+- **Preview Modal**: Right-click → Preview or double-click any row
+- **Vault Management**: Multiple vaults with tab-based navigation
+- **Document Operations**: Sorting, filtering, searching
+- **Similarity Search**: Working when Qdrant is configured
+- **Compliance**: Automated checking and enforcement via pre-commit hooks
 
-## Key Fixes Applied
-- Similarity router: Added `mergeParams: true` and fixed vault access pattern
-- Stop command: Now kills processes by port (5173, 3001)
-- TableView: Refactored with TableCore for testability
-- All TypeScript errors resolved
-- Console.logs removed from production
-
-## Known Issues
-- **Playwright headless not working** - Tests open browser despite config
-- **Vaults missing from UI** - Only Personal shows, no error messages
-- **YAML parsing errors** - 11 files in InD BizDev vault have frontmatter issues (non-blocking)
+## Known Issues (Resolved)
+- ~~Playwright tests opening browser windows~~ ✅ Fixed
+- ~~Preview modal not showing content~~ ✅ Fixed
+- ~~NO DEFAULTS violations with env vars~~ ✅ Fixed
+- ~~Mock usage in tests~~ ✅ Fixed (100% compliance)
 
 ## Notes for Next Session
-1. **PRIORITY**: Fix Playwright headless - it's disrupting development
-2. Then fix vault display - users need to see all configured vaults
-3. Consider adding explicit error UI when vaults fail to load
-4. All core functionality is working, just UI/testing issues remain
+1. All critical issues have been resolved
+2. Preview feature fully functional and tested
+3. Codebase is 100% compliant with CLAUDE.md principles
+4. Consider working on remaining open issues (#245, #174, #153)
+5. User has confirmed Preview works both ways (right-click and double-click)
+
+## Session Summary
+This was a highly productive session focused on completing the Preview feature (Issue #150) and achieving full compliance with project principles. The TDD approach successfully identified and resolved a critical bug where the document path wasn't being passed correctly to the Preview modal. All work has been merged and the application is in a stable, compliant state.
