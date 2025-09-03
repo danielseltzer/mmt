@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,12 +10,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useDocumentStore } from '../stores/document-store';
+import { useDocumentStore, useCurrentTab } from '../stores/document-store';
+import type { Document } from '../stores/types';
 
-const columnHelper = createColumnHelper();
+const columnHelper = createColumnHelper<Document>();
 
-export function EnhancedDocumentTable({ documents }) {
-  const { searchMode, findSimilarDocuments, setSort, sortBy, sortOrder } = useDocumentStore();
+interface EnhancedDocumentTableProps {
+  documents: Document[];
+}
+
+export function EnhancedDocumentTable({ documents }: EnhancedDocumentTableProps) {
+  const { findSimilarDocuments, setSort } = useDocumentStore();
+  const currentTab = useCurrentTab();
+  const searchMode = currentTab?.searchMode || 'text';
   const [sorting, setSorting] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
 
@@ -61,7 +68,7 @@ export function EnhancedDocumentTable({ documents }) {
         header: 'Path',
         size: 300,
         cell: ({ getValue }) => {
-          const fullPath = getValue();
+          const fullPath = getValue() as string;
           // Clean up path for display
           const cleanPath = fullPath
             .replace(/^\/Users\/[^/]+\/[^/]+\/[^/]+/, '')
@@ -129,9 +136,9 @@ export function EnhancedDocumentTable({ documents }) {
               </div>
             );
           },
-          sortingFn: (rowA, rowB) => {
-            const a = rowA.original.similarityScore || 0;
-            const b = rowB.original.similarityScore || 0;
+          sortingFn: (rowA: any, rowB: any) => {
+            const a = (rowA.original as Document).similarityScore || 0;
+            const b = (rowB.original as Document).similarityScore || 0;
             return a - b;
           },
         })
