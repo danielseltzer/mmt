@@ -44,11 +44,26 @@ describe('Document Table Sorting', () => {
     // Reset the store to initial state and set test data
     const store = useDocumentStore.getState();
 
-    // Reset store state
-    store.setDocuments(testDocuments);
-    store.setLoading(false);
-    store.setError(null);
-    store.setSort(undefined, 'asc');
+    // Create a test tab with test documents
+    store.tabs = [{
+      tabId: 'test-tab',
+      vaultId: 'test-vault',
+      tabName: 'Test Tab',
+      documents: testDocuments,
+      filteredDocuments: testDocuments,
+      totalCount: testDocuments.length,
+      vaultTotal: testDocuments.length,
+      searchQuery: '',
+      filters: { conditions: [], logic: 'AND' },
+      sortBy: undefined,
+      sortOrder: 'asc',
+      searchMode: 'text',
+      similarityResults: [],
+      loading: false,
+      loadingSimilarity: false,
+      error: null
+    }];
+    store.activeTabId = 'test-tab';
   });
 
   it('should update sort state when Name column header is clicked', () => {
@@ -58,27 +73,27 @@ describe('Document Table Sorting', () => {
     fireEvent.click(nameHeader);
 
     // Check that the store state was updated
-    const store = useDocumentStore.getState();
-    expect(store.sortBy).toBe('name');
-    expect(store.sortOrder).toBe('asc');
+    const currentTab = useDocumentStore.getState().getCurrentTab();
+    expect(currentTab?.sortBy).toBe('name');
+    expect(currentTab?.sortOrder).toBe('asc');
   });
 
   it('should toggle sort order when same column is clicked twice', () => {
-    const { rerender } = render(<DocumentTable />);
+    render(<DocumentTable />);
     
     const nameHeader = screen.getByTestId('column-header-name');
     
     // First click - ascending
     fireEvent.click(nameHeader);
-    let store = useDocumentStore.getState();
-    expect(store.sortBy).toBe('name');
-    expect(store.sortOrder).toBe('asc');
+    let currentTab = useDocumentStore.getState().getCurrentTab();
+    expect(currentTab?.sortBy).toBe('name');
+    expect(currentTab?.sortOrder).toBe('asc');
 
     // Second click - should toggle to descending
     fireEvent.click(nameHeader);
-    store = useDocumentStore.getState();
-    expect(store.sortBy).toBe('name');
-    expect(store.sortOrder).toBe('desc');
+    currentTab = useDocumentStore.getState().getCurrentTab();
+    expect(currentTab?.sortBy).toBe('name');
+    expect(currentTab?.sortOrder).toBe('desc');
   });
 
   it('should sort by Path column when clicked', () => {
@@ -87,9 +102,9 @@ describe('Document Table Sorting', () => {
     const pathHeader = screen.getByTestId('column-header-path');
     fireEvent.click(pathHeader);
 
-    const store = useDocumentStore.getState();
-    expect(store.sortBy).toBe('path');
-    expect(store.sortOrder).toBe('asc');
+    const currentTab = useDocumentStore.getState().getCurrentTab();
+    expect(currentTab?.sortBy).toBe('path');
+    expect(currentTab?.sortOrder).toBe('asc');
   });
 
   it('should sort by Modified column when clicked', () => {
@@ -98,9 +113,9 @@ describe('Document Table Sorting', () => {
     const modifiedHeader = screen.getByTestId('column-header-modified');
     fireEvent.click(modifiedHeader);
 
-    const store = useDocumentStore.getState();
-    expect(store.sortBy).toBe('modified');
-    expect(store.sortOrder).toBe('asc');
+    const currentTab = useDocumentStore.getState().getCurrentTab();
+    expect(currentTab?.sortBy).toBe('modified');
+    expect(currentTab?.sortOrder).toBe('asc');
   });
 
   it('should sort by Size column when clicked', () => {
@@ -109,15 +124,19 @@ describe('Document Table Sorting', () => {
     const sizeHeader = screen.getByTestId('column-header-size');
     fireEvent.click(sizeHeader);
 
-    const store = useDocumentStore.getState();
-    expect(store.sortBy).toBe('size');
-    expect(store.sortOrder).toBe('asc');
+    const currentTab = useDocumentStore.getState().getCurrentTab();
+    expect(currentTab?.sortBy).toBe('size');
+    expect(currentTab?.sortOrder).toBe('asc');
   });
 
   it('should show sort indicator on sorted column', () => {
     // Set up the store with a sorted state
     const store = useDocumentStore.getState();
-    store.setSort('name', 'desc');
+    // Update the current tab's sort state
+    if (store.tabs[0]) {
+      store.tabs[0].sortBy = 'name';
+      store.tabs[0].sortOrder = 'desc';
+    }
 
     render(<DocumentTable />);
 

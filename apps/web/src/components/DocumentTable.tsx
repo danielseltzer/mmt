@@ -1,7 +1,6 @@
 import { TableView } from '@mmt/table-view';
 import { EnhancedDocumentTable } from './EnhancedDocumentTable';
 import { useDocumentStore, useCurrentTab } from '../stores/document-store';
-import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Sparkles } from 'lucide-react';
 import { Loggers } from '@mmt/logger';
@@ -66,7 +65,7 @@ export function DocumentTable() {
   return (
     <div className="flex-1 overflow-hidden" data-testid="document-table">
       <TableView 
-        documents={filteredDocuments}
+        documents={filteredDocuments as any}
         onSelectionChange={(selectedIds) => {
           logger.debug('Selected documents:', selectedIds);
         }}
