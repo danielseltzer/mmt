@@ -1,10 +1,19 @@
 # Handoff Document - MMT Project Status
 
-## Date: 2025-09-02
+## Date: 2025-09-03
 
 ## Current State
 
-### ✅ Most Recent Work (This Session - Issue #228)
+### ✅ Most Recent Work - Issue #258 (MERGED)
+
+**PR #259 Merged** - Converted integration tests to proper E2E tests
+- Created 16 comprehensive Playwright E2E tests
+- All 16 tests passing (100% success rate)
+- Removed obsolete React Testing Library integration layer
+- Tests now properly verify full user workflows
+- All tests run in headless mode
+
+### ✅ Previous Session Work - Issue #228
 
 1. **Refactored document-store.ts** (Issue #228) ✅
    - Reduced from 926 lines to 548 lines (41% reduction)
@@ -67,9 +76,11 @@
 ## Next Priority Actions
 
 ### High Priority Issues
-1. **#245** - File operations (Reveal in Finder, QuickLook) not working in web UI
-2. **#174** - Create set operations panel (v3-core, v3-ui)
-3. **#153** - Implement download functionality for OUTPUT panel
+1. **#257** - Refactor table-view package to remove document-specific code
+2. **#234** - Extract non-table-specific code from table-view package
+3. **#245** - File operations (Reveal in Finder, QuickLook) not working in web UI
+4. **#174** - Create set operations panel (v3-core, v3-ui)
+5. **#153** - Implement download functionality for OUTPUT panel
 
 ### Medium Priority
 1. **#128** - Add operation execution feedback and progress in GUI
