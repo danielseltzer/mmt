@@ -4,6 +4,7 @@
  */
 
 import type { Document, FilterCollection } from './types.js';
+import { API_ENDPOINTS } from '../config/api.js';
 
 export interface DocumentFetchParams {
   vaultId: string;
@@ -52,28 +53,32 @@ export async function fetchDocuments(params: DocumentFetchParams): Promise<Docum
     queryParams.append('filters', JSON.stringify(filters));
   }
   
-  // Use vault-aware endpoint with properly encoded vault ID
-  const url = `/api/vaults/${encodeURIComponent(vaultId)}/documents?${queryParams.toString()}`;
-  console.log('[fetchDocuments] Fetching from URL:', url);
+  // Use centralized API endpoint configuration
+  const baseUrl = API_ENDPOINTS.vaultDocuments(vaultId);
+  const url = `${baseUrl}?${queryParams.toString()}`;
   
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[fetchDocuments] API error:', errorText);
-    throw new Error(`HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    return {
+      documents: data.documents || [],
+      total: data.total || 0,
+      vaultTotal: data.vaultTotal || 0
+    };
+  } catch (error) {
+    console.error('[document-operations] Error fetching documents:', error);
+    throw error;
   }
-  
-  const data = await response.json();
-  console.log('[fetchDocuments] Received data:', { 
-    documents: data.documents?.length || 0, 
-    total: data.total,
-    vaultTotal: data.vaultTotal 
-  });
-  
-  return {
-    documents: data.documents || [],
-    total: data.total || 0,
-    vaultTotal: data.vaultTotal || 0
-  };
 }

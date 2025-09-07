@@ -8,8 +8,18 @@ import {
   SimilarityStatus,
   ProviderInitOptions
 } from '@mmt/similarity-provider';
-import { Loggers, formatError, type Logger } from '@mmt/logger';
+import { Loggers, type Logger } from '@mmt/logger';
 import { isAxiosLikeError } from '@mmt/entities';
+
+interface QdrantPayload {
+  originalId: string;
+  path: string;
+  title?: unknown;
+  tags?: unknown;
+  created?: unknown;
+  modified?: unknown;
+  size?: unknown;
+}
 
 /**
  * Qdrant vector database provider implementation
@@ -17,10 +27,10 @@ import { isAxiosLikeError } from '@mmt/entities';
 export class QdrantProvider extends BaseSimilarityProvider {
   readonly name = 'qdrant';
   private client?: QdrantClient;
-  private collectionName: string = 'documents';
+  private collectionName = 'documents';
   private ollamaUrl?: string;
   private model?: string;
-  private documentCount: number = 0;
+  private documentCount = 0;
   private lastIndexedTime?: Date;
   private lastError?: string;
   private logger: Logger = Loggers.qdrant();
@@ -30,24 +40,35 @@ export class QdrantProvider extends BaseSimilarityProvider {
     
     this.logger.info('Starting Qdrant provider initialization', {
       vaultId: options.vaultId,
-      hasConfig: !!config,
-      hasQdrantConfig: !!config.qdrant
+      hasConfig: Boolean(config),
+      hasQdrantConfig: Boolean(config.qdrant)
     });
     
-    // Get Qdrant configuration
-    const qdrantConfig = config.qdrant || {
-      url: 'http://localhost:6333',
-      collectionName: 'documents',
-      onDisk: false
-    };
+    // Get Qdrant URL - check if qdrant.url is configured, otherwise fail (NO DEFAULTS)
+    const qdrantUrl = config.qdrant?.url;
+    if (!qdrantUrl) {
+      throw new Error('Qdrant URL must be configured via qdrant.url');
+    }
+    
+    // Get Ollama URL - check if configured, otherwise fail (NO DEFAULTS)
+    const { ollamaUrl } = config;
+    if (!ollamaUrl) {
+      throw new Error('Ollama URL must be configured via ollamaUrl');
+    }
+    
+    // Get collection name from qdrant config or fail
+    const collectionName = config.qdrant?.collectionName;
+    if (!collectionName) {
+      throw new Error('Qdrant collection name must be configured via qdrant.collectionName');
+    }
     
     // Store configuration
-    this.ollamaUrl = config.ollamaUrl;
+    this.ollamaUrl = ollamaUrl;
     this.model = config.model;
-    this.collectionName = qdrantConfig.collectionName;
+    this.collectionName = collectionName;
     
     this.logger.info('Creating Qdrant client', {
-      url: qdrantConfig.url,
+      url: qdrantUrl,
       collectionName: this.collectionName,
       ollamaUrl: this.ollamaUrl,
       model: this.model
@@ -55,7 +76,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
     
     // Initialize Qdrant client
     this.client = new QdrantClient({
-      url: qdrantConfig.url,
+      url: qdrantUrl,
       timeout: 30000 // 30 second timeout
     });
     
@@ -71,16 +92,17 @@ export class QdrantProvider extends BaseSimilarityProvider {
       collectionName: this.collectionName,
       documentCount: this.documentCount,
       initialized: this.initialized,
-      hasClient: !!this.client
+      hasClient: Boolean(this.client)
     });
   }
   
-  protected async doShutdown(): Promise<void> {
+  protected doShutdown(): Promise<void> {
     // Qdrant client doesn't need explicit cleanup
     this.client = undefined;
     this.documentCount = 0;
     this.lastIndexedTime = undefined;
     this.lastError = undefined;
+    return Promise.resolve();
   }
   
   private async ensureCollection(): Promise<void> {
@@ -91,7 +113,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
     try {
       // Check if collection exists
       const collections = await this.client.getCollections();
-      const exists = collections.collections?.some(c => c.name === this.collectionName);
+      const exists = collections.collections.some(c => c.name === this.collectionName);
       
       if (!exists) {
         // Create collection with appropriate vector size for nomic-embed-text
@@ -123,11 +145,11 @@ export class QdrantProvider extends BaseSimilarityProvider {
   }
   
   private async updateDocumentCount(): Promise<void> {
-    if (!this.client) return;
+    if (!this.client) {return;}
     
     try {
       const info = await this.client.getCollection(this.collectionName);
-      this.documentCount = info.points_count || 0;
+      this.documentCount = info.points_count ?? 0;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to get document count', {
@@ -204,12 +226,12 @@ export class QdrantProvider extends BaseSimilarityProvider {
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Ollama embedding failed (${response.status}): ${errorText}`);
+        throw new Error(`Ollama embedding failed (${String(response.status)}): ${errorText}`);
       }
       
       const data = await response.json() as { embedding?: unknown };
       
-      if (!data.embedding || !Array.isArray(data.embedding)) {
+      if (data.embedding === undefined || data.embedding === null || !Array.isArray(data.embedding)) {
         throw new Error('Invalid embedding response from Ollama');
       }
       
@@ -238,17 +260,17 @@ export class QdrantProvider extends BaseSimilarityProvider {
     // Check for empty content - skip with warning
     if (!doc.content || doc.content.trim().length === 0) {
       this.logger.warn(`Skipping empty file: ${doc.path}`);
-      return;  // Exit without error
+      return; // Exit without error
     }
     
     try {
       // Generate embedding if not provided
-      const embedding = doc.embedding || await this.generateEmbedding(doc.content);
+      const embedding = doc.embedding ?? await this.generateEmbedding(doc.content);
       
       // Check if embedding generation failed
-      if (!embedding || embedding.length === 0) {
+      if (embedding.length === 0) {
         this.logger.warn(`Skipping document with no embedding: ${doc.path}`);
-        return;  // Exit without error
+        return; // Exit without error
       }
       
       // Convert MD5 ID to numeric format for Qdrant
@@ -259,14 +281,14 @@ export class QdrantProvider extends BaseSimilarityProvider {
         id: qdrantId,
         vector: embedding,
         payload: {
-          originalId: doc.id,  // Store original MD5 for reference
+          originalId: doc.id, // Store original MD5 for reference
           path: doc.path,
           // Only include specific, small metadata fields
-          title: doc.metadata?.title,
-          tags: doc.metadata?.tags,
-          created: doc.metadata?.created,
-          modified: doc.metadata?.modified,
-          size: doc.metadata?.size
+          title: doc.metadata?.title as unknown,
+          tags: doc.metadata?.tags as unknown,
+          created: doc.metadata?.created as unknown,
+          modified: doc.metadata?.modified as unknown,
+          size: doc.metadata?.size as unknown
           // DO NOT spread all metadata - could include large content fields
         }
       };
@@ -310,13 +332,13 @@ export class QdrantProvider extends BaseSimilarityProvider {
         if (!doc.content || doc.content.trim().length === 0) {
           this.logger.warn(`Skipping empty file: ${doc.path}`);
           skipped++;
-          continue;  // Skip to next document
+          continue; // Skip to next document
         }
         
-        const embedding = doc.embedding || await this.generateEmbedding(doc.content);
+        const embedding = doc.embedding ?? await this.generateEmbedding(doc.content);
         
         // Check if embedding generation failed (empty vector)
-        if (!embedding || embedding.length === 0) {
+        if (embedding.length === 0) {
           this.logger.warn(`Skipping document with no embedding: ${doc.path}`);
           skipped++;
           continue;
@@ -329,14 +351,14 @@ export class QdrantProvider extends BaseSimilarityProvider {
           id: qdrantId,
           vector: embedding,
           payload: {
-            originalId: doc.id,  // Store original MD5 for reference
+            originalId: doc.id, // Store original MD5 for reference
             path: doc.path,
             // Only include specific, small metadata fields
-            title: doc.metadata?.title,
-            tags: doc.metadata?.tags,
-            created: doc.metadata?.created,
-            modified: doc.metadata?.modified,
-            size: doc.metadata?.size
+            title: doc.metadata?.title as unknown,
+            tags: doc.metadata?.tags as unknown,
+            created: doc.metadata?.created as unknown,
+            modified: doc.metadata?.modified as unknown,
+            size: doc.metadata?.size as unknown
             // DO NOT spread all metadata - could include large content fields
           }
         });
@@ -355,7 +377,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
     
     // Batch upsert successful points
     if (points.length > 0) {
-      this.logger.info(`Attempting to upsert batch of ${points.length} documents`);
+      this.logger.info(`Attempting to upsert batch of ${String(points.length)} documents`);
       try {
         await this.client.upsert(this.collectionName, {
           points
@@ -363,11 +385,11 @@ export class QdrantProvider extends BaseSimilarityProvider {
         
         this.lastIndexedTime = new Date();
         this.documentCount += points.length;
-        this.logger.info(`Successfully upserted ${points.length} documents`);
+        this.logger.info(`Successfully upserted ${String(points.length)} documents`);
       } catch (error) {
         // If batch fails, try indexing documents one by one to identify problematic ones
         const batchError = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Batch upsert failed, falling back to individual indexing for ${points.length} documents`);
+        this.logger.warn(`Batch upsert failed, falling back to individual indexing for ${String(points.length)} documents`);
         this.logger.warn('Batch error was:', {
           error: batchError,
           httpStatus: isAxiosLikeError(error) ? error.response?.status : undefined,
@@ -376,13 +398,13 @@ export class QdrantProvider extends BaseSimilarityProvider {
         
         // Try indexing each document individually
         let individualSuccesses = 0;
-        const failedDocs: Array<{path: string, error: string, payload?: unknown}> = [];
+        const failedDocs: {path: string, error: string, payload?: unknown}[] = [];
         
         for (const point of points) {
-          const originalId = (point.payload as any).originalId;
+          const {originalId} = point.payload as QdrantPayload;
           const doc = docs.find(d => d.id === originalId);
           
-          if (!doc) continue;
+          if (!doc) {continue;}
           
           try {
             // Try to index this single document
@@ -425,15 +447,15 @@ export class QdrantProvider extends BaseSimilarityProvider {
           successful = individualSuccesses;
           this.lastIndexedTime = new Date();
           this.documentCount += individualSuccesses;
-          this.logger.info(`Successfully indexed ${individualSuccesses}/${points.length} documents individually`);
+          this.logger.info(`Successfully indexed ${String(individualSuccesses)}/${String(points.length)} documents individually`);
         }
         
         if (failedDocs.length > 0) {
           // Write failed documents to a file for analysis
           const fs = await import('fs/promises');
-          const failedDocsPath = `/tmp/qdrant-failed-docs-${Date.now()}.json`;
+          const failedDocsPath = `/tmp/qdrant-failed-docs-${String(Date.now())}.json`;
           await fs.writeFile(failedDocsPath, JSON.stringify(failedDocs, null, 2));
-          this.logger.error(`${failedDocs.length} documents failed. Details saved to: ${failedDocsPath}`);
+          this.logger.error(`${String(failedDocs.length)} documents failed. Details saved to: ${failedDocsPath}`);
         }
       }
     }
@@ -447,16 +469,20 @@ export class QdrantProvider extends BaseSimilarityProvider {
     
     // Report summary including skipped files
     if (skipped > 0) {
-      this.logger.info(`Skipped ${skipped} empty/invalid files (warnings logged above)`);
+      this.logger.info(`Skipped ${String(skipped)} empty/invalid files (warnings logged above)`);
     }
     
     if (errors.length > 0) {
-      this.logger.warn(`Batch indexing completed with ${errors.length} errors`);
+      this.logger.warn(`Batch indexing completed with ${String(errors.length)} errors`);
       if (errors.length > 5) {
         this.logger.warn(`First 5 errors:`);
-        errors.slice(0, 5).forEach(e => this.logger.warn(`  - ${e.path}: ${e.error}`));
+        errors.slice(0, 5).forEach(e => {
+          this.logger.warn(`  - ${e.path}: ${e.error}`);
+        });
       } else {
-        errors.forEach(e => this.logger.warn(`  - ${e.path}: ${e.error}`));
+        errors.forEach(e => {
+          this.logger.warn(`  - ${e.path}: ${e.error}`);
+        });
       }
     }
     
@@ -520,7 +546,7 @@ export class QdrantProvider extends BaseSimilarityProvider {
     // Add detailed logging to debug the issue
     this.logger.debug('Search called', {
       initialized: this.initialized,
-      hasClient: !!this.client,
+      hasClient: Boolean(this.client),
       collectionName: this.collectionName,
       queryLength: query.length
     });
@@ -568,11 +594,11 @@ export class QdrantProvider extends BaseSimilarityProvider {
       });
       
       return searchResult.map(hit => ({
-        id: hit.payload?.originalId as string || String(hit.id),  // Return original MD5 ID
+        id: hit.payload?.originalId as string || String(hit.id), // Return original MD5 ID
         path: hit.payload?.path as string || '',
         score: hit.score || 0,
-        content: '',  // Content not stored in Qdrant
-        metadata: hit.payload as Record<string, any>
+        content: '', // Content not stored in Qdrant
+        metadata: hit.payload as Record<string, unknown>
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -1,549 +1,400 @@
+/**
+ * Document Store V2 - Simplified replacement for the complex original
+ * 
+ * Key improvements:
+ * - Single store instead of multiple stores
+ * - Direct API calls without complex abstraction layers
+ * - Proper React StrictMode handling
+ * - Clear error handling
+ * - Maintains tab functionality but simplified
+ */
+
 import { create } from 'zustand';
-import { Loggers } from '@mmt/logger';
-import { API_ENDPOINTS } from '../config/api';
-import type { 
-  Document, 
-  FilterCollection, 
-  Vault, 
-  TabState, 
-  VaultIndexStatus 
-} from './types.js';
-import {
-  generateTabId,
-  createInitialTabState,
-  loadTabsFromStorage,
-  saveTabsToStorage,
-  saveActiveTabId
-} from './tab-manager.js';
-import {
-  initializeTabs,
-  performInitialFetch
-} from './tab-initialization.js';
-import {
-  performSimilaritySearch,
-  findSimilarDocuments,
-  checkSimilarityAvailable
-} from './similarity-search.js';
-import {
-  loadVaults as loadVaultsFromAPI,
-  VaultStatusManager
-} from './vault-manager.js';
-import {
-  fetchDocuments as fetchDocumentsFromAPI,
-  type DocumentFetchParams
-} from './document-operations.js';
-import type { DocumentStoreState } from './document-store-types.js';
 
-const logger = Loggers.web();
+// Types (simplified from original)
+interface Vault {
+  id: string;
+  name: string;
+  status: string;
+}
 
+interface Document {
+  path: string;
+  fullPath: string;
+  metadata: {
+    name: string;
+    modified: string;
+    size: number;
+    frontmatter?: any;
+    tags?: string[];
+    links?: any[];
+  };
+}
 
-// Local storage keys
-const ACTIVE_TAB_STORAGE_KEY = 'mmt-active-tab';
+interface Tab {
+  id: string;
+  vaultId: string;
+  name: string;
+  documents: Document[];
+  searchQuery: string;
+  searchMode: 'text' | 'similarity';
+  loading: boolean;
+  error: string | null;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  vaultTotal?: number; // Total document count from API (not limited by pagination)
+}
 
-// Initialize vault status manager
-const vaultStatusManager = new VaultStatusManager();
-
-export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
-  // Initialize with stored tabs or empty array
-  tabs: [],
-  activeTabId: localStorage.getItem(ACTIVE_TAB_STORAGE_KEY),
+interface DocumentStore {
+  // State
+  vaults: Vault[];
+  tabs: Tab[];
+  activeTabId: string | null;
+  loadingVaults: boolean;
+  error: string | null;
   
-  // Vault state
+  // Actions
+  loadVaults: () => Promise<void>;
+  createTab: (vaultId: string) => void;
+  switchTab: (tabId: string) => void;
+  closeTab: (tabId: string) => void;
+  loadDocuments: (tabId: string) => Promise<void>;
+  updateSearch: (tabId: string, query: string) => void;
+  setSearchMode: (tabId: string, mode: 'text' | 'similarity') => void;
+  performSimilaritySearch: (tabId: string, query: string) => Promise<void>;
+  clearError: () => void;
+  
+  // Getters
+  getActiveTab: () => Tab | null;
+}
+
+// API functions
+const API_BASE = 'http://localhost:3001';
+
+async function fetchVaults(): Promise<Vault[]> {
+  const response = await fetch(`${API_BASE}/api/vaults`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch vaults: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.vaults || [];
+}
+
+async function fetchDocuments(
+  vaultId: string, 
+  searchQuery?: string,
+  sortBy?: string,
+  sortOrder?: 'asc' | 'desc'
+): Promise<{ documents: Document[]; total: number }> {
+  const params = new URLSearchParams();
+  params.append('limit', '500'); // TODO: Implement proper pagination
+  params.append('offset', '0');
+  if (searchQuery) {
+    params.append('q', searchQuery);
+  }
+  // Add sorting parameters for API to handle full dataset sorting
+  if (sortBy) {
+    params.append('sortBy', sortBy);
+    params.append('sortOrder', sortOrder || 'desc');
+  }
+
+  const url = `${API_BASE}/api/vaults/${encodeURIComponent(vaultId)}/documents?${params}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch documents: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return {
+    documents: data.documents || [],
+    total: data.total || 0
+  };
+}
+
+async function performSimilaritySearch(vaultId: string, query: string): Promise<Document[]> {
+  const url = `${API_BASE}/api/vaults/${encodeURIComponent(vaultId)}/similarity/search`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, limit: 500 })
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Similarity search not available for this vault');
+    }
+    if (response.status === 501) {
+      throw new Error('Similarity search is not configured for this vault');
+    }
+    throw new Error(`Similarity search failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  // The API returns 'results' for similarity search, not 'documents'
+  // Results include similarity scores which we should preserve
+  const results = data.results || [];
+  
+  // Transform results to match Document interface if needed
+  return results.map((result: any) => ({
+    path: result.path,
+    fullPath: result.fullPath || result.path,
+    metadata: {
+      name: result.metadata?.name || result.path.split('/').pop(),
+      modified: result.metadata?.modified || new Date().toISOString(),
+      size: result.metadata?.size || 0,
+      frontmatter: result.metadata?.frontmatter,
+      tags: result.metadata?.tags || [],
+      links: result.metadata?.links || [],
+      // Store similarity score as part of metadata for display
+      similarityScore: result.score
+    }
+  }));
+}
+
+// Generate unique IDs
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+// Store implementation
+export const useDocumentStore = create<DocumentStore>((set, get) => ({
+  // Initial state
   vaults: [],
-  isLoadingVaults: false,
-  similarityAvailable: false,
+  tabs: [],
+  activeTabId: null,
+  loadingVaults: false,
+  error: null,
   
-  // Tab management actions
-  createTab: (vaultId: string) => {
-    const vault = get().vaults.find(v => v.id === vaultId);
-    if (!vault) return;
-
-    // Check if there are existing tabs for this vault to create unique names
-    const existingVaultTabs = get().tabs.filter(t => t.vaultId === vaultId);
-    const tabName = existingVaultTabs.length > 0
-      ? `${vault.name} (${existingVaultTabs.length + 1})`
-      : vault.name;
-
-    const newTab = createInitialTabState(vaultId, tabName);
-    const updatedTabs = [...get().tabs, newTab];
-
-    set({
-      tabs: updatedTabs,
-      activeTabId: newTab.tabId
-    });
-
-    saveTabsToStorage(updatedTabs);
-    saveActiveTabId(newTab.tabId);
-
-    // Fetch documents for the new tab
-    get().fetchDocuments();
-  },
-  
-  switchTab: (tabId: string) => {
-    const tab = get().tabs.find(t => t.tabId === tabId);
-    if (!tab) return;
+  // Load vaults from API
+  loadVaults: async () => {
+    const { loadingVaults } = get();
+    if (loadingVaults) return; // Prevent duplicate calls
     
-    set({ activeTabId: tabId });
-    saveActiveTabId(tabId);
+    set({ loadingVaults: true, error: null });
     
-    // If tab has no documents yet, fetch them
-    if (tab.documents.length === 0 && !tab.loading) {
-      get().fetchDocuments();
+    try {
+      console.log('[DocumentStore] Loading vaults...');
+      const vaults = await fetchVaults();
+      console.log('[DocumentStore] Loaded vaults:', vaults.length);
+      
+      set({ vaults, loadingVaults: false });
+      
+      // Auto-create tabs for all vaults if no tabs exist
+      const { tabs } = get();
+      if (tabs.length === 0 && vaults.length > 0) {
+        // Create tabs for all vaults
+        vaults.forEach((vault, index) => {
+          get().createTab(vault.id);
+          // Set first vault as active
+          if (index === 0) {
+            const newTabs = get().tabs;
+            const firstTab = newTabs.find(t => t.vaultId === vault.id);
+            if (firstTab) {
+              set({ activeTabId: firstTab.id });
+            }
+          }
+        });
+      }
+      
+    } catch (error) {
+      console.error('[DocumentStore] Error loading vaults:', error);
+      set({ 
+        loadingVaults: false, 
+        error: error instanceof Error ? error.message : 'Failed to load vaults' 
+      });
     }
   },
   
+  // Create new tab for a vault
+  createTab: (vaultId: string) => {
+    const { vaults, tabs } = get();
+    const vault = vaults.find(v => v.id === vaultId);
+    if (!vault) return;
+    
+    // Check for existing tab with same vault
+    const existingTab = tabs.find(t => t.vaultId === vaultId);
+    if (existingTab) {
+      set({ activeTabId: existingTab.id });
+      return;
+    }
+    
+    const newTab: Tab = {
+      id: generateId(),
+      vaultId,
+      name: vault.name,
+      documents: [],
+      searchQuery: '',
+      searchMode: 'text',
+      loading: false,
+      error: null
+    };
+    
+    set({ 
+      tabs: [...tabs, newTab],
+      activeTabId: newTab.id
+    });
+    
+    // Load documents for the new tab
+    get().loadDocuments(newTab.id);
+  },
+  
+  // Switch to existing tab
+  switchTab: (tabId: string) => {
+    set({ activeTabId: tabId });
+  },
+  
+  // Close tab
   closeTab: (tabId: string) => {
-    const tabs = get().tabs;
-    const activeTabId = get().activeTabId;
-    const tabIndex = tabs.findIndex(t => t.tabId === tabId);
+    const { tabs, activeTabId } = get();
+    const newTabs = tabs.filter(t => t.id !== tabId);
     
-    if (tabIndex === -1 || tabs.length <= 1) return;
-    
-    const updatedTabs = tabs.filter(t => t.tabId !== tabId);
     let newActiveTabId = activeTabId;
-    
-    // If closing the active tab, switch to adjacent tab
     if (activeTabId === tabId) {
-      const newIndex = Math.min(tabIndex, updatedTabs.length - 1);
-      newActiveTabId = updatedTabs[newIndex]?.tabId || null;
+      newActiveTabId = newTabs.length > 0 ? newTabs[0].id : null;
     }
     
     set({ 
-      tabs: updatedTabs,
-      activeTabId: newActiveTabId 
+      tabs: newTabs,
+      activeTabId: newActiveTabId
     });
-    
-    saveTabsToStorage(updatedTabs);
-    saveActiveTabId(newActiveTabId);
   },
   
-  getCurrentTab: () => {
-    const { tabs, activeTabId } = get();
-    return tabs.find(t => t.tabId === activeTabId) || null;
-  },
-  
-  updateTabName: (tabId: string, name: string) => {
-    const tabs = get().tabs;
-    const updatedTabs = tabs.map(tab => 
-      tab.tabId === tabId ? { ...tab, tabName: name } : tab
-    );
+  // Load documents for a specific tab
+  loadDocuments: async (tabId: string) => {
+    const { tabs } = get();
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab || tab.loading) return;
     
-    set({ tabs: updatedTabs });
-    saveTabsToStorage(updatedTabs);
-  },
-  
-  // Per-tab actions
-  setSearchQuery: (query: string) => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
-    const updatedTabs = get().tabs.map(tab =>
-      tab.tabId === currentTab.tabId 
-        ? { ...tab, searchQuery: query }
-        : tab
-    );
-    
-    set({ tabs: updatedTabs });
-  },
-  
-  setFilters: (filters: FilterCollection) => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
-    const updatedTabs = get().tabs.map(tab =>
-      tab.tabId === currentTab.tabId 
-        ? { ...tab, filters }
-        : tab
-    );
-    
-    set({ tabs: updatedTabs });
-    
-    // Trigger a new fetch with the updated filters
-    get().fetchDocuments();
-  },
-  
-  setSort: (sortBy: string, sortOrder: 'asc' | 'desc') => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
-    const updatedTabs = get().tabs.map(tab =>
-      tab.tabId === currentTab.tabId 
-        ? { ...tab, sortBy, sortOrder }
-        : tab
-    );
-    
-    set({ tabs: updatedTabs });
-    
-    // Trigger a new fetch with the updated sort
-    get().fetchDocuments();
-  },
-  
-  fetchDocuments: () => {
-    const state = get();
-    const currentTab = state.getCurrentTab();
-    const tabId = currentTab?.tabId;
-    
-    console.log('[fetchDocuments] Current tab:', currentTab);
-    if (!currentTab || !tabId) {
-      console.log('[fetchDocuments] No current tab, aborting');
-      return;
-    }
-    
-    // Prevent duplicate fetches for the same tab
-    if (currentTab.loading) {
-      console.log('[fetchDocuments] Already loading for this tab, skipping duplicate fetch');
-      return;
-    }
-    
-    // Update loading state for current tab
+    // Update tab loading state
     set({
-      tabs: state.tabs.map(tab =>
-        tab.tabId === tabId
-          ? { ...tab, loading: true, error: null }
-          : tab
+      tabs: tabs.map(t => 
+        t.id === tabId 
+          ? { ...t, loading: true, error: null }
+          : t
       )
     });
     
-    const { searchQuery, filters, sortBy, sortOrder, vaultId } = currentTab;
-    
-    // Use the extracted function
-    const params: DocumentFetchParams = {
-      vaultId,
-      searchQuery,
-      filters,
-      sortBy,
-      sortOrder
-    };
-    
-    fetchDocumentsFromAPI(params)
-      .then(result => {
-        // Update tab with fetched documents - use captured tabId
-        set((currentState) => ({
-          tabs: currentState.tabs.map(tab =>
-            tab.tabId === tabId
-              ? { 
-                  ...tab,
-                  documents: result.documents,
-                  filteredDocuments: result.documents,
-                  totalCount: result.total,
-                  vaultTotal: result.vaultTotal,
-                  loading: false
-                }
-              : tab
-          )
-        }));
-        
-        console.log('[fetchDocuments] Updated tab state, loading should be false');
-      })
-      .catch(error => {
-        console.error('[fetchDocuments] Error:', error);
-        set((currentState) => ({
-          tabs: currentState.tabs.map(tab =>
-            tab.tabId === tabId
-              ? { 
-                  ...tab,
-                  error: error instanceof Error ? error.message : 'Unknown error',
-                  loading: false
-                }
-              : tab
-          )
-        }));
-      });
-  },
-  
-  clearError: () => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
-    set({
-      tabs: get().tabs.map(tab =>
-        tab.tabId === currentTab.tabId 
-          ? { ...tab, error: null }
-          : tab
-      )
-    });
-  },
-  
-  reset: () => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
-    set({
-      tabs: get().tabs.map(tab =>
-        tab.tabId === currentTab.tabId 
-          ? {
-              ...tab,
-              documents: [],
-              filteredDocuments: [],
-              totalCount: 0,
-              vaultTotal: 0,
-              loading: false,
-              error: null,
-              searchQuery: '',
-              filters: { conditions: [], logic: 'AND' },
-              sortBy: undefined,
-              sortOrder: 'asc',
-              searchMode: 'text',
-              similarityResults: [],
-              loadingSimilarity: false
-            }
-          : tab
-      )
-    });
-  },
-  
-  // Similarity search actions
-  setSearchMode: (mode: 'text' | 'similarity') => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
-    set({
-      tabs: get().tabs.map(tab =>
-        tab.tabId === currentTab.tabId 
-          ? { ...tab, searchMode: mode }
-          : tab
-      )
-    });
-    
-    // Clear results when switching modes
-    if (mode === 'text') {
+    try {
+      console.log('[DocumentStore] Loading documents for tab:', tabId, 'vault:', tab.vaultId);
+      const result = await fetchDocuments(
+        tab.vaultId, 
+        tab.searchQuery,
+        tab.sortBy,
+        tab.sortOrder
+      );
+      console.log('[DocumentStore] Loaded documents:', result.documents.length, 'total:', result.total);
+      
       set({
-        tabs: get().tabs.map(tab =>
-          tab.tabId === currentTab.tabId 
-            ? { ...tab, similarityResults: [] }
-            : tab
+        tabs: get().tabs.map(t => 
+          t.id === tabId 
+            ? { ...t, documents: result.documents, vaultTotal: result.total, loading: false }
+            : t
         )
       });
-      get().fetchDocuments();
+      
+    } catch (error) {
+      console.error('[DocumentStore] Error loading documents:', error);
+      set({
+        tabs: get().tabs.map(t => 
+          t.id === tabId 
+            ? { 
+                ...t, 
+                loading: false, 
+                error: error instanceof Error ? error.message : 'Failed to load documents' 
+              }
+            : t
+        )
+      });
+    }
+  },
+  
+  // Update search query for a tab
+  updateSearch: (tabId: string, query: string) => {
+    const { tabs } = get();
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    set({
+      tabs: tabs.map(t =>
+        t.id === tabId
+          ? { ...t, searchQuery: query }
+          : t
+      )
+    });
+
+    // Perform appropriate search based on mode
+    if (tab.searchMode === 'similarity' && query) {
+      get().performSimilaritySearch(tabId, query);
     } else {
-      // If switching to similarity mode and we have a query, perform search
-      if (currentTab.searchQuery) {
-        get().performSimilaritySearch(currentTab.searchQuery);
-      }
+      get().loadDocuments(tabId);
     }
   },
-  
-  performSimilaritySearch: async (query: string) => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
+
+  // Set search mode for a tab
+  setSearchMode: (tabId: string, mode: 'text' | 'similarity') => {
+    const { tabs } = get();
     set({
-      tabs: get().tabs.map(tab =>
-        tab.tabId === currentTab.tabId 
-          ? { ...tab, loadingSimilarity: true, error: null }
-          : tab
+      tabs: tabs.map(t =>
+        t.id === tabId
+          ? { ...t, searchMode: mode }
+          : t
       )
     });
-    
+
+    // Re-run search with new mode
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab?.searchQuery) {
+      get().updateSearch(tabId, tab.searchQuery);
+    }
+  },
+
+  // Perform similarity search
+  performSimilaritySearch: async (tabId: string, query: string) => {
+    const { tabs } = get();
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab || tab.loading) return;
+
+    // Update tab loading state
+    set({
+      tabs: tabs.map(t =>
+        t.id === tabId
+          ? { ...t, loading: true, error: null }
+          : t
+      )
+    });
+
     try {
-      const documentsWithScores = await performSimilaritySearch(
-        currentTab.vaultId,
-        query,
-        20
-      );
-      
+      console.log('[DocumentStore] Performing similarity search for tab:', tabId, 'query:', query);
+      const documents = await performSimilaritySearch(tab.vaultId, query);
+      console.log('[DocumentStore] Similarity search results:', documents.length);
+
       set({
-        tabs: get().tabs.map(tab =>
-          tab.tabId === currentTab.tabId 
-            ? { 
-                ...tab,
-                similarityResults: documentsWithScores,
-                filteredDocuments: documentsWithScores,
-                totalCount: documentsWithScores.length,
-                loadingSimilarity: false,
-                loading: false
-              }
-            : tab
+        tabs: get().tabs.map(t =>
+          t.id === tabId
+            ? { ...t, documents, loading: false }
+            : t
         )
       });
+
     } catch (error) {
-      console.error('[performSimilaritySearch] Error:', error);
+      console.error('[DocumentStore] Error in similarity search:', error);
       set({
-        tabs: get().tabs.map(tab =>
-          tab.tabId === currentTab.tabId 
-            ? { 
-                ...tab,
-                error: error instanceof Error ? error.message : 'Similarity search failed',
-                loadingSimilarity: false,
-                loading: false
-              }
-            : tab
-        )
-      });
-    }
-  },
-  
-  findSimilarDocuments: async (documentPath: string) => {
-    const currentTab = get().getCurrentTab();
-    if (!currentTab) return;
-    
-    set({
-      tabs: get().tabs.map(tab =>
-        tab.tabId === currentTab.tabId 
-          ? { ...tab, loadingSimilarity: true, error: null, searchMode: 'similarity' }
-          : tab
-      )
-    });
-    
-    try {
-      const documentsWithScores = await findSimilarDocuments(
-        currentTab.vaultId,
-        documentPath,
-        10
-      );
-      
-      set({
-        tabs: get().tabs.map(tab =>
-          tab.tabId === currentTab.tabId 
-            ? { 
-                ...tab,
-                similarityResults: documentsWithScores,
-                filteredDocuments: documentsWithScores,
-                totalCount: documentsWithScores.length,
-                loadingSimilarity: false,
+        tabs: get().tabs.map(t =>
+          t.id === tabId
+            ? {
+                ...t,
                 loading: false,
-                searchQuery: `Similar to: ${documentPath.split('/').pop()}`
+                error: error instanceof Error ? error.message : 'Similarity search failed'
               }
-            : tab
-        )
-      });
-    } catch (error) {
-      console.error('[findSimilarDocuments] Error:', error);
-      set({
-        tabs: get().tabs.map(tab =>
-          tab.tabId === currentTab.tabId 
-            ? { 
-                ...tab,
-                error: error instanceof Error ? error.message : 'Find similar failed',
-                loadingSimilarity: false,
-                loading: false
-              }
-            : tab
+            : t
         )
       });
     }
   },
   
-  // Vault actions
-  loadVaults: async () => {
-    // Prevent multiple concurrent loads
-    if (get().isLoadingVaults) {
-      console.log('[loadVaults] Already loading vaults, skipping...');
-      return;
-    }
-    
-    set({ isLoadingVaults: true });
-    console.log('[loadVaults] Starting vault load...');
-    
-    try {
-      const vaults = await loadVaultsFromAPI();
-      console.log('[loadVaults] Loaded vaults:', vaults);
-      
-      // Check if similarity search is available
-      let similarityAvailable = false;
-      if (vaults.length > 0) {
-        similarityAvailable = await checkSimilarityAvailable(vaults[0].id);
-      }
-      
-      set({ vaults, isLoadingVaults: false, similarityAvailable });
-      
-      // Initialize tabs if needed
-      const { tabs } = get();
-      const initResult = initializeTabs(vaults, tabs);
-      
-      if (initResult.tabs !== tabs || initResult.activeTabId) {
-        set({ 
-          tabs: initResult.tabs,
-          activeTabId: initResult.activeTabId || get().activeTabId
-        });
-        
-        saveTabsToStorage(initResult.tabs);
-        if (initResult.activeTabId) {
-          saveActiveTabId(initResult.activeTabId);
-        }
-        
-        // Fetch documents for active tab if needed
-        if (initResult.shouldFetch) {
-          const activeTab = initResult.tabs.find(t => t.tabId === initResult.activeTabId);
-          if (activeTab && initResult.fetchVaultId) {
-            const tabId = activeTab.tabId;
-            performInitialFetch(
-              tabId,
-              initResult.fetchVaultId,
-              (data) => {
-                set((state) => ({
-                  tabs: state.tabs.map(tab =>
-                    tab.tabId === tabId
-                      ? { 
-                          ...tab,
-                          documents: data.documents,
-                          filteredDocuments: data.documents,
-                          totalCount: data.total,
-                          vaultTotal: data.vaultTotal,
-                          loading: false
-                        }
-                      : tab
-                  )
-                }));
-              },
-              (error) => {
-                set((state) => ({
-                  tabs: state.tabs.map(tab =>
-                    tab.tabId === tabId
-                      ? { 
-                          ...tab,
-                          error: 'Failed to load documents',
-                          loading: false
-                        }
-                      : tab
-                  )
-                }));
-              }
-            );
-          } else {
-            get().fetchDocuments();
-          }
-        }
-      }
-    } catch (error) {
-      logger.error('Failed to load vaults:', error);
-      console.error('[loadVaults] Failed to load vaults:', error);
-      console.error('[loadVaults] Error details:', {
-        message: error?.message,
-        stack: error?.stack,
-        type: error?.constructor?.name
-      });
-      set({ 
-        isLoadingVaults: false 
-      });
-    }
-  },
+  // Clear error
+  clearError: () => set({ error: null }),
   
-  // Vault status management
-  updateVaultStatus: (vaultId: string, status: VaultIndexStatus) => {
-    vaultStatusManager.updateStatus(vaultId, status);
-  },
-  
-  getVaultStatus: (vaultId: string) => {
-    return vaultStatusManager.getStatus(vaultId);
+  // Get active tab
+  getActiveTab: () => {
+    const { tabs, activeTabId } = get();
+    return tabs.find(t => t.id === activeTabId) || null;
   }
 }));
-
-// For backward compatibility, expose commonly used getters at the top level
-export const useCurrentTab = () => {
-  const tabs = useDocumentStore(state => state.tabs);
-  const activeTabId = useDocumentStore(state => state.activeTabId);
-  return tabs.find(t => t.tabId === activeTabId) || null;
-};
-export const useActiveDocuments = () => {
-  const currentTab = useCurrentTab();
-  return currentTab?.filteredDocuments || [];
-};
-export const useActiveFilters = () => {
-  const currentTab = useCurrentTab();
-  return currentTab?.filters || { conditions: [], logic: 'AND' };
-};
-export const useActiveTotalCount = () => {
-  const currentTab = useCurrentTab();
-  return currentTab?.totalCount || 0;
-};

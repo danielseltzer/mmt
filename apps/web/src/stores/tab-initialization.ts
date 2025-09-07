@@ -117,6 +117,7 @@ export function initializeTabs(vaults: Vault[], existingTabs: TabState[]): TabIn
 
 /**
  * Perform initial document fetch for first tab
+ * Now uses fetchDocuments for consistency
  */
 export async function performInitialFetch(
   tabId: string,
@@ -124,19 +125,27 @@ export async function performInitialFetch(
   onSuccess: (data: any) => void,
   onError: (error: Error) => void
 ) {
-  const url = `/api/vaults/${encodeURIComponent(vaultId)}/documents?limit=500&offset=0`;
+  // Import the fetchDocuments function directly to avoid circular dependency
+  const { fetchDocuments } = await import('./document-operations.js');
   
-  setTimeout(() => {
-    console.log('[performInitialFetch] Direct fetch for initial load:', url);
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        console.log('[performInitialFetch] Initial fetch complete:', data.documents?.length || 0);
-        onSuccess(data);
-      })
-      .catch(error => {
-        console.error('[performInitialFetch] Initial fetch error:', error);
-        onError(error);
-      });
-  }, 100);
+  console.log('[performInitialFetch] Using fetchDocuments for initial load, vaultId:', vaultId);
+  
+  try {
+    const result = await fetchDocuments({
+      vaultId,
+      limit: 500,
+      offset: 0
+    });
+    
+    console.log('[performInitialFetch] Initial fetch complete:', {
+      documents: result.documents?.length || 0,
+      total: result.total,
+      vaultTotal: result.vaultTotal
+    });
+    
+    onSuccess(result);
+  } catch (error) {
+    console.error('[performInitialFetch] Initial fetch error:', error);
+    onError(error as Error);
+  }
 }

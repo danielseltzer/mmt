@@ -2,25 +2,18 @@ import { useEffect } from 'react';
 import { useDocumentStore } from '@/stores/document-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { X, Plus, Loader2 } from 'lucide-react';
-import { VaultStatusIndicator } from './VaultStatusIndicator';
+import { formatDocumentCount } from '@/utils/format-utils';
 
 export function TabBar() {
   const {
     tabs,
     activeTabId,
     vaults,
-    isLoadingVaults,
+    loadingVaults,
     createTab,
     switchTab,
     closeTab,
-    loadVaults,
   } = useDocumentStore();
   
   console.log('[TabBar] Vaults:', vaults.length, 'Tabs:', tabs.length);
@@ -30,7 +23,7 @@ export function TabBar() {
 
   // Don't show tab bar if no vaults available
   if (!vaults || vaults.length === 0) {
-    if (isLoadingVaults) {
+    if (loadingVaults) {
       return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground px-2 py-1">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -66,20 +59,20 @@ export function TabBar() {
       <div className="flex items-end overflow-x-auto">
         {tabs.map((tab) => {
           const vault = vaults.find(v => v.id === tab.vaultId);
-          const isActive = tab.tabId === activeTabId;
+          const isActive = tab.id === activeTabId;
 
           return (
             <div
-              key={tab.tabId}
+              key={tab.id}
               className={cn(
                 "group flex items-center gap-2 px-4 py-2 cursor-pointer transition-all duration-200",
-                "border-t border-l border-r min-w-[140px] max-w-[220px] relative",
+                "min-w-[140px] max-w-[220px] relative",
                 "rounded-t-lg -mb-px",
                 isActive
-                  ? "bg-background border-border z-10 shadow-sm"
-                  : "bg-muted/40 border-muted-foreground/20 hover:bg-muted/60 hover:border-muted-foreground/30"
+                  ? "bg-background border-2 border-t-2 border-l-2 border-r-2 border-primary z-10 shadow-md ring-2 ring-primary/20"
+                  : "bg-muted/40 border border-t border-l border-r border-muted-foreground/20 hover:bg-muted/60 hover:border-muted-foreground/30"
               )}
-              onClick={() => switchTab(tab.tabId)}
+              onClick={() => switchTab(tab.id)}
               data-testid={`tab-trigger-${tab.vaultId}`}
             >
               {/* Tab content */}
@@ -88,16 +81,12 @@ export function TabBar() {
                   "text-sm truncate",
                   isActive ? "font-medium" : ""
                 )}>
-                  {tab.tabName}
+                  {tab.name}
                 </span>
                 
-                {/* Compact status indicator */}
-                <div data-testid={`tab-status-${tab.vaultId}`}>
-                  <VaultStatusIndicator 
-                    vaultId={tab.vaultId}
-                    compact={true}
-                    className="ml-auto"
-                  />
+                {/* Status indicator temporarily removed */}
+                <div className="text-xs text-muted-foreground">
+                  {tab.loading ? 'Loading...' : `${formatDocumentCount(tab.vaultTotal || tab.documents.length)} docs`}
                 </div>
               </div>
               
@@ -110,7 +99,7 @@ export function TabBar() {
                     "h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity",
                     isActive && "opacity-50 hover:opacity-100"
                   )}
-                  onClick={(e) => handleCloseTab(tab.tabId, e)}
+                  onClick={(e) => handleCloseTab(tab.id, e)}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -119,40 +108,25 @@ export function TabBar() {
           );
         })}
 
-        {/* Add new tab button with vault picker dropdown */}
-        {vaults.some(v => v.status === 'ready') && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <div
-                className={cn(
-                  "flex items-center justify-center cursor-pointer transition-colors",
-                  "w-8 h-8 ml-1 rounded-md hover:bg-muted/60",
-                  "border border-transparent hover:border-muted-foreground/20"
-                )}
-                title="Open new vault tab"
-              >
-                <Plus className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-              {vaults
-                .filter(v => v.status === 'ready')
-                .map((vault) => (
-                  <DropdownMenuItem
-                    key={vault.id}
-                    onClick={() => handleCreateTab(vault.id)}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{vault.name}</span>
-                      {vault.status === 'initializing' && (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {/* Add new tab button - temporarily simplified without dropdown */}
+        {vaults.some(v => v.status === 'ready') && vaults.length > 0 && (
+          <button
+            className={cn(
+              "flex items-center justify-center cursor-pointer transition-colors",
+              "w-8 h-8 ml-1 rounded-md hover:bg-muted/60",
+              "border border-transparent hover:border-muted-foreground/20"
+            )}
+            title="Open new vault tab"
+            onClick={() => {
+              // For now, just create a tab for the first ready vault
+              const firstReadyVault = vaults.find(v => v.status === 'ready');
+              if (firstReadyVault) {
+                handleCreateTab(firstReadyVault.id);
+              }
+            }}
+          >
+            <Plus className="h-4 w-4 text-muted-foreground" />
+          </button>
         )}
       </div>
     </div>

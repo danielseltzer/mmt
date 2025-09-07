@@ -29,6 +29,14 @@ const checkBrowserHealth = async (url = 'http://localhost:5173', options = {}) =
       }
     } else if (type === 'warning') {
       warnings.push(text);
+    } else {
+      // Check for stack traces in console logs (they often come as 'log' type)
+      if (text.includes('Error') && text.includes('    at ')) {
+        errors.push({ 
+          text: 'Stack trace detected in console: ' + text.substring(0, 200), 
+          isStackTrace: true 
+        });
+      }
     }
     
     if (verbose) {
@@ -67,14 +75,98 @@ const checkBrowserHealth = async (url = 'http://localhost:5173', options = {}) =
     
     // Check for React error boundaries
     const reactError = await page.evaluate(() => {
+      // Only look for actual error boundary elements, not data attributes
       const errorElement = document.querySelector('.error-boundary') || 
-                          document.querySelector('[data-error]') ||
-                          document.body.textContent?.includes('Something went wrong');
+                          document.querySelector('.react-error') ||
+                          (document.body.textContent?.includes('Something went wrong') && 
+                           document.body.textContent?.includes('Error boundary'));
       return errorElement ? true : false;
     });
     
     if (reactError) {
       errors.push({ text: 'React error boundary triggered', isReactError: true });
+    }
+    
+    // Check status bar for app state
+    const appStatus = await page.evaluate(() => {
+      const statusBar = document.getElementById('app-status-bar');
+      const statusText = document.getElementById('status-text');
+      const notificationText = document.getElementById('notification-text');
+      
+      // Check for the specific "Loading documents..." text that indicates stuck state
+      const hasLoadingDocumentsText = document.body.textContent?.includes('Loading documents...') || false;
+      
+      return {
+        statusBarExists: !!statusBar,
+        status: statusBar?.dataset?.status || 'unknown',
+        ready: statusBar?.dataset?.ready === 'true',
+        hasError: statusBar?.dataset?.error === 'true',
+        statusText: statusText?.textContent || '',
+        notification: notificationText?.textContent || null,
+        notificationType: statusBar?.querySelector('[data-notification-type]')?.dataset?.notificationType || null,
+        
+        // Check for various loading indicators
+        hasLoadingText: document.body.textContent?.includes('Loading...') || false,
+        hasLoadingDocumentsText: hasLoadingDocumentsText,
+        
+        // Additional checks
+        documentCount: document.getElementById('document-count')?.textContent || '0',
+        vaultCount: document.getElementById('vault-count')?.textContent || '0'
+      };
+    });
+    
+    // Check if app is stuck in loading or error state
+    // The app should NOT show "Loading documents..." for more than a few seconds
+    if (appStatus.hasLoadingDocumentsText) {
+      // Wait a bit longer to see if it resolves
+      await page.waitForTimeout(2000);
+      
+      // Check again
+      const stillLoading = await page.evaluate(() => 
+        document.body.textContent?.includes('Loading documents...')
+      );
+      
+      if (stillLoading) {
+        errors.push({ 
+          text: 'App is stuck showing "Loading documents..." - documents are not loading properly',
+          isLoadingError: true,
+          critical: true
+        });
+      }
+    }
+    
+    // Check status bar state
+    if (appStatus.statusBarExists) {
+      if (!appStatus.ready && appStatus.status !== 'initializing') {
+        if (appStatus.status === 'loading-documents' || appStatus.status === 'loading-vaults') {
+          // Check if it's been loading for too long
+          errors.push({ 
+            text: `App stuck in loading state: ${appStatus.statusText}`,
+            isLoadingError: true,
+            status: appStatus.status
+          });
+        } else if (appStatus.hasError || appStatus.status === 'error' || appStatus.status === 'timeout') {
+          errors.push({ 
+            text: `App in error state: ${appStatus.statusText}${appStatus.notification ? ' - ' + appStatus.notification : ''}`,
+            isAppError: true,
+            status: appStatus.status
+          });
+        } else if (appStatus.status === 'no-vaults') {
+          errors.push({ 
+            text: 'No vaults configured or found',
+            isConfigError: true,
+            status: appStatus.status
+          });
+        }
+      }
+    } else {
+      // No status bar found but page loaded
+      if (appStatus.hasLoadingText || appStatus.hasLoadingDocumentsText) {
+        errors.push({ 
+          text: 'Page shows loading text but no status bar found - app may be broken',
+          isLoadingError: true
+        });
+      }
     }
     
     // Get page title to verify basic loading
@@ -85,6 +177,7 @@ const checkBrowserHealth = async (url = 'http://localhost:5173', options = {}) =
       url,
       title,
       appMounted: appExists,
+      appStatus,
       errors,
       warnings,
       timestamp: new Date().toISOString()
@@ -122,6 +215,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(`Status: ${result.success ? '✅ HEALTHY' : '❌ UNHEALTHY'}`);
       console.log(`Page Title: ${result.title || 'N/A'}`);
       console.log(`App Mounted: ${result.appMounted ? 'Yes' : 'No'}`);
+      
+      if (result.appStatus) {
+        console.log(`\nApp Status: ${result.appStatus.statusText || result.appStatus.status}`);
+        console.log(`Ready: ${result.appStatus.ready ? '✅ Yes' : '❌ No'}`);
+        if (result.appStatus.documentCount !== '0') {
+          console.log(`Documents: ${result.appStatus.documentCount}`);
+        }
+        if (result.appStatus.vaultCount !== '0') {
+          console.log(`Vaults: ${result.appStatus.vaultCount}`);
+        }
+        if (result.appStatus.notification) {
+          console.log(`Notification: [${result.appStatus.notificationType}] ${result.appStatus.notification}`);
+        }
+      }
       
       if (result.errors.length > 0) {
         console.log('\n❌ Errors Found:');

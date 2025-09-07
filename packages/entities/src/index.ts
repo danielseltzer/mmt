@@ -74,3 +74,6 @@ export * from './preview.schema.js';
 
 // Export error classes
 export * from './errors.js';
+
+// Export URL builder utilities
+export * from './url-builder.js';

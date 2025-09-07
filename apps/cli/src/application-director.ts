@@ -4,7 +4,7 @@ import { setDebug, debugLog } from './schemas/cli.schema.js';
 import type { CommandHandler } from './commands/index.js';
 import { HelpCommand } from './commands/help-command.js';
 import { ScriptCommand } from './commands/script-command.js';
-import { readFileSync } from 'node:fs';
+import { NodeFileSystem } from '@mmt/filesystem-access';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Loggers, type Logger } from '@mmt/logger';
@@ -23,10 +23,12 @@ export class ApplicationDirector {
   private commands: Map<string, CommandHandler>;
   private version: string;
   private logger: Logger;
+  private fs: NodeFileSystem;
 
   constructor() {
-    // Initialize logger
+    // Initialize logger and filesystem
     this.logger = Loggers.cli();
+    this.fs = new NodeFileSystem();
     
     // Register available commands
     this.commands = new Map([
@@ -39,7 +41,7 @@ export class ApplicationDirector {
     try {
       const currentDir = dirname(fileURLToPath(import.meta.url));
       const packageJson: { version: string } = JSON.parse(
-        readFileSync(join(currentDir, '..', 'package.json'), 'utf-8')
+        this.fs.readFileSync(join(currentDir, '..', 'package.json'), 'utf-8')
       ) as { version: string };
       this.version = packageJson.version;
     } catch {
@@ -94,7 +96,7 @@ export class ApplicationDirector {
       const config = configService.load(cliArgs.configPath);
       
       // Override file watching setting with CLI flag if provided
-      if (cliArgs.watch && config.vaults[0]) {
+      if (cliArgs.watch && config.vaults.length > 0) {
         config.vaults[0].fileWatching = {
           enabled: true,
           debounceMs: config.vaults[0].fileWatching?.debounceMs ?? 100,

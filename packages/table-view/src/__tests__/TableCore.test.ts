@@ -73,10 +73,10 @@ describe('TableCore', () => {
       expect(core.isAllSelected()).toBe(false);
     });
 
-    it('should select range of documents', () => {
+    it('should select range of documents by ID', () => {
       const core = new TableCore({ documents: testDocuments });
       
-      core.selectRange(0, 2);
+      core.selectRange('/path/to/file1.md', '/path/to/file3.md');
       expect(core.getSelectedPaths()).toHaveLength(3);
       expect(core.isRowSelected('/path/to/file1.md')).toBe(true);
       expect(core.isRowSelected('/path/to/file2.md')).toBe(true);
@@ -104,6 +104,43 @@ describe('TableCore', () => {
       
       core.selectRow('/path/to/file1.md');
       expect(selectedPaths).toEqual(['/path/to/file1.md']);
+    });
+    
+    it('should handle selectRow with shift key', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      // Select first document
+      core.selectRow('/path/to/file1.md');
+      expect(core.getSelectedPaths()).toEqual(['/path/to/file1.md']);
+      
+      // Shift-select third document (should select range)
+      core.selectRow('/path/to/file3.md', true);
+      expect(core.getSelectedPaths()).toHaveLength(3);
+      expect(core.isRowSelected('/path/to/file1.md')).toBe(true);
+      expect(core.isRowSelected('/path/to/file2.md')).toBe(true);
+      expect(core.isRowSelected('/path/to/file3.md')).toBe(true);
+    });
+    
+    it('should clear selection', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      core.selectAll();
+      expect(core.getSelectedPaths()).toHaveLength(3);
+      
+      core.clearSelection();
+      expect(core.getSelectedPaths()).toHaveLength(0);
+    });
+    
+    it('should return selected row IDs', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      core.toggleRowSelection('/path/to/file1.md');
+      core.toggleRowSelection('/path/to/file2.md');
+      
+      const selectedRows = core.getSelectedRows();
+      expect(selectedRows).toContain('/path/to/file1.md');
+      expect(selectedRows).toContain('/path/to/file2.md');
+      expect(selectedRows).toHaveLength(2);
     });
   });
 
@@ -219,6 +256,163 @@ describe('TableCore', () => {
     });
   });
 
+  describe('Content Management', () => {
+    it('should cache and retrieve content', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      const content = 'This is the document content';
+      core.cacheContent('/path/to/file1.md', content);
+      
+      expect(core.getCachedContent('/path/to/file1.md')).toBe(content);
+      expect(core.getCachedContent('/path/to/file2.md')).toBeUndefined();
+    });
+    
+    it('should clear content cache', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      core.cacheContent('/path/to/file1.md', 'Content 1');
+      core.cacheContent('/path/to/file2.md', 'Content 2');
+      
+      core.clearContentCache();
+      
+      expect(core.getCachedContent('/path/to/file1.md')).toBeUndefined();
+      expect(core.getCachedContent('/path/to/file2.md')).toBeUndefined();
+    });
+  });
+
+  describe('Export Functionality', () => {
+    it('should export selected rows as JSON', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      core.toggleRowSelection('/path/to/file1.md');
+      core.toggleRowSelection('/path/to/file2.md');
+      
+      const exported = core.exportSelectedRows('json');
+      const parsed = JSON.parse(exported);
+      
+      expect(parsed).toHaveLength(2);
+      expect(parsed[0].path).toBe('/path/to/file1.md');
+      expect(parsed[1].path).toBe('/path/to/file2.md');
+    });
+    
+    it('should export all rows as JSON', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      const exported = core.exportAllRows('json');
+      const parsed = JSON.parse(exported);
+      
+      expect(parsed).toHaveLength(3);
+    });
+    
+    it('should export selected rows as CSV', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      core.selectRow('/path/to/file1.md');
+      
+      const exported = core.exportSelectedRows('csv');
+      const lines = exported.split('\n');
+      
+      expect(lines[0]).toBe('Path,Name,Size,Modified,Tags');
+      expect(lines[1]).toContain('/path/to/file1.md');
+      expect(lines[1]).toContain('file1.md');
+      expect(lines[1]).toContain('1024');
+    });
+    
+    it('should export all rows as CSV', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      const exported = core.exportAllRows('csv');
+      const lines = exported.split('\n');
+      
+      expect(lines).toHaveLength(4); // header + 3 documents
+      expect(lines[0]).toBe('Path,Name,Size,Modified,Tags');
+    });
+    
+    it('should handle CSV escaping properly', () => {
+      const documentsWithSpecialChars = [
+        {
+          ...testDocuments[0],
+          path: '/path/with,comma.md',
+          metadata: {
+            ...testDocuments[0].metadata,
+            name: 'file with "quotes".md',
+            tags: ['tag1', 'tag2']
+          }
+        }
+      ];
+      
+      const core = new TableCore({ documents: documentsWithSpecialChars });
+      const exported = core.exportAllRows('csv');
+      const lines = exported.split('\n');
+      
+      expect(lines[1]).toContain('"/path/with,comma.md"');
+      expect(lines[1]).toContain('"file with ""quotes"".md"');
+      expect(lines[1]).toContain('tag1;tag2');
+    });
+  });
+
+  describe('Context Menu State', () => {
+    it('should return correct context menu state', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      // No selection
+      let state = core.getContextMenuState();
+      expect(state.canDelete).toBe(false);
+      expect(state.canRename).toBe(false);
+      expect(state.canExport).toBe(false);
+      expect(state.canSelectAll).toBe(true);
+      expect(state.canDeselectAll).toBe(false);
+      
+      // Single selection
+      core.selectRow('/path/to/file1.md');
+      state = core.getContextMenuState();
+      expect(state.canDelete).toBe(true);
+      expect(state.canRename).toBe(true);
+      expect(state.canExport).toBe(true);
+      expect(state.canSelectAll).toBe(true);
+      expect(state.canDeselectAll).toBe(true);
+      
+      // Multiple selection
+      core.toggleRowSelection('/path/to/file2.md');
+      state = core.getContextMenuState();
+      expect(state.canDelete).toBe(true);
+      expect(state.canRename).toBe(false); // Only single selection can rename
+      expect(state.canExport).toBe(true);
+      
+      // All selected
+      core.selectAll();
+      state = core.getContextMenuState();
+      expect(state.canSelectAll).toBe(false); // Already all selected
+      expect(state.canDeselectAll).toBe(true);
+    });
+    
+    it('should check if operations can be performed', () => {
+      const core = new TableCore({ documents: testDocuments });
+      
+      // No selection
+      expect(core.canPerformOperation('delete', [])).toBe(false);
+      
+      // Single selection
+      const singleSelection = ['/path/to/file1.md'];
+      expect(core.canPerformOperation('delete', singleSelection)).toBe(true);
+      expect(core.canPerformOperation('rename', singleSelection)).toBe(true);
+      expect(core.canPerformOperation('edit', singleSelection)).toBe(true);
+      expect(core.canPerformOperation('export', singleSelection)).toBe(true);
+      expect(core.canPerformOperation('bulk-edit', singleSelection)).toBe(false);
+      
+      // Multiple selection
+      const multiSelection = ['/path/to/file1.md', '/path/to/file2.md'];
+      expect(core.canPerformOperation('delete', multiSelection)).toBe(true);
+      expect(core.canPerformOperation('rename', multiSelection)).toBe(false);
+      expect(core.canPerformOperation('edit', multiSelection)).toBe(false);
+      expect(core.canPerformOperation('export', multiSelection)).toBe(true);
+      expect(core.canPerformOperation('bulk-edit', multiSelection)).toBe(true);
+      
+      // Unknown operation
+      expect(core.canPerformOperation('unknown', singleSelection)).toBe(false);
+    });
+  });
+
   describe('Operations', () => {
     it('should request operations with selected documents', () => {
       let requestedOperation = '';
@@ -232,8 +426,8 @@ describe('TableCore', () => {
         }
       });
       
-      core.selectRow('/path/to/file1.md');
-      core.selectRow('/path/to/file2.md');
+      core.toggleRowSelection('/path/to/file1.md');
+      core.toggleRowSelection('/path/to/file2.md');
       core.requestOperation('delete');
       
       expect(requestedOperation).toBe('delete');

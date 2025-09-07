@@ -11,7 +11,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 describe('QdrantProvider Integration Tests', () => {
   let provider: QdrantProvider;
   let qdrantClient: QdrantClient;
-  const testCollectionName = 'test-documents-' + Date.now();
+  const testCollectionName = `test-documents-${String(Date.now())}`;
   
   const options: ProviderInitOptions = {
     config: {
@@ -34,7 +34,7 @@ describe('QdrantProvider Integration Tests', () => {
     
     try {
       await qdrantClient.getCollections();
-    } catch (error) {
+    } catch {
       console.error('Qdrant is not running. Start it with: docker-compose up qdrant');
       throw new Error('Qdrant must be running for integration tests');
     }
@@ -44,12 +44,12 @@ describe('QdrantProvider Integration Tests', () => {
     // Clean up test collection
     try {
       await qdrantClient.deleteCollection(testCollectionName);
-    } catch (error) {
+    } catch {
       // Collection might not exist, that's ok
     }
   });
   
-  beforeEach(async () => {
+  beforeEach(() => {
     // Create fresh provider for each test
     provider = new QdrantProvider();
   });
@@ -67,7 +67,7 @@ describe('QdrantProvider Integration Tests', () => {
     
     // Verify collection was created
     const collections = await qdrantClient.getCollections();
-    const testCollection = collections.collections?.find(c => c.name === testCollectionName);
+    const testCollection = collections.collections.find(c => c.name === testCollectionName);
     expect(testCollection).toBeDefined();
     
     await provider.shutdown();
@@ -105,7 +105,7 @@ describe('QdrantProvider Integration Tests', () => {
       id: 'doc-with-embedding',
       path: '/test/doc.md',
       content: 'Document with pre-computed embedding',
-      embedding: new Array(768).fill(0.1), // Mock embedding
+      embedding: new Array(768).fill(0.1), // Test embedding vector
       metadata: { type: 'test', version: 1 }
     };
     
@@ -152,8 +152,8 @@ describe('QdrantProvider Integration Tests', () => {
     expect(result.failed).toBe(0);
     
     // Search with a vector close to the second document
-    const searchVector = new Array(768).fill(0.19);
-    const results = await provider.searchByVector(searchVector, { limit: 2 });
+    const searchVector = new Array(768).fill(0.19) as number[];
+    const results = await provider.searchByVector(searchVector, { limit: 2, threshold: 0.2 });
     
     expect(results).toHaveLength(2);
     expect(results[0].path).toBe('/test/vec2.md');
@@ -208,7 +208,7 @@ describe('QdrantProvider Integration Tests', () => {
     await provider.updateDocument(updatedDoc);
     
     // Search with vector close to updated embedding
-    const results = await provider.searchByVector(new Array(768).fill(0.88), { limit: 1 });
+    const results = await provider.searchByVector(new Array(768).fill(0.88) as number[], { limit: 1, threshold: 0.2 });
     expect(results).toHaveLength(1);
     expect(results[0].id).toBe('to-update');
     expect(results[0].content).toBe('Updated content');
@@ -221,9 +221,9 @@ describe('QdrantProvider Integration Tests', () => {
     
     // Add some documents
     const docs: DocumentToIndex[] = Array.from({ length: 5 }, (_, i) => ({
-      id: `clear-${i}`,
-      path: `/test/clear${i}.md`,
-      content: `Document ${i}`,
+      id: `clear-${String(i)}`,
+      path: `/test/clear${String(i)}.md`,
+      content: `Document ${String(i)}`,
       embedding: new Array(768).fill(i * 0.1)
     }));
     
@@ -249,17 +249,17 @@ describe('QdrantProvider Integration Tests', () => {
     
     // Index documents with varying similarity
     const docs: DocumentToIndex[] = Array.from({ length: 10 }, (_, i) => ({
-      id: `opt-${i}`,
-      path: `/test/opt${i}.md`,
-      content: `Document ${i}`,
+      id: `opt-${String(i)}`,
+      path: `/test/opt${String(i)}.md`,
+      content: `Document ${String(i)}`,
       embedding: new Array(768).fill(i * 0.1)
     }));
     
     await provider.indexBatch(docs);
     
     // Search with custom limit
-    const searchVector = new Array(768).fill(0.5);
-    const results1 = await provider.searchByVector(searchVector, { limit: 3 });
+    const searchVector = new Array(768).fill(0.5) as number[];
+    const results1 = await provider.searchByVector(searchVector, { limit: 3, threshold: 0.2 });
     expect(results1).toHaveLength(3);
     
     // Search with threshold

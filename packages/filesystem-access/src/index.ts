@@ -10,11 +10,11 @@ export type { FileWatcherOptions, FileChangeEvent } from './file-watcher.js';
 // Export file revealer functionality
 export { 
   FileRevealer,
-  FileRevealStrategy,
   SystemFileRevealStrategy,
   TestFileRevealStrategy,
   DryRunFileRevealStrategy
 } from './file-revealer.js';
+export type { FileRevealStrategy } from './file-revealer.js';
 
 import {
   readFile as fsReadFile,
@@ -27,28 +27,59 @@ import {
   rename as fsRename,
   copyFile as fsCopyFile,
   link as fsLink,
+  rm as fsRm,
+  appendFile as fsAppendFile,
+  mkdtemp as fsMkdtemp,
 } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import {
+  readFileSync as fsReadFileSync,
+  writeFileSync as fsWriteFileSync,
+  existsSync as fsExistsSync,
+  mkdirSync as fsMkdirSync,
+  rmSync as fsRmSync,
+  mkdtempSync as fsMkdtempSync,
+  appendFileSync as fsAppendFileSync,
+  unlinkSync as fsUnlinkSync,
+  statSync as fsStatSync,
+} from 'node:fs';
+import { dirname, join } from 'node:path';
 import { constants } from 'node:fs';
 import type { Stats } from 'node:fs';
+import { tmpdir } from 'node:os';
 import matter from 'gray-matter';
 
 /**
  * File system access interface. All file operations in MMT go through this interface.
  */
 export interface FileSystemAccess {
-  // Basic file operations
+  // Basic file operations (async)
   readFile(path: string, encoding?: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
   exists(path: string): Promise<boolean>;
   unlink(path: string): Promise<void>;
+  appendFile(path: string, content: string): Promise<void>;
   
-  // Directory operations
+  // Basic file operations (sync)
+  readFileSync(path: string, encoding?: string): string;
+  writeFileSync(path: string, content: string): void;
+  existsSync(path: string): boolean;
+  unlinkSync(path: string): void;
+  appendFileSync(path: string, content: string): void;
+  
+  // Directory operations (async)
   mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
   readdir(path: string): Promise<string[]>;
+  rm(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void>;
+  mkdtemp(prefix: string): Promise<string>;
+  
+  // Directory operations (sync)
+  mkdirSync(path: string, options?: { recursive?: boolean }): void;
+  rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
+  mkdtempSync(prefix: string): string;
   
   // File metadata
   stat(path: string): Promise<Stats>;
+  statSync(path: string): Stats;
   
   // File movement/copying
   rename(oldPath: string, newPath: string): Promise<void>;
@@ -145,5 +176,59 @@ export class NodeFileSystem implements FileSystemAccess {
       const fileContent = matter.stringify(content, frontmatter);
       await this.writeFile(path, fileContent);
     }
+  }
+
+  async appendFile(path: string, content: string): Promise<void> {
+    await fsAppendFile(path, content, 'utf-8');
+  }
+
+  async rm(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
+    await fsRm(path, options);
+  }
+
+  async mkdtemp(prefix: string): Promise<string> {
+    const tmpPath = join(tmpdir(), prefix);
+    return fsMkdtemp(tmpPath);
+  }
+
+  // Sync methods
+  readFileSync(path: string, encoding?: string): string {
+    return fsReadFileSync(path, (encoding ?? 'utf-8') as BufferEncoding);
+  }
+
+  writeFileSync(path: string, content: string): void {
+    // Create parent directory if it doesn't exist
+    const dir = dirname(path);
+    this.mkdirSync(dir, { recursive: true });
+    fsWriteFileSync(path, content, 'utf-8');
+  }
+
+  existsSync(path: string): boolean {
+    return fsExistsSync(path);
+  }
+
+  unlinkSync(path: string): void {
+    fsUnlinkSync(path);
+  }
+
+  appendFileSync(path: string, content: string): void {
+    fsAppendFileSync(path, content, 'utf-8');
+  }
+
+  mkdirSync(path: string, options?: { recursive?: boolean }): void {
+    fsMkdirSync(path, options);
+  }
+
+  rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void {
+    fsRmSync(path, options);
+  }
+
+  mkdtempSync(prefix: string): string {
+    const tmpPath = join(tmpdir(), prefix);
+    return fsMkdtempSync(tmpPath);
+  }
+
+  statSync(path: string): Stats {
+    return fsStatSync(path);
   }
 }

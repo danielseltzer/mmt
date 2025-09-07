@@ -15,21 +15,34 @@ export class TableCore {
   private documents: Document[];
   private state: TableState;
   private options: TableCoreOptions;
+  private contentCache: Map<string, string>;
   
   constructor(options: TableCoreOptions) {
     this.options = options;
     this.documents = options.documents;
+    this.contentCache = new Map<string, string>();
     
     // Initialize state
     const initialColumns = options.initialColumns || ['name', 'path', 'modified', 'size', 'tags'];
+    
+    // Default to sorting by modified date descending if no initial sort is explicitly provided
+    // Allow null to be passed explicitly to disable default sorting
+    let initialSort = options.initialSort;
+    if (initialSort === undefined) {
+      initialSort = { field: 'modified', order: 'desc' as const };
+    }
+    
     this.state = {
-      sorting: options.initialSort || null,
+      sorting: initialSort,
       selectedRows: new Set<string>(),
       visibleColumns: new Set(initialColumns),
       columnOrder: [],
       columnSizes: {},
       lastSelectedIndex: -1
     };
+    
+    // Don't notify about initial sort in constructor to avoid infinite loops
+    // The parent component should handle the initial state
   }
   
   // --- Document Management ---
@@ -107,8 +120,38 @@ export class TableCore {
     this.notifySelectionChange();
   }
   
-  selectRow(documentId: string): void {
-    this.state.selectedRows.add(documentId);
+  selectRow(id: string, shiftKey?: boolean): void {
+    if (shiftKey && this.state.lastSelectedIndex !== -1) {
+      // Get index of the clicked document
+      const sortedDocs = this.getSortedDocuments();
+      const clickedIndex = sortedDocs.findIndex(doc => getDocumentId(doc) === id);
+      
+      if (clickedIndex !== -1) {
+        // Clear existing selection and select range
+        this.state.selectedRows.clear();
+        const start = Math.min(this.state.lastSelectedIndex, clickedIndex);
+        const end = Math.max(this.state.lastSelectedIndex, clickedIndex);
+        
+        for (let i = start; i <= end; i++) {
+          const doc = sortedDocs[i];
+          if (doc) {
+            this.state.selectedRows.add(getDocumentId(doc));
+          }
+        }
+        this.state.lastSelectedIndex = clickedIndex;
+      }
+    } else {
+      // Regular selection (no shift)
+      this.state.selectedRows.clear();
+      this.state.selectedRows.add(id);
+      
+      // Update last selected index
+      const sortedDocs = this.getSortedDocuments();
+      const index = sortedDocs.findIndex(doc => getDocumentId(doc) === id);
+      if (index !== -1) {
+        this.state.lastSelectedIndex = index;
+      }
+    }
     this.notifySelectionChange();
   }
   
@@ -117,10 +160,17 @@ export class TableCore {
     this.notifySelectionChange();
   }
   
-  selectRange(startIndex: number, endIndex: number): void {
+  selectRange(fromId: string, toId: string): void {
     const sortedDocs = this.getSortedDocuments();
-    const start = Math.min(startIndex, endIndex);
-    const end = Math.max(startIndex, endIndex);
+    const fromIndex = sortedDocs.findIndex(doc => getDocumentId(doc) === fromId);
+    const toIndex = sortedDocs.findIndex(doc => getDocumentId(doc) === toId);
+    
+    if (fromIndex === -1 || toIndex === -1) {
+      return;
+    }
+    
+    const start = Math.min(fromIndex, toIndex);
+    const end = Math.max(fromIndex, toIndex);
     
     for (let i = start; i <= end; i++) {
       const doc = sortedDocs[i];
@@ -139,8 +189,12 @@ export class TableCore {
     const documentId = getDocumentId(doc);
     
     if (shiftKey && this.state.lastSelectedIndex !== -1) {
-      // Shift-click: select range
-      this.selectRange(this.state.lastSelectedIndex, index);
+      // Shift-click: select range by getting IDs from indices
+      const lastDoc = sortedDocs[this.state.lastSelectedIndex];
+      if (lastDoc) {
+        const lastDocId = getDocumentId(lastDoc);
+        this.selectRange(lastDocId, documentId);
+      }
     } else {
       // Regular click: toggle selection
       this.toggleRowSelection(documentId);
@@ -160,6 +214,14 @@ export class TableCore {
     this.state.selectedRows.clear();
     this.state.lastSelectedIndex = -1;
     this.notifySelectionChange();
+  }
+  
+  clearSelection(): void {
+    this.deselectAll();
+  }
+  
+  getSelectedRows(): string[] {
+    return Array.from(this.state.selectedRows);
   }
   
   toggleAllSelection(): void {
@@ -187,6 +249,20 @@ export class TableCore {
     return this.documents.filter(doc => this.state.selectedRows.has(getDocumentId(doc)));
   }
   
+  // --- Content Management ---
+  
+  cacheContent(docId: string, content: string): void {
+    this.contentCache.set(docId, content);
+  }
+  
+  getCachedContent(docId: string): string | undefined {
+    return this.contentCache.get(docId);
+  }
+  
+  clearContentCache(): void {
+    this.contentCache.clear();
+  }
+  
   // --- Sorting ---
   
   setSorting(field: string | null, order: 'asc' | 'desc' = 'asc'): void {
@@ -205,9 +281,12 @@ export class TableCore {
     } else if (this.state.sorting.order === 'asc') {
       // Same field, ascending -> descending
       this.setSorting(field, 'desc');
-    } else {
+    } else if (this.state.sorting.order === 'desc') {
       // Same field, descending -> clear
       this.setSorting(null);
+    } else {
+      // Shouldn't happen, but default to ascending as fallback
+      this.setSorting(field, 'asc');
     }
   }
   
@@ -255,6 +334,97 @@ export class TableCore {
       documentPaths: this.getSelectedPaths()
     };
     this.options.onOperationRequest?.(request);
+  }
+  
+  // --- Export Functionality ---
+  
+  exportSelectedRows(format: 'json' | 'csv'): string {
+    const selectedDocs = this.getSelectedDocuments();
+    if (format === 'json') {
+      return JSON.stringify(selectedDocs, null, 2);
+    } else {
+      return this.convertToCSV(selectedDocs);
+    }
+  }
+  
+  exportAllRows(format: 'json' | 'csv'): string {
+    const docs = this.getSortedDocuments();
+    if (format === 'json') {
+      return JSON.stringify(docs, null, 2);
+    } else {
+      return this.convertToCSV(docs);
+    }
+  }
+  
+  private convertToCSV(documents: Document[]): string {
+    if (documents.length === 0) {
+      return '';
+    }
+    
+    // Define CSV headers
+    const headers = ['Path', 'Name', 'Size', 'Modified', 'Tags'];
+    const rows = [headers];
+    
+    // Convert each document to a CSV row
+    documents.forEach(doc => {
+      const row = [
+        doc.path,
+        doc.metadata.name || '',
+        (doc.metadata.size || 0).toString(),
+        doc.metadata.modified ? new Date(doc.metadata.modified).toISOString() : '',
+        (doc.metadata.tags || []).join(';')
+      ];
+      rows.push(row);
+    });
+    
+    // Convert rows to CSV string with proper escaping
+    return rows.map(row => 
+      row.map(cell => {
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        const escaped = cell.replace(/"/g, '""');
+        return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped;
+      }).join(',')
+    ).join('\n');
+  }
+  
+  // --- Context Menu State ---
+  
+  getContextMenuState(rowId?: string, columnId?: string): {
+    canDelete: boolean;
+    canRename: boolean;
+    canExport: boolean;
+    canSelectAll: boolean;
+    canDeselectAll: boolean;
+  } {
+    const hasSelection = this.state.selectedRows.size > 0;
+    const hasDocuments = this.documents.length > 0;
+    
+    return {
+      canDelete: hasSelection,
+      canRename: this.state.selectedRows.size === 1,
+      canExport: hasSelection,
+      canSelectAll: hasDocuments && !this.isAllSelected(),
+      canDeselectAll: hasSelection
+    };
+  }
+  
+  canPerformOperation(operation: string, selection: string[]): boolean {
+    if (!selection || selection.length === 0) {
+      return false;
+    }
+    
+    switch (operation) {
+      case 'delete':
+      case 'export':
+        return selection.length > 0;
+      case 'rename':
+      case 'edit':
+        return selection.length === 1;
+      case 'bulk-edit':
+        return selection.length > 1;
+      default:
+        return false;
+    }
   }
   
   // --- State Management ---

@@ -33,6 +33,37 @@ const absolutePath = z.string().refine(
  * ```
  */
 /**
+ * Network configuration for services.
+ * Provides component-based URL construction instead of hardcoded URLs.
+ */
+export const NetworkConfigSchema = z.object({
+  /**
+   * Host for services. Can be hostname or IP address.
+   */
+  host: z.string().describe('Host for services (e.g., localhost, 127.0.0.1)'),
+  
+  /**
+   * Port configuration for different services.
+   */
+  ports: z.object({
+    /**
+     * Ollama embedding service port.
+     */
+    ollama: z.number().int().min(1).max(65535).describe('Port for Ollama service'),
+    
+    /**
+     * Qdrant vector database port.
+     */
+    qdrant: z.number().int().min(1).max(65535).optional().describe('Port for Qdrant service'),
+  }).describe('Port configuration for services'),
+  
+  /**
+   * Protocol to use for connections.
+   */
+  protocol: z.enum(['http', 'https']).describe('Protocol for service connections'),
+}).describe('Network configuration for external services');
+
+/**
  * Similarity search configuration for a specific vault or globally.
  * Provides semantic search capabilities through vector similarity.
  */
@@ -41,25 +72,25 @@ export const SimilarityConfigSchema = z.object({
    * Whether to enable similarity search features.
    * Requires Ollama to be installed and running.
    */
-  enabled: z.boolean().default(false),
+  enabled: z.boolean(),
   
   /**
    * Which similarity provider to use.
    * Currently only 'qdrant' is supported.
    */
-  provider: z.enum(['qdrant']).default('qdrant').optional(),
+  provider: z.enum(['qdrant']).optional(),
   
   /**
    * URL of the Ollama API server.
-   * Default is the standard Ollama local endpoint.
+   * @deprecated Use network configuration instead.
    */
-  ollamaUrl: z.string().url().default('http://localhost:11434'),
+  ollamaUrl: z.string().url().optional(),
   
   /**
    * Ollama model to use for generating embeddings.
    * Must be a model that supports embeddings (e.g., nomic-embed-text).
    */
-  model: z.string().default('nomic-embed-text'),
+  model: z.string(),
   
   /**
    * Optional custom path for the similarity index file.
@@ -71,11 +102,20 @@ export const SimilarityConfigSchema = z.object({
    * Qdrant-specific configuration.
    */
   qdrant: z.object({
-    url: z.string().url().default('http://localhost:6333'),
-    collectionName: z.string().default('documents'),
-    onDisk: z.boolean().default(false)
+    /**
+     * @deprecated Use network configuration instead.
+     */
+    url: z.string().url().optional(),
+    collectionName: z.string(),
+    onDisk: z.boolean()
   }).optional(),
-}).default({ enabled: false });
+  
+  /**
+   * Network configuration for similarity services.
+   * Overrides deprecated URL fields.
+   */
+  network: NetworkConfigSchema.optional(),
+});
 
 export const VaultConfigSchema = z.object({
   /**
@@ -135,6 +175,7 @@ export const VaultConfigSchema = z.object({
 
 export type VaultConfig = z.infer<typeof VaultConfigSchema>;
 export type SimilarityConfig = z.infer<typeof SimilarityConfigSchema>;
+export type NetworkConfig = z.infer<typeof NetworkConfigSchema>;
 
 /**
  * Main configuration schema for MMT.
@@ -194,11 +235,14 @@ export const ConfigSchema = z.object({
    * Global similarity search configuration.
    * Can be overridden per-vault for vault-specific settings.
    * When both global and per-vault configs exist, per-vault takes precedence.
-   * 
-   * @deprecated In favor of per-vault similarity configuration.
-   * This field is maintained for backward compatibility but will be removed in v4.
    */
   similarity: SimilarityConfigSchema.optional(),
+  
+  /**
+   * Global network configuration for services.
+   * Provides component-based URL construction.
+   */
+  network: NetworkConfigSchema.optional(),
 }).strict();
 
 export type Config = z.infer<typeof ConfigSchema>;

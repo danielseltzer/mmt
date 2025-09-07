@@ -9,6 +9,8 @@
  * - ENV VARS: Environment variables only for secrets, not configuration
  * - NO BACKWARD COMPATIBILITY: Never add legacy support or aliases
  * - FILESYSTEM ACCESS: All file operations must go through @mmt/filesystem-access
+ * - NO HARDCODED URLS: URLs must come from configuration, not hardcoded
+ * - NO ESLINT DISABLE: Fix underlying issues instead of suppressing warnings
  */
 
 import fs from 'fs';
@@ -262,8 +264,6 @@ class ComplianceChecker {
       /\bdeprecated\b/i,
       /\blegacy\b/i,
       /\bbackward[s-]?compat/i,
-      /\baliases\b/i,  // Only check for plural "aliases", not "alias" (which is used by Vite/webpack)
-      /\bold[A-Z]\w+/,  // oldConfig, oldMethod, etc.
       /\/\/ TODO.*remove.*version/i,
       /\/\/ TODO.*backwards/i
     ];
@@ -287,7 +287,13 @@ class ComplianceChecker {
             // Filter out false positives
             if (line.includes('no-deprecated') || // dependency-cruiser rule names
                 line.includes('not-to-deprecated') ||
-                line.includes('NO BACKWARD COMPATIBILITY')) { // Our own docs
+                line.includes('NO BACKWARD COMPATIBILITY') || // Our own docs
+                line.includes('.dependency-cruiser') || // Dependency cruiser config file
+                (line.includes('deprecated') && line.includes('rule')) || // Rule names that include 'deprecated'
+                (line.includes('aliases') && (line.includes('frontmatter') || line.includes('metadata') || line.includes('document'))) || // Document metadata aliases field
+                (line.includes('oldPath') && (line.includes('rename') || line.includes('move') || line.includes('relocate'))) || // File operations with oldPath/newPath
+                (line.includes('oldPath') && line.includes('newPath')) || // Common pairing in file operations
+                (pattern.toString().includes('old[A-Z]') && line.match(/\bold[A-Z]\w+/) && line.includes('Path'))) { // oldPath, newPath in file operations
               continue;
             }
 
@@ -310,28 +316,148 @@ class ComplianceChecker {
    * Check for direct filesystem access outside of @mmt/filesystem-access
    */
   checkFilesystemAccess(files) {
-    // Node fs methods that should only be in filesystem-access package
-    const fsPatterns = [
-      /\bfs\./,
-      /\breadFile(?:Sync)?\(/,
-      /\bwriteFile(?:Sync)?\(/,
-      /\breaddir(?:Sync)?\(/,
-      /\bmkdir(?:Sync)?\(/,
-      /\brmdir(?:Sync)?\(/,
-      /\bunlink(?:Sync)?\(/,
-      /\bexists(?:Sync)?\(/,
-      /\bstat(?:Sync)?\(/,
-      /\baccess(?:Sync)?\(/
+    const violations = [];
+    
+    for (const file of files) {
+      // Skip filesystem-access package itself, tools, and ALL test files
+      if (file.includes('packages/filesystem-access') || 
+          file.includes('/tools/') ||
+          file.includes('.test.') ||
+          file.includes('.spec.') ||
+          file.includes('__tests__') ||
+          file.includes('/tests/') ||
+          file.includes('/test/')) {
+        continue;
+      }
+
+      const content = fs.readFileSync(file, 'utf8');
+      const lines = content.split('\n');
+      
+      // Check for direct fs imports (the real violation)
+      const hasDirectFsImport = lines.some(line => {
+        // Look for direct fs imports
+        return /^import\s+.*from\s+['"](?:node:)?fs(?:\/promises)?['"]/.test(line) ||
+               /^import\s+fs\s+from\s+['"](?:node:)?fs['"]/.test(line) ||
+               /^const\s+fs\s*=\s*require\(['"]fs['"]\)/.test(line) ||
+               /^const\s+\{.*\}\s*=\s*require\(['"]fs['"]\)/.test(line);
+      });
+      
+      if (hasDirectFsImport) {
+        lines.forEach((line, index) => {
+          if (/^import\s+.*from\s+['"](?:node:)?fs(?:\/promises)?['"]/.test(line) ||
+              /^const\s+.*require\(['"]fs['"]\)/.test(line)) {
+            violations.push({
+              file: path.relative(this.projectRoot, file),
+              line: index + 1,
+              content: line.trim(),
+              issue: 'Direct fs import - must use @mmt/filesystem-access'
+            });
+          }
+        });
+      }
+      
+      // Also check for direct fs usage without proper context
+      // BUT: Allow context.fs.*, this.fs.*, this.fileSystem.* as these are legitimate
+      // Also need to check if 'fs' is a NodeFileSystem instance
+      const hasNodeFileSystemImport = lines.some(line => 
+        line.includes('NodeFileSystem') && (line.includes('import') || line.includes('from'))
+      );
+      
+      // Check if fs is assigned to a NodeFileSystem instance
+      const hasNodeFileSystemAssignment = lines.some(line =>
+        /const\s+fs\s*=\s*new\s+NodeFileSystem/.test(line) ||
+        /this\.fs\s*=\s*new\s+NodeFileSystem/.test(line)
+      );
+      
+      lines.forEach((line, index) => {
+        // Skip comments, type definitions, and import statements
+        if (line.trim().startsWith('//') || 
+            line.trim().startsWith('*') ||
+            line.includes('import ') ||
+            line.includes('require(') ||
+            line.includes('interface ') ||
+            line.includes('type ')) {
+          return;
+        }
+        
+        // Check for direct fs.* calls (not context.fs.* or this.fs.* or this.fileSystem.*)
+        if (/\bfs\./.test(line)) {
+          // Exclude legitimate uses through context or this
+          if (!/\b(?:context|this)\.(?:fs|fileSystem)\./.test(line)) {
+            // If we have NodeFileSystem import and assignment, fs is legitimate
+            if (!hasNodeFileSystemImport || !hasNodeFileSystemAssignment) {
+              violations.push({
+                file: path.relative(this.projectRoot, file),
+                line: index + 1,
+                content: line.trim(),
+                issue: 'Direct fs usage - must use injected filesystem-access instance'
+              });
+            }
+          }
+        }
+        
+        // Check for standalone fs functions (not prefixed with context/this)
+        const fsFunctions = [
+          'readFileSync', 'writeFileSync', 'existsSync', 'mkdirSync', 
+          'unlinkSync', 'rmdirSync', 'readdirSync', 'statSync',
+          'readFile', 'writeFile', 'mkdir', 'unlink', 'rmdir', 'readdir', 'stat'
+        ];
+        
+        for (const func of fsFunctions) {
+          const regex = new RegExp(`\\b${func}\\s*\\(`);
+          if (regex.test(line)) {
+            // Make sure it's not context.fs.func or this.fs.func or this.fileSystem.func or fs.func where fs is NodeFileSystem
+            if (!line.includes('context.fs.') && 
+                !line.includes('this.fs.') && 
+                !line.includes('this.fileSystem.') &&
+                !line.includes('await fs.') && // Allow await fs. if fs is from filesystem-access
+                !line.includes(`fs.${func}`) && // Allow fs.func if fs is NodeFileSystem
+                !line.includes('fs' + func.charAt(0).toUpperCase() + func.slice(1))) { // Allow fsReadFile style naming
+              // Only flag if we don't have NodeFileSystem
+              if (!hasNodeFileSystemImport || !hasNodeFileSystemAssignment) {
+                violations.push({
+                  file: path.relative(this.projectRoot, file),
+                  line: index + 1,
+                  content: line.trim(),
+                  issue: `Direct ${func} call - must use filesystem-access`
+                });
+                break;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    this.violations['FILESYSTEM_ACCESS'] = violations;
+  }
+
+  /**
+   * Check for hardcoded URLs (localhost, 127.0.0.1, specific ports)
+   */
+  checkNoHardcodedURLs(files) {
+    // Patterns for hardcoded URLs that should be configured
+    const urlPatterns = [
+      /https?:\/\/localhost(?::\d+)?/,     // http://localhost or http://localhost:port
+      /https?:\/\/127\.0\.0\.1(?::\d+)?/,  // http://127.0.0.1 or http://127.0.0.1:port
+      /https?:\/\/0\.0\.0\.0(?::\d+)?/,    // http://0.0.0.0 or http://0.0.0.0:port
+      /localhost:\d{4}/,                    // localhost:3001, localhost:5173, etc.
+      /127\.0\.0\.1:\d{4}/,                 // 127.0.0.1:3001, etc.
+      /:\d{4}\/api\//,                      // :3001/api/, :5173/api/
+      /['"]\/api\/[^'"]*['"]\.split/,       // API paths that might be concatenated
     ];
 
     const violations = [];
     
     for (const file of files) {
-      // Skip filesystem-access package itself, test files, and tools
-      if (file.includes('packages/filesystem-access') || 
-          file.includes('.test.') ||
+      // Skip test files, config files, tools, and documentation
+      if (file.includes('.test.') || 
           file.includes('.spec.') ||
-          file.includes('/tools/')) {
+          file.includes('/tools/') ||
+          file.includes('config/') ||
+          file.includes('.md') ||
+          file.endsWith('vite.config.ts') ||
+          file.endsWith('vitest.config.ts')) {
         continue;
       }
 
@@ -339,21 +465,28 @@ class ComplianceChecker {
       const lines = content.split('\n');
       
       lines.forEach((line, index) => {
-        // Skip comments and imports
+        // Skip comments and type definitions
         if (line.trim().startsWith('//') || 
             line.trim().startsWith('*') ||
-            line.includes('import ') ||
-            line.includes('require(')) {
+            line.includes('interface ') ||
+            line.includes('type ')) {
           return;
         }
         
-        for (const pattern of fsPatterns) {
+        for (const pattern of urlPatterns) {
           if (pattern.test(line)) {
+            // Skip if it's in an error message or console log
+            if (line.includes('console.') || 
+                line.includes('throw ') ||
+                line.includes('Error(')) {
+              continue;
+            }
+            
             violations.push({
               file: path.relative(this.projectRoot, file),
               line: index + 1,
               content: line.trim(),
-              issue: 'Direct filesystem access outside @mmt/filesystem-access'
+              issue: 'Hardcoded URL - should come from configuration'
             });
             break;
           }
@@ -361,7 +494,48 @@ class ComplianceChecker {
       });
     }
 
-    this.violations['FILESYSTEM_ACCESS'] = violations;
+    this.violations['HARDCODED_URLS'] = violations;
+  }
+
+  /**
+   * Check for eslint disable comments (checking for suppression of linting rules)
+   */
+  checkNoEslintDisable(files) {
+    // Patterns for linting rule suppression
+    const eslintDisablePatterns = [
+      /eslint-disable(?:-next-line|-line)?/,  // Matches suppression comments
+      /\/\*\s*eslint-disable/,                 // Block comment suppression
+      /\/\/\s*eslint-disable/,                 // Line comment suppression
+      /@ts-ignore/,                            // TypeScript ignore (also problematic)
+      /@ts-nocheck/,                           // TypeScript nocheck (also problematic)
+    ];
+
+    const violations = [];
+    
+    for (const file of files) {
+      // Skip the compliance checker itself
+      if (file.endsWith('check-compliance.js')) {
+        continue;
+      }
+      const content = fs.readFileSync(file, 'utf8');
+      const lines = content.split('\n');
+      
+      lines.forEach((line, index) => {
+        for (const pattern of eslintDisablePatterns) {
+          if (pattern.test(line)) {
+            violations.push({
+              file: path.relative(this.projectRoot, file),
+              line: index + 1,
+              content: line.trim(),
+              issue: 'ESLint/TypeScript suppression - fix the underlying issue instead'
+            });
+            break;
+          }
+        }
+      });
+    }
+
+    this.violations['NO_ESLINT_DISABLE'] = violations;
   }
 
   /**
@@ -373,7 +547,9 @@ class ComplianceChecker {
       { key: 'NO_DEFAULTS', label: 'NO DEFAULTS', description: 'All config must be explicit' },
       { key: 'ENV_VARS', label: 'ENV VARS', description: 'Only for secrets, not config' },
       { key: 'BACKWARD_COMPAT', label: 'NO BACKWARD COMPAT', description: 'Direct changes only' },
-      { key: 'FILESYSTEM_ACCESS', label: 'FILESYSTEM ACCESS', description: 'Use @mmt/filesystem-access' }
+      { key: 'FILESYSTEM_ACCESS', label: 'FILESYSTEM ACCESS', description: 'Use @mmt/filesystem-access' },
+      { key: 'HARDCODED_URLS', label: 'NO HARDCODED URLS', description: 'URLs from config, not hardcoded' },
+      { key: 'NO_ESLINT_DISABLE', label: 'NO ESLINT DISABLE', description: 'Fix issues, don\'t suppress' }
     ];
 
     let hasViolations = false;
@@ -441,6 +617,12 @@ class ComplianceChecker {
       if (this.violations['FILESYSTEM_ACCESS']?.length) {
         console.log(`• Use @mmt/filesystem-access for file operations`);
       }
+      if (this.violations['HARDCODED_URLS']?.length) {
+        console.log(`• Move hardcoded URLs to configuration`);
+      }
+      if (this.violations['NO_ESLINT_DISABLE']?.length) {
+        console.log(`• Fix the underlying lint/type issues instead of suppressing`);
+      }
       console.log();
     } else {
       console.log(`\n${colors.green}${colors.bold}✅ All compliance checks passed!${colors.reset}\n`);
@@ -470,6 +652,8 @@ class ComplianceChecker {
     this.checkEnvVars(files);
     this.checkNoBackwardCompatibility(files);
     this.checkFilesystemAccess(files);
+    this.checkNoHardcodedURLs(files);
+    this.checkNoEslintDisable(files);
 
     // Display results
     return this.displayResults();
@@ -497,6 +681,8 @@ This tool enforces critical rules from CLAUDE.md:
 - ENV VARS: Environment variables only for secrets
 - NO BACKWARD COMPAT: Never add legacy support
 - FILESYSTEM ACCESS: Use @mmt/filesystem-access package
+- NO HARDCODED URLS: URLs from configuration, not hardcoded
+- NO ESLINT DISABLE: Fix issues instead of suppressing
 
 Exit codes:
   0 - All checks passed

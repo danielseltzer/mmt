@@ -60,8 +60,7 @@ describe('Document Operations Integration', () => {
     await indexer.initialize();
     
     // Use the internal method to set indexer
-    // @ts-ignore - using internal method for testing
-    scriptRunner._setIndexer(indexer);
+    (scriptRunner as any).setIndexerForTesting(indexer);
   });
 
   // Helper to start API server after files are created

@@ -21,11 +21,15 @@ const OUTPUT_FORMATS = [
   { value: 'markdown', label: 'Markdown Table', description: 'GitHub-flavored Markdown' },
 ];
 
-// eslint-disable-next-line no-unused-vars
-export function OutputPanel({ selectedDocuments = [], onFormatChange }) {
+interface OutputPanelProps {
+  selectedDocuments?: any[];
+  onFormatChange?: (format: string) => void;
+}
+
+export function OutputPanel({ selectedDocuments = [], onFormatChange }: OutputPanelProps) {
   const [format, setFormat] = useState('json');
   
-  const handleFormatChange = (newFormat) => {
+  const handleFormatChange = (newFormat: string) => {
     setFormat(newFormat);
     if (onFormatChange) {
       onFormatChange(newFormat);
@@ -39,7 +43,7 @@ export function OutputPanel({ selectedDocuments = [], onFormatChange }) {
     markdown: { alignColumns: true },
   });
 
-  const updateOption = (format, key, value) => {
+  const updateOption = (format: string, key: string, value: any) => {
     setOptions(prev => ({
       ...prev,
       [format]: {

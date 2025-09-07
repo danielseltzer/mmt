@@ -34,7 +34,7 @@ export class DocumentSelector {
   async selectDocuments(criteria: SelectCriteria): Promise<Document[]> {
     // Handle explicit file list
     if ('files' in criteria && criteria.files !== undefined) {
-      return this.selectFromFileList(criteria.files);
+      return this.selectFromFileList(criteria.files as readonly string[]);
     }
 
     // Query-based selection using indexer

@@ -28,7 +28,7 @@ import { Loggers, type Logger } from '@mmt/logger';
  * The getInstance() method ensures global access to the same registry.
  */
 export class VaultRegistry {
-  private static instance: VaultRegistry;
+  private static instance: VaultRegistry | undefined;
   private vaults = new Map<string, Vault>();
   private initializationPromise?: Promise<void>;
   private logger: Logger;
@@ -39,10 +39,7 @@ export class VaultRegistry {
   }
 
   static getInstance(): VaultRegistry {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
-    if (!VaultRegistry.instance) {
-      VaultRegistry.instance = new VaultRegistry();
-    }
+    VaultRegistry.instance ??= new VaultRegistry();
     return VaultRegistry.instance;
   }
 
@@ -73,19 +70,19 @@ export class VaultRegistry {
 
   private async doInitializeVaults(config: Config): Promise<void> {
     // Log for debugging purposes
-    // eslint-disable-next-line no-console
-    console.log(`\nInitializing ${String(config.vaults.length)} vault(s)...`);
     this.logger.info(`Initializing ${String(config.vaults.length)} vault(s)`);
 
     // Clear any existing vaults
+    const shutdownPromises = [];
     for (const vault of this.vaults.values()) {
-      vault.shutdown();
+      shutdownPromises.push(vault.shutdown());
     }
+    await Promise.all(shutdownPromises);
     this.vaults.clear();
 
     if (config.vaults.length === 0) {
       const errorMsg = 'No vaults configured';
-      // eslint-disable-next-line no-console
+       
       console.error(errorMsg);
       throw new Error(errorMsg);
     }
@@ -99,7 +96,7 @@ export class VaultRegistry {
       this.vaults.set(defaultVault.id, defaultVault);
     } catch (error) {
       const message = `Failed to initialize default vault ${defaultVault.id}: ${error instanceof Error ? error.message : String(error)}`;
-      // eslint-disable-next-line no-console
+       
       console.error(message);
       this.logger.error(message);
       // Still add the vault to registry but in error state
@@ -126,7 +123,7 @@ export class VaultRegistry {
         } catch (error) {
           // Additional vaults fail gracefully
           const errorMsg = error instanceof Error ? error.message : String(error);
-          // eslint-disable-next-line no-console
+           
           console.error(`✗ Failed to initialize vault ${vault.id}: ${errorMsg}`);
           this.logger.error(`Failed to initialize vault ${vault.id}`, { error });
           vault.status = 'error';
@@ -143,26 +140,13 @@ export class VaultRegistry {
     const readyVaults = this.getAllVaults().filter(v => v.status === 'ready');
     const errorVaults = this.getAllVaults().filter(v => v.status === 'error');
     
-    // eslint-disable-next-line no-console
-    console.log(`\nVault initialization complete:`);
-    // eslint-disable-next-line no-console
-    console.log(`  ✓ Ready: ${readyVaults.length} vault(s)`);
-    if (errorVaults.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✗ Failed: ${errorVaults.length} vault(s)`);
-    }
-    
     this.logger.info('Vault initialization complete:', {
       ready: readyVaults.length,
       failed: errorVaults.length
     });
     
     if (errorVaults.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log('\nFailed vaults:');
       errorVaults.forEach(v => {
-        // eslint-disable-next-line no-console
-        console.error(`  - ${v.id}: ${v.error?.message}`);
         this.logger.warn(`Failed vault: ${v.id}`, { 
           error: v.error?.message 
         });

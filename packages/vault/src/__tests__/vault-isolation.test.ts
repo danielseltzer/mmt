@@ -3,7 +3,6 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { VaultRegistry } from '../registry.js';
-import { Vault } from '../vault.js';
 import type { Config } from '@mmt/entities';
 
 describe('Vault Isolation', () => {
@@ -94,11 +93,11 @@ describe('Vault Isolation', () => {
     expect(workVault.config.path).toBe(workVaultPath);
     
     // Get documents from Personal vault
-    const personalDocs = await personalVault.indexer.getAllDocuments();
+    const personalDocs = personalVault.indexer.getAllDocuments();
     const personalPaths = personalDocs.map(doc => doc.path);
     
     // Get documents from Work vault
-    const workDocs = await workVault.indexer.getAllDocuments();
+    const workDocs = workVault.indexer.getAllDocuments();
     const workPaths = workDocs.map(doc => doc.path);
     
     // Verify Personal vault only contains personal documents
@@ -134,8 +133,8 @@ describe('Vault Isolation', () => {
     expect(personalVault.indexer).not.toBe(workVault.indexer);
     
     // Verify each vault returns documents from its own path
-    const personalDocs = await personalVault.indexer.getAllDocuments();
-    const workDocs = await workVault.indexer.getAllDocuments();
+    const personalDocs = personalVault.indexer.getAllDocuments();
+    const workDocs = workVault.indexer.getAllDocuments();
     
     // All personal docs should be from personal vault path
     personalDocs.forEach(doc => {

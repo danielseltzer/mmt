@@ -51,6 +51,7 @@ export function formatFileSize(sizeInBytes: number): string {
 
 /**
  * Compare dates for sorting
+ * Invalid/missing dates are treated as very old (sorted to end when descending)
  */
 export function compareDates(a: string | Date | null | undefined, b: string | Date | null | undefined): number {
   // Convert to dates
@@ -63,17 +64,17 @@ export function compareDates(a: string | Date | null | undefined, b: string | Da
   if (typeof b === 'string') dateB = new Date(b);
   else if (b instanceof Date) dateB = b;
   
-  // Handle null/undefined dates - put them at the end
-  if (!dateA && !dateB) return 0;
-  if (!dateA) return 1;
-  if (!dateB) return -1;
+  // Get timestamps, treating invalid/missing as very old date (0)
+  let aTime = 0;
+  let bTime = 0;
   
-  // Handle invalid dates
-  const aTime = dateA.getTime();
-  const bTime = dateB.getTime();
-  if (isNaN(aTime) && isNaN(bTime)) return 0;
-  if (isNaN(aTime)) return 1;
-  if (isNaN(bTime)) return -1;
+  if (dateA && !isNaN(dateA.getTime())) {
+    aTime = dateA.getTime();
+  }
+  
+  if (dateB && !isNaN(dateB.getTime())) {
+    bTime = dateB.getTime();
+  }
   
   return aTime - bTime;
 }

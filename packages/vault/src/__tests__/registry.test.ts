@@ -19,7 +19,7 @@ describe('VaultRegistry', () => {
     await factory.cleanupAll();
     // Shutdown registry after each test to prevent resource leaks
     try {
-      vaultRegistry.shutdown();
+      await vaultRegistry.shutdown();
     } catch {
       // Registry might already be shut down
     }
@@ -344,7 +344,7 @@ describe('VaultRegistry', () => {
       // Verify vaults exist
       expect(vaultRegistry.getAllVaults()).toHaveLength(2);
 
-      vaultRegistry.shutdown();
+      await vaultRegistry.shutdown();
 
       // Registry should be cleared
       expect(vaultRegistry.getAllVaults()).toHaveLength(0);
@@ -354,11 +354,11 @@ describe('VaultRegistry', () => {
       await cleanup2();
     });
 
-    it('should handle shutdown when not initialized', () => {
+    it('should handle shutdown when not initialized', async () => {
       // Should not throw
-      expect(() => {
-        vaultRegistry.shutdown();
-      }).not.toThrow();
+      // Should not throw even without await
+      const promise = vaultRegistry.shutdown();
+      await expect(promise).resolves.not.toThrow();
     });
 
     it('should allow re-initialization after shutdown', async () => {
@@ -372,7 +372,7 @@ describe('VaultRegistry', () => {
       await vaultRegistry.initializeVaults(config);
       expect(vaultRegistry.getAllVaults()).toHaveLength(1);
 
-      vaultRegistry.shutdown();
+      await vaultRegistry.shutdown();
       expect(vaultRegistry.getAllVaults()).toHaveLength(0);
 
       // Should be able to initialize again

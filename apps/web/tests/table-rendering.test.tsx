@@ -1,9 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { TableView } from '@mmt/table-view';
+import { TableView, configureApiBaseUrl } from '@mmt/table-view';
 
 describe('Table Rendering', () => {
+  beforeAll(() => {
+    // Configure API base URL for TableView
+    configureApiBaseUrl('http://localhost:3001');
+  });
+
   const mockDocuments = [
     {
       path: '/test/doc1.md',

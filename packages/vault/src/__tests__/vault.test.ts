@@ -68,7 +68,7 @@ describe('Vault', () => {
       expect(vault.status).toBe('ready');
       expect(vault.config.fileWatching?.enabled).toBe(true);
 
-      vault.shutdown();
+      await vault.shutdown();
       await cleanup();
     });
   });
@@ -130,9 +130,7 @@ describe('Vault', () => {
       expect(vault.status).toBe('ready');
       
       // Should not throw
-      expect(() => {
-        vault.shutdown();
-      }).not.toThrow();
+      await expect(vault.shutdown()).resolves.not.toThrow();
 
       await cleanup();
     });
@@ -145,7 +143,7 @@ describe('Vault', () => {
       await vault.initialize();
       expect(vault.status).toBe('ready');
       
-      vault.shutdown();
+      await vault.shutdown();
       expect(vault.status).toBe('initializing');
       expect(vault.services).toBeUndefined();
 
@@ -167,7 +165,7 @@ describe('Vault', () => {
       await new Promise(resolve => setTimeout(resolve, 300));
       
       // Shutdown should stop file watching
-      vault.shutdown();
+      await vault.shutdown();
 
       await cleanup();
     });

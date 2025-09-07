@@ -9,13 +9,11 @@
  */
 
 import { EventEmitter } from 'events';
-import type { Config, SimilarityConfig } from '@mmt/entities';
+import type { SimilarityConfig } from '@mmt/entities';
 import { 
   SimilarityProviderFactory,
   SimilarityProvider,
-  DocumentToIndex,
-  SearchResult,
-  IndexingResult as ProviderIndexingResult
+  DocumentToIndex
 } from '@mmt/similarity-provider';
 import { QdrantProvider } from '@mmt/similarity-provider-qdrant';
 import { Loggers, type Logger } from '@mmt/logger';
@@ -32,7 +30,7 @@ export interface SimilaritySearchResult {
   size?: number;
   title?: string;
   tags?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   excerpt?: string;
 }
 
@@ -66,15 +64,11 @@ export interface IndexingResult {
   totalDocuments: number;
   successfullyIndexed: number;
   failed: number;
-  errors: Array<{ path: string; error: string }>;
+  errors: { path: string; error: string }[];
   errorLogPath?: string;
 }
 
-interface OllamaHealthStatus {
-  healthy: boolean;
-  modelAvailable?: boolean;
-  error?: string;
-}
+// Ollama health status interface removed - not currently used
 
 export class SimilaritySearchService extends EventEmitter {
   private provider?: SimilarityProvider;
@@ -97,13 +91,13 @@ export class SimilaritySearchService extends EventEmitter {
   }
 
   async initialize(): Promise<void> {
-    if (!this.config?.enabled) {
+    if (!this.config.enabled) {
       return;
     }
 
     try {
       // Check Ollama health first if needed
-      const providerName = this.config.provider || 'qdrant';
+      const providerName = this.config.provider ?? 'qdrant';
       
       // Only check Ollama if not using pre-computed embeddings
       if (this.config.ollamaUrl) {
@@ -148,7 +142,7 @@ export class SimilaritySearchService extends EventEmitter {
       this.lastIndexedTime = status.lastIndexed;
       this.indexStatus = status.ready ? 'ready' : 'error';
       
-      this.logger.info(`Similarity search initialized for vault ${this.vaultId} with ${providerName} provider (${this.documentCount} documents)`);
+      this.logger.info(`Similarity search initialized for vault ${this.vaultId} with ${providerName} provider (${String(this.documentCount)} documents)`);
     } catch (error) {
       this.indexStatus = 'error';
       this.lastError = error instanceof Error ? error.message : String(error);
@@ -160,6 +154,10 @@ export class SimilaritySearchService extends EventEmitter {
   }
 
   async checkOllamaHealth(): Promise<boolean> {
+    if (!this.config.ollamaUrl) {
+      return false;
+    }
+    
     try {
       const response = await fetch(`${this.config.ollamaUrl}/api/tags`, {
         method: 'GET',
@@ -171,7 +169,7 @@ export class SimilaritySearchService extends EventEmitter {
     }
   }
 
-  async search(query: string, limit: number = 10): Promise<SimilaritySearchResult[]> {
+  async search(query: string, limit = 10): Promise<SimilaritySearchResult[]> {
     if (!this.provider) {
       throw new Error(`Similarity search not initialized for vault ${this.vaultId}`);
     }
@@ -185,14 +183,14 @@ export class SimilaritySearchService extends EventEmitter {
       
       return results.map(result => ({
         path: result.id,
-        content: result.content || '',
+        content: result.content ?? '',
         score: result.score,
-        modified: result.metadata?.modified,
-        size: result.metadata?.size,
-        title: result.metadata?.title,
-        tags: result.metadata?.tags,
+        modified: result.metadata?.modified as string | undefined,
+        size: result.metadata?.size as number | undefined,
+        title: result.metadata?.title as string | undefined,
+        tags: result.metadata?.tags as string[] | undefined,
         metadata: result.metadata,
-        excerpt: this.generateExcerpt(result.content || '', query)
+        excerpt: this.generateExcerpt(result.content ?? '', query)
       }));
     } catch (error) {
       this.logger.error(`Search failed for vault ${this.vaultId}`, {
@@ -217,8 +215,8 @@ export class SimilaritySearchService extends EventEmitter {
     const end = Math.min(content.length, queryIndex + queryLower.length + 150);
     
     let excerpt = content.slice(start, end);
-    if (start > 0) excerpt = '...' + excerpt;
-    if (end < content.length) excerpt = excerpt + '...';
+    if (start > 0) {excerpt = `...${ excerpt}`;}
+    if (end < content.length) {excerpt = `${excerpt }...`;}
     
     return excerpt;
   }
@@ -236,7 +234,7 @@ export class SimilaritySearchService extends EventEmitter {
       startedAt: new Date()
     };
 
-    const errors: Array<{ path: string; error: string }> = [];
+    const errors: { path: string; error: string }[] = [];
     let successCount = 0;
 
     try {
@@ -298,12 +296,12 @@ export class SimilaritySearchService extends EventEmitter {
   }
 
   async getStatus(): Promise<SimilarityStatus> {
-    const ollamaHealthy = this.config?.ollamaUrl 
+    const ollamaHealthy = this.config.ollamaUrl 
       ? await this.checkOllamaHealth()
       : true;
 
     return {
-      available: !!this.provider && this.indexStatus === 'ready',
+      available: Boolean(this.provider) && this.indexStatus === 'ready',
       ollamaHealthy,
       indexStatus: this.indexStatus,
       stats: {
@@ -311,14 +309,14 @@ export class SimilaritySearchService extends EventEmitter {
         indexSize: 0, // Provider-specific, could be enhanced
         lastUpdated: this.lastIndexedTime
       },
-      progress: this.indexingProgress || undefined,
-      error: this.lastError || undefined,
+      progress: this.indexingProgress ?? undefined,
+      error: this.lastError ?? undefined,
       generatedAt: new Date()
     };
   }
 
   async shutdown(): Promise<void> {
-    if (this.isShuttingDown) return;
+    if (this.isShuttingDown) {return;}
     this.isShuttingDown = true;
 
     this.logger.info(`Shutting down similarity search for vault ${this.vaultId}`);

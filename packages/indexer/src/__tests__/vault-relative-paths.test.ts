@@ -50,8 +50,8 @@ describe('Vault Relative Paths', () => {
     }
   });
 
-  it('should return "/" for files at vault root', async () => {
-    const documents = await indexer.getAllDocuments();
+  it('should return "/" for files at vault root', () => {
+    const documents = indexer.getAllDocuments();
     
     // Find root files
     const rootNote = documents.find(d => d.path.endsWith('root-note.md'));
@@ -65,8 +65,8 @@ describe('Vault Relative Paths', () => {
     expect(indexFile?.folderPath).toBe('/');
   });
 
-  it('should return relative folder path for files in subdirectories', async () => {
-    const documents = await indexer.getAllDocuments();
+  it('should return relative folder path for files in subdirectories', () => {
+    const documents = indexer.getAllDocuments();
     
     // Find files in different folders
     const note1 = documents.find(d => d.path.endsWith('folder1/note1.md'));
@@ -83,18 +83,18 @@ describe('Vault Relative Paths', () => {
     expect(note2?.folderPath).toBe('/folder2');
   });
 
-  it('should have a path property showing the full absolute path', async () => {
-    const documents = await indexer.getAllDocuments();
+  it('should have a path property showing the full absolute path', () => {
+    const documents = indexer.getAllDocuments();
     
     // All documents should have the full path
     documents.forEach(doc => {
       expect(doc.path).toContain(vaultPath);
-      expect(doc.path).toMatch(/\.md$/);
+      expect(doc.path).toMatch(/\.md$/u);
     });
   });
 
-  it('should have metadata.name showing just the filename without extension', async () => {
-    const documents = await indexer.getAllDocuments();
+  it('should have metadata.name showing just the filename without extension', () => {
+    const documents = indexer.getAllDocuments();
     
     const rootNote = documents.find(d => d.path.endsWith('root-note.md'));
     const note1 = documents.find(d => d.path.endsWith('note1.md'));
@@ -103,8 +103,8 @@ describe('Vault Relative Paths', () => {
     expect(note1?.basename).toBe('note1');
   });
 
-  it('should provide enough information to display "folder/filename" in UI', async () => {
-    const documents = await indexer.getAllDocuments();
+  it('should provide enough information to display "folder/filename" in UI', () => {
+    const documents = indexer.getAllDocuments();
     
     // For each document, we should be able to construct a display path
     documents.forEach(doc => {
@@ -116,7 +116,7 @@ describe('Vault Relative Paths', () => {
         ? `/${fileName}`
         : `${folderPath}/${fileName}`;
       
-      expect(displayPath).toMatch(/^\//); // Should start with /
+      expect(displayPath).toMatch(/^\//u); // Should start with /
       expect(displayPath).not.toContain(vaultPath); // Should not contain absolute path
     });
   });

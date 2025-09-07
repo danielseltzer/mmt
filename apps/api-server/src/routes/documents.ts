@@ -15,146 +15,6 @@ import {
   parseSizeExpression,
 } from '@mmt/entities';
 
-// DEPRECATED: This function is not used - filtering is done via indexer.query() and applyDeclarativeFilters()
-// Keeping for reference but should be removed in cleanup
-function applyFilters(documents: any[], filters: FilterCriteria, vaultPath: string): any[] {
-  let filtered = [...documents];
-  
-  if (filters.name) {
-    filtered = filtered.filter(doc => 
-      doc.metadata.name.toLowerCase().includes(filters.name!.toLowerCase())
-    );
-  }
-  
-  if (filters.content) {
-    const searchLower = filters.content.toLowerCase();
-    filtered = filtered.filter(doc => {
-      // Search in multiple fields for content
-      const title = doc.metadata.frontmatter?.title as string | undefined;
-      if (title?.toLowerCase().includes(searchLower)) return true;
-      if (doc.metadata.name.toLowerCase().includes(searchLower)) return true;
-      if (doc.path.toLowerCase().includes(searchLower)) return true;
-      const aliases = doc.metadata.frontmatter?.aliases as string[] | undefined;
-      if (aliases?.some((alias: string) => alias.toLowerCase().includes(searchLower))) return true;
-      if (doc.metadata.tags?.some((tag: string) => tag.toLowerCase().includes(searchLower))) return true;
-      return false;
-    });
-  }
-  
-  if (filters.folders && filters.folders.length > 0) {
-    filtered = filtered.filter(doc => {
-      // Get the relative path from the vault root
-      const relativePath = doc.path.replace(vaultPath, '');
-      const docFolder = relativePath.substring(0, relativePath.lastIndexOf('/')) || '/';
-      
-      // Check if the document is in any of the selected folders
-      return filters.folders!.some((folder: string) => {
-        if (folder === '/') {
-          // Root folder - check if file is directly in vault root
-          return !relativePath.substring(1).includes('/');
-        }
-        // Check if document path starts with the selected folder
-        return docFolder === folder || docFolder.startsWith(folder + '/');
-      });
-    });
-  }
-  
-  if (filters.tags && filters.tags.length > 0) {
-    filtered = filtered.filter(doc => 
-      filters.tags!.some((tag: string) => doc.metadata.tags?.includes(tag))
-    );
-  }
-  
-  if (filters.metadata && filters.metadata.length > 0) {
-    filtered = filtered.filter(doc => {
-      if (!doc.metadata.frontmatter) return false;
-      
-      // Check if all metadata filters match
-      return filters.metadata!.every((metadataFilter: string) => {
-        const [key, value] = metadataFilter.split(':');
-        if (!key) return false;
-        
-        const docValue = doc.metadata.frontmatter[key];
-        if (!docValue) return false;
-        
-        // If no value specified, just check if key exists
-        if (!value) return true;
-        
-        // Handle array values (like tags in frontmatter)
-        if (Array.isArray(docValue)) {
-          return docValue.some(v => String(v).toLowerCase() === value.toLowerCase());
-        }
-        
-        // Handle single values
-        return String(docValue).toLowerCase() === value.toLowerCase();
-      });
-    });
-  }
-  
-  if (filters.date) {
-    filtered = filtered.filter(doc => {
-      if (!doc.metadata.modified) return false;
-      const docDate = new Date(doc.metadata.modified);
-      
-      // Parse date value
-      const { operator, value } = filters.date!;
-      let targetDate: Date;
-      
-      // Handle relative dates like "-30d"
-      if (value.match(/^-?\d+[dD]$/)) {
-        const days = parseInt(value);
-        targetDate = new Date();
-        targetDate.setDate(targetDate.getDate() + days);
-      } else {
-        // Parse absolute dates
-        targetDate = new Date(value);
-        if (isNaN(targetDate.getTime())) return true; // Invalid date, skip filter
-      }
-      
-      switch (operator) {
-        case '<': return docDate < targetDate;
-        case '<=': return docDate <= targetDate;
-        case '>': return docDate > targetDate;
-        case '>=': return docDate >= targetDate;
-        default: return true;
-      }
-    });
-  }
-  
-  if (filters.size) {
-    filtered = filtered.filter(doc => {
-      const docSize = doc.metadata.size || 0;
-      const { operator, value } = filters.size!;
-      
-      // Parse size value (e.g., "1k", "10M")
-      let targetSize = 0;
-      const match = value.match(/^(\d+(?:\.\d+)?)(k|K|m|M|g|G)?$/i);
-      if (!match) return true; // Invalid format, skip filter
-      
-      const num = parseFloat(match[1]);
-      const unit = match[2]?.toLowerCase();
-      
-      switch (unit) {
-        case 'k': targetSize = num * 1024; break;
-        case 'm': targetSize = num * 1024 * 1024; break;
-        case 'g': targetSize = num * 1024 * 1024 * 1024; break;
-        default: targetSize = num;
-      }
-      
-      switch (operator) {
-        case '<': return docSize < targetSize;
-        case '<=': return docSize <= targetSize;
-        case '>': return docSize > targetSize;
-        case '>=': return docSize >= targetSize;
-        default: return true;
-      }
-    });
-  }
-  
-  return filtered;
-}
-
-
 // Apply declarative filters to documents (using PageMetadata from indexer)
 function applyDeclarativeFilters(documents: PageMetadata[], filterCollection: FilterCollection, vaultPath: string): PageMetadata[] {
   return documents.filter(doc => {
@@ -602,9 +462,9 @@ export function documentsRouter(context: Context): Router {
           return res.status(400).json({ error: 'File path is required' });
         }
         
-        // Check if file exists
-        const { existsSync } = await import('fs');
-        if (!existsSync(filePath)) {
+        // Check if file exists using filesystem-access
+        const exists = await context.fs.exists(filePath);
+        if (!exists) {
           return res.status(404).json({ error: `File not found: ${filePath}` });
         }
         
@@ -671,14 +531,13 @@ export function documentsRouter(context: Context): Router {
       const fullPath = document.path;
 
       // Read the file content
-      const fs = await import('fs/promises');
       const path = await import('path');
       
       // Resolve the full path - if it's already absolute use it, otherwise make it relative to vault
       const absolutePath = path.isAbsolute(fullPath) ? fullPath : path.join(vault.path, fullPath);
       
       try {
-        const content = await fs.readFile(absolutePath, 'utf-8');
+        const content = await context.fs.readFile(absolutePath, 'utf-8');
         
         // Extract preview information
         const lines = content.split('\n');

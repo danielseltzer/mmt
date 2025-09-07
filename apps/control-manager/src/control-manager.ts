@@ -7,11 +7,11 @@
 import { spawn, ChildProcess, execSync } from 'child_process';
 import net from 'net';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { DockerManager } from './docker-manager.js';
 import { Loggers, type Logger } from '@mmt/logger';
+import { NodeFileSystem } from '@mmt/filesystem-access';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,15 +48,17 @@ export class MMTControlManager {
   private cleanupHandlers: (() => void)[] = [];
   private dockerManager: DockerManager;
   private logger: Logger;
+  private fs: NodeFileSystem;
   
   constructor(options: ControlOptions) {
     this.options = options;
     this.dockerManager = new DockerManager();
     this.logger = Loggers.control();
+    this.fs = new NodeFileSystem();
     
     // Ensure log directory exists
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirSync(logDir, { recursive: true });
+    if (!this.fs.existsSync(logDir)) {
+      this.fs.mkdirSync(logDir, { recursive: true });
     }
     
     // Register process cleanup on exit
@@ -73,7 +75,7 @@ export class MMTControlManager {
    */
   private writePidFile(): void {
     try {
-      fs.writeFileSync(pidFile, process.pid.toString());
+      this.fs.writeFileSync(pidFile, process.pid.toString());
     } catch (err) {
       this.logger.warn(`Could not write PID file: ${err}`);
     }
@@ -84,8 +86,8 @@ export class MMTControlManager {
    */
   private removePidFile(): void {
     try {
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
+      if (this.fs.existsSync(pidFile)) {
+        this.fs.unlinkSync(pidFile);
       }
     } catch (err) {
       // Ignore errors when removing PID file
@@ -96,6 +98,7 @@ export class MMTControlManager {
    * Check if another instance is running
    */
   static isRunning(): boolean {
+    const fs = new NodeFileSystem();
     try {
       if (!fs.existsSync(pidFile)) {
         return false;
@@ -345,16 +348,7 @@ export class MMTControlManager {
       vaultPath = pathMatch[1].trim();
       indexPath = indexMatch[1].trim();
     } else {
-      // Fall back to old format for backward compatibility
-      const vaultMatch = configContent.match(/vaultPath:\s*(.+)/);
-      const indexMatch = configContent.match(/indexPath:\s*(.+)/);
-      
-      if (!vaultMatch || !indexMatch) {
-        throw new Error('Config must include vaults array or vaultPath/indexPath');
-      }
-      
-      vaultPath = vaultMatch[1].trim();
-      indexPath = indexMatch[1].trim();
+      throw new Error('Config must include vaults array with at least one vault');
     }
     
     if (!apiPortMatch || !webPortMatch) {
@@ -527,6 +521,9 @@ export class MMTControlManager {
       env: {
         ...process.env,
         MMT_API_PORT: String(this.config.apiPort),
+        VITE_API_PORT: String(this.config.apiPort),
+        VITE_API_HOST: 'localhost',
+        VITE_API_PROTOCOL: 'http',
         FORCE_COLOR: '1' // Ensure colored output from Vite
       },
       stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr

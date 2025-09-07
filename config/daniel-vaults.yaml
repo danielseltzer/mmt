@@ -11,12 +11,17 @@ vaults:
     similarity:
       enabled: true
       provider: qdrant
-      ollamaUrl: http://localhost:11434
       model: nomic-embed-text
       qdrant:
-        url: http://localhost:6333
         collectionName: personal-documents
         onDisk: false
+      # New component-based network configuration
+      network:
+        host: localhost
+        ports:
+          ollama: 11434
+          qdrant: 6333
+        protocol: http
 
   # InData Bizdev
   - name: 'InD BizDev'
@@ -29,12 +34,17 @@ vaults:
     similarity:
       enabled: true
       provider: qdrant
-      ollamaUrl: http://localhost:11434
       model: nomic-embed-text
       qdrant:
-        url: http://localhost:6333
         collectionName: ind-bizdev-documents
         onDisk: false
+      # New component-based network configuration
+      network:
+        host: localhost
+        ports:
+          ollama: 11434
+          qdrant: 6333
+        protocol: http
   
   # InData Work
   - name: 'Work'
@@ -47,25 +57,26 @@ vaults:
     similarity:
       enabled: true
       provider: qdrant
-      ollamaUrl: http://localhost:11434
       model: nomic-embed-text
       qdrant:
-        url: http://localhost:6333
         collectionName: work-documents
         onDisk: false
+      # New component-based network configuration
+      network:
+        host: localhost
+        ports:
+          ollama: 11434
+          qdrant: 6333
+        protocol: http
 
 # Required port settings
 apiPort: 3001
 webPort: 5173
 
-# Global similarity configuration (deprecated - now per-vault)
-# similarity:
-#   enabled: true
-#   provider: qdrant
-#   ollamaUrl: http://localhost:11434
-#   model: nomic-embed-text
-#
-#   qdrant:
-#     url: http://localhost:6333
-#     collectionName: personal-documents
-#     onDisk: false
+# Global network configuration (can be overridden per-vault)
+network:
+  host: localhost
+  ports:
+    ollama: 11434
+    qdrant: 6333
+  protocol: http

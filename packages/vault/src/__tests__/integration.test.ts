@@ -16,7 +16,7 @@ describe('Vault Integration Tests', () => {
   afterEach(async () => {
     await factory.cleanupAll();
     try {
-      vaultRegistry.shutdown();
+      await vaultRegistry.shutdown();
     } catch {
       // Registry might already be shut down
     }
@@ -409,7 +409,7 @@ describe('Vault Integration Tests', () => {
       expect(documents).toHaveLength(1);
 
       // Shutdown should clean up all resources
-      vaultRegistry.shutdown();
+      await vaultRegistry.shutdown();
 
       // Registry should be empty
       expect(vaultRegistry.getAllVaults()).toHaveLength(0);
@@ -435,7 +435,7 @@ describe('Vault Integration Tests', () => {
         
         expect(vault.status).toBe('ready');
         
-        vaultRegistry.shutdown();
+        await vaultRegistry.shutdown();
       }
 
       await cleanup();
@@ -473,7 +473,7 @@ describe('Vault Integration Tests', () => {
       expect(doc1).toBeDefined();
       expect(doc1?.title).toBe('Document 1');
 
-      vault.shutdown();
+      await vault.shutdown();
       await cleanup();
     });
 

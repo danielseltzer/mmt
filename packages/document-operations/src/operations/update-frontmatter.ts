@@ -48,17 +48,11 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
       // In merge mode, merge updates with existing
       newFrontmatter = { ...currentFrontmatter };
       
-      // Apply updates
-      for (const [key, value] of Object.entries(this.options.updates)) {
-        if (value === null) {
-          // Remove the key by creating new object without it
-          // eslint-disable-next-line @typescript-eslint/naming-convention
-          const { [key]: _removed, ...rest } = newFrontmatter;
-          newFrontmatter = rest;
-        } else {
-          newFrontmatter[key] = value;
-        }
-      }
+      // Apply updates, filtering out nulls
+      newFrontmatter = Object.fromEntries(
+        Object.entries({ ...newFrontmatter, ...this.options.updates })
+          .filter(([, value]) => value !== null)
+      );
     }
     
     // Generate YAML representations
@@ -107,17 +101,11 @@ export class UpdateFrontmatterOperation implements DocumentOperation {
         // Merge mode: merge with existing frontmatter
         newFrontmatter = { ...doc.metadata.frontmatter };
         
-        // Apply updates
-        for (const [key, value] of Object.entries(this.options.updates)) {
-          if (value === null) {
-            // Remove the key by creating new object without it
-            // eslint-disable-next-line @typescript-eslint/naming-convention
-            const { [key]: _removed, ...rest } = newFrontmatter;
-            newFrontmatter = rest;
-          } else {
-            newFrontmatter[key] = value;
-          }
-        }
+        // Apply updates, filtering out nulls
+        newFrontmatter = Object.fromEntries(
+          Object.entries({ ...newFrontmatter, ...this.options.updates })
+            .filter(([, value]) => value !== null)
+        );
       }
       
       if (!context.options.dryRun) {

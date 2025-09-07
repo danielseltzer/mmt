@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, HardDrive, Tag, Hash, Loader2, AlertCircle, X } from 'lucide-react';
+import { FileText, Calendar, HardDrive, Tag, Hash, Loader2, AlertCircle, X, ExternalLink, FolderOpen, Database } from 'lucide-react';
 import { Loggers } from '@mmt/logger';
 import { getApiEndpoint } from './config/api';
 
@@ -116,9 +116,15 @@ export function DocumentPreviewModal({
                 Document Preview
               </h2>
               {previewData && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {previewData.path}
-                </p>
+                <div className="space-y-1 mt-1">
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Database className="h-3 w-3" />
+                    Vault: <span className="font-medium">{vaultId}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {previewData.path}
+                  </p>
+                </div>
               )}
             </div>
             <button
@@ -166,6 +172,13 @@ export function DocumentPreviewModal({
                   <span className="text-sm">{formatFileSize(previewData.metadata.size)}</span>
                 </div>
 
+                {previewData.fullPath && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm font-medium min-w-[80px] text-muted-foreground">Full Path:</span>
+                    <span className="text-sm font-mono text-xs break-all">{previewData.fullPath}</span>
+                  </div>
+                )}
+
                 <div className="flex items-start gap-2">
                   <span className="text-sm font-medium min-w-[80px] text-muted-foreground flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
@@ -211,6 +224,43 @@ export function DocumentPreviewModal({
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pb-3 border-b">
+                <button
+                  onClick={() => {
+                    // Open in Obsidian using obsidian:// URI scheme
+                    if (previewData.fullPath) {
+                      const obsidianUrl = `obsidian://open?path=${encodeURIComponent(previewData.fullPath)}`;
+                      window.open(obsidianUrl, '_blank');
+                    }
+                  }}
+                  className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                  title="Open in Obsidian"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open in Obsidian
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // Reveal in Finder/Explorer using system call
+                    if (previewData.fullPath) {
+                      // This would need to be implemented via API endpoint
+                      fetch(getApiEndpoint(`/api/vaults/${vaultId}/documents/reveal`), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: previewData.fullPath })
+                      }).catch(err => logger.error('Failed to reveal file:', err));
+                    }
+                  }}
+                  className="px-3 py-1.5 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors flex items-center gap-1.5"
+                  title="Reveal in Finder"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Reveal in Finder
+                </button>
               </div>
 
               {/* Content Preview Section */}

@@ -8,14 +8,13 @@
 
 import log from 'loglevel';
 
-// Log levels matching loglevel's defaults (and compatible with Winston)
+// Log levels matching loglevel's defaults
 export const LogLevel = {
   ERROR: 'error',
   WARN: 'warn',
   INFO: 'info',
   DEBUG: 'debug',
   TRACE: 'trace',
-  // Winston compatibility - map verbose and silly to debug/trace
   HTTP: 'debug',
   VERBOSE: 'debug',
   SILLY: 'trace'
@@ -42,7 +41,7 @@ interface LoggerOptions {
 }
 
 /**
- * Logger wrapper that provides Winston-compatible API using loglevel
+ * Logger wrapper that provides consistent API using loglevel
  */
 export class Logger {
   private component: string | undefined;
@@ -62,7 +61,7 @@ export class Logger {
     // Create a namespaced logger for this component
     this.logger = component ? log.getLogger(component) : log;
     
-    // Map Winston levels to loglevel levels
+    // Map common log levels to loglevel levels
     const mappedLevel = this.mapLogLevel(logLevel);
     this.logger.setLevel(mappedLevel as log.LogLevelDesc);
 
@@ -73,7 +72,7 @@ export class Logger {
   }
 
   private mapLogLevel(level: string): string {
-    // Map Winston-specific levels to loglevel equivalents
+    // Map common log levels to loglevel equivalents
     const levelMap: Record<string, string> = {
       'error': 'error',
       'warn': 'warn',
@@ -134,7 +133,7 @@ export class Logger {
     this.logger.setLevel(this.logger.getLevel());
   }
 
-  // Winston-compatible logging methods
+  // Logging methods
   error(message: string, ...args: any[]) {
     if (!this.silent) this.logger.error(message, ...args);
   }
@@ -163,7 +162,7 @@ export class Logger {
     if (!this.silent) this.logger.trace(message, ...args);
   }
 
-  // Additional Winston compatibility
+  // Additional logging method
   log(level: string, message: string, ...args: any[]) {
     const method = (this as any)[level];
     if (method) {
@@ -174,7 +173,6 @@ export class Logger {
 
 /**
  * Creates a loglevel logger instance with consistent configuration
- * Maintains backward compatibility with Winston interface
  */
 export function createLogger(options: LoggerOptions = {}): Logger {
   return new Logger(options);
@@ -250,12 +248,3 @@ export function formatError(error: unknown): object {
   return { error: String(error) };
 }
 
-// Export winston type aliases for backward compatibility
-// This allows existing code using winston.Logger to continue working
-export { Logger as winston };
-export type { Logger as WinstonLogger };
-
-// Re-export transports and format as no-ops for compatibility
-// These are Winston-specific concepts that don't apply to loglevel
-export const transports = {};
-export const format = {};

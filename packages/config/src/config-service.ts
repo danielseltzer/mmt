@@ -1,14 +1,14 @@
-import { readFileSync, existsSync, statSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import { load as loadYaml } from 'js-yaml';
 import { ConfigSchema, type Config } from '@mmt/entities';
 import { z } from 'zod';
 import { Loggers, type Logger } from '@mmt/logger';
+import { NodeFileSystem, type FileSystemAccess } from '@mmt/filesystem-access';
 
 /**
  * Service for loading and validating MMT configuration.
  * 
- * This service has no dependencies and performs full validation including:
+ * This service performs full validation including:
  * - Path format validation (must be absolute)
  * - File existence checks
  * - YAML parsing
@@ -19,9 +19,11 @@ import { Loggers, type Logger } from '@mmt/logger';
  */
 export class ConfigService {
   private logger: Logger;
+  private fs: FileSystemAccess;
 
-  constructor() {
+  constructor(fs?: FileSystemAccess) {
     this.logger = Loggers.default();
+    this.fs = fs ?? new NodeFileSystem();
   }
 
   /**
@@ -43,14 +45,14 @@ export class ConfigService {
     }
 
     // Check config file exists
-    if (!existsSync(configPath)) {
+    if (!this.fs.existsSync(configPath)) {
       this.exitWithError(`Config file not found: ${configPath}`);
     }
 
     // Read config file
     let configContent: string;
     try {
-      configContent = readFileSync(configPath, 'utf-8');
+      configContent = this.fs.readFileSync(configPath, 'utf-8');
     } catch (error) {
       this.exitWithError(`Failed to read config file: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -106,13 +108,13 @@ export class ConfigService {
 
     // Check vault directories exist
     for (const vault of config.vaults) {
-      if (!existsSync(vault.path)) {
+      if (!this.fs.existsSync(vault.path)) {
         this.exitWithError(`Vault directory not found for '${vault.name}': ${vault.path}`);
       }
 
       // Verify vault path is a directory
       try {
-        const stats = statSync(vault.path);
+        const stats = this.fs.statSync(vault.path);
         if (!stats.isDirectory()) {
           this.exitWithError(`Vault path is not a directory for '${vault.name}': ${vault.path}`);
         }
