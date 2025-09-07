@@ -10,6 +10,9 @@
  */
 
 import { create } from 'zustand';
+import type { FilterCollection } from './types';
+import { applyFilters } from './filter-manager';
+import { useConfigStore } from './config-store';
 
 // Types (simplified from original)
 interface Vault {
@@ -36,13 +39,16 @@ interface Tab {
   vaultId: string;
   name: string;
   documents: Document[];
+  filteredDocuments?: Document[];
   searchQuery: string;
   searchMode: 'text' | 'similarity';
+  filters?: FilterCollection;
   loading: boolean;
   error: string | null;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   vaultTotal?: number; // Total document count from API (not limited by pagination)
+  totalCount?: number;
 }
 
 interface DocumentStore {
@@ -62,6 +68,7 @@ interface DocumentStore {
   updateSearch: (tabId: string, query: string) => void;
   setSearchMode: (tabId: string, mode: 'text' | 'similarity') => void;
   performSimilaritySearch: (tabId: string, query: string) => Promise<void>;
+  setFilters: (filters: FilterCollection) => void;
   clearError: () => void;
   
   // Getters
@@ -69,10 +76,18 @@ interface DocumentStore {
 }
 
 // API functions
-const API_BASE = 'http://localhost:3001';
+const getApiBase = () => {
+  // Get from config store or derive from location
+  const config = useConfigStore.getState().config;
+  if (config?.apiUrl) {
+    return config.apiUrl;
+  }
+  // Fallback to deriving from window location
+  return window.location.origin;
+};
 
 async function fetchVaults(): Promise<Vault[]> {
-  const response = await fetch(`${API_BASE}/api/vaults`);
+  const response = await fetch(`${getApiBase()}/api/vaults`);
   if (!response.ok) {
     throw new Error(`Failed to fetch vaults: ${response.statusText}`);
   }
@@ -98,7 +113,7 @@ async function fetchDocuments(
     params.append('sortOrder', sortOrder || 'desc');
   }
 
-  const url = `${API_BASE}/api/vaults/${encodeURIComponent(vaultId)}/documents?${params}`;
+  const url = `${getApiBase()}/api/vaults/${encodeURIComponent(vaultId)}/documents?${params}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch documents: ${response.statusText}`);
@@ -111,7 +126,7 @@ async function fetchDocuments(
 }
 
 async function performSimilaritySearch(vaultId: string, query: string): Promise<Document[]> {
-  const url = `${API_BASE}/api/vaults/${encodeURIComponent(vaultId)}/similarity/search`;
+  const url = `${getApiBase()}/api/vaults/${encodeURIComponent(vaultId)}/similarity/search`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -220,10 +235,13 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       vaultId,
       name: vault.name,
       documents: [],
+      filteredDocuments: [],
+      filters: { conditions: [], logic: 'AND' },
       searchQuery: '',
       searchMode: 'text',
       loading: false,
-      error: null
+      error: null,
+      totalCount: 0
     };
     
     set({ 
@@ -281,10 +299,26 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       );
       console.log('[DocumentStore] Loaded documents:', result.documents.length, 'total:', result.total);
       
+      const updatedTab = get().tabs.find(t => t.id === tabId);
+      const filters = updatedTab?.filters || { conditions: [], logic: 'AND' };
+      const filteredDocs = applyFilters(
+        result.documents,
+        filters,
+        updatedTab?.searchQuery,
+        updatedTab?.searchMode
+      );
+
       set({
         tabs: get().tabs.map(t => 
           t.id === tabId 
-            ? { ...t, documents: result.documents, vaultTotal: result.total, loading: false }
+            ? { 
+                ...t, 
+                documents: result.documents, 
+                filteredDocuments: filteredDocs,
+                vaultTotal: result.total, 
+                totalCount: filteredDocs.length,
+                loading: false 
+              }
             : t
         )
       });
@@ -346,6 +380,35 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   },
 
   // Perform similarity search
+  setFilters: (filters: FilterCollection) => {
+    const { tabs, activeTabId } = get();
+    if (!activeTabId) return;
+    
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (!tab) return;
+
+    // Apply filters to documents
+    const filteredDocuments = applyFilters(
+      tab.documents, 
+      filters,
+      tab.searchQuery,
+      tab.searchMode
+    );
+
+    set({
+      tabs: tabs.map(t =>
+        t.id === activeTabId
+          ? { 
+              ...t, 
+              filters,
+              filteredDocuments,
+              totalCount: filteredDocuments.length
+            }
+          : t
+      )
+    });
+  },
+
   performSimilaritySearch: async (tabId: string, query: string) => {
     const { tabs } = get();
     const tab = tabs.find(t => t.id === tabId);
