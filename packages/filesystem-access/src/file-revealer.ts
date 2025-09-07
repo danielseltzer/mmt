@@ -10,7 +10,7 @@
 import { existsSync } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { dirname, basename } from 'path';
+import { dirname } from 'path';
 import { ComponentLogger } from '@mmt/logger';
 
 const execAsync = promisify(exec);
@@ -24,7 +24,7 @@ export interface FileRevealStrategy {
    * @param filePath - Absolute path to the file to reveal
    * @throws Error if the file doesn't exist or operation fails
    */
-  reveal(filePath: string): Promise<void>;
+  reveal(filePath: string): Promise<void> | void;
 }
 
 /**
@@ -37,7 +37,7 @@ export class SystemFileRevealStrategy implements FileRevealStrategy {
       throw new Error(`Cannot reveal non-existent file: ${filePath}`);
     }
 
-    const platform = process.platform;
+    const {platform} = process;
     let command: string;
 
     if (platform === 'darwin') {
@@ -45,13 +45,12 @@ export class SystemFileRevealStrategy implements FileRevealStrategy {
       command = `open -R "${filePath}"`;
     } else if (platform === 'win32') {
       // Windows - use explorer with /select flag
-      const windowsPath = filePath.replace(/\//g, '\\');
+      const windowsPath = filePath.replace(/\//gu, '\\');
       command = `explorer.exe /select,"${windowsPath}"`;
     } else {
       // Linux - try various file managers
       const parentDir = dirname(filePath);
-      const fileName = basename(filePath);
-      
+
       // Try different Linux file managers
       command = `xdg-open "${parentDir}" 2>/dev/null || ` +
                 `nautilus --select "${filePath}" 2>/dev/null || ` +
@@ -78,7 +77,7 @@ export class SystemFileRevealStrategy implements FileRevealStrategy {
 export class TestFileRevealStrategy implements FileRevealStrategy {
   private revealedFiles: string[] = [];
 
-  async reveal(filePath: string): Promise<void> {
+  reveal(filePath: string): void {
     // Verify file exists - this tests the real constraint
     if (!existsSync(filePath)) {
       throw new Error(`Cannot reveal non-existent file: ${filePath}`);
@@ -112,14 +111,14 @@ export class TestFileRevealStrategy implements FileRevealStrategy {
  * Useful for debugging and CI environments
  */
 export class DryRunFileRevealStrategy implements FileRevealStrategy {
-  async reveal(filePath: string): Promise<void> {
+  reveal(filePath: string): void {
     // Verify file exists
     if (!existsSync(filePath)) {
       throw new Error(`Cannot reveal non-existent file: ${filePath}`);
     }
 
     // Log what would happen
-    const platform = process.platform;
+    const {platform} = process;
     const logger = ComponentLogger.get('FileRevealer');
     logger.info(`[DRY RUN] Would reveal file on ${platform}: ${filePath}`);
   }

@@ -8,7 +8,7 @@ import { vaultRegistry } from '@mmt/vault';
 
 export interface Context {
   config: Config;
-  indexer: VaultIndexer; // Legacy: for backward compatibility
+  indexer: VaultIndexer; // Default vault's indexer (first vault in config)
   fileRelocator: FileRelocator;
   operationRegistry: OperationRegistry;
   fs: NodeFileSystem;
@@ -24,8 +24,8 @@ export async function createContext(config: Config): Promise<Context> {
   // This creates and manages all indexers
   await vaultRegistry.initializeVaults(config);
   
-  // Get the default vault's indexer for backward compatibility
-  // (some routes still expect a single indexer in the context)
+  // Get the default vault's indexer (first vault in config)
+  // Some routes still expect a single indexer in the context
   const defaultVault = config.vaults[0];
   if (!defaultVault) {
     throw new Error('No vaults configured. At least one vault is required.');

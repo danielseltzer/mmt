@@ -142,8 +142,8 @@ export abstract class BaseSimilarityProvider implements SimilarityProvider {
   
   protected abstract doShutdown(): Promise<void>;
   
-  async isHealthy(): Promise<boolean> {
-    return this.initialized;
+  isHealthy(): Promise<boolean> {
+    return Promise.resolve(this.initialized);
   }
   
   abstract getStatus(): Promise<SimilarityStatus>;

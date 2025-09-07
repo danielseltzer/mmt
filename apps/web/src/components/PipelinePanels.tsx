@@ -5,14 +5,20 @@ import { OutputPanel } from './OutputPanel';
 import { PreviewModal } from './PreviewModal';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput, Eye } from 'lucide-react';
-import { useDocumentStore, useCurrentTab, useActiveFilters, useActiveTotalCount } from '../stores/document-store';
+import { ChevronDown, ChevronRight, Filter, Wand2, FileOutput, Eye, LucideIcon } from 'lucide-react';
+import { useDocumentStore } from '../stores/document-store';
 import { Loggers } from '@mmt/logger';
 
 const logger = Loggers.web();
 
-// eslint-disable-next-line no-unused-vars
-function PanelHeader({ icon: Icon, title, summary, isOpen }) {
+interface PanelHeaderProps {
+  icon: LucideIcon;
+  title: string;
+  summary?: string;
+  isOpen: boolean;
+}
+
+function PanelHeader({ icon: Icon, title, summary, isOpen }: PanelHeaderProps) {
   return (
     <div className="flex items-center gap-2 w-full">
       {isOpen ? (
@@ -31,13 +37,19 @@ function PanelHeader({ icon: Icon, title, summary, isOpen }) {
   );
 }
 
-export function PipelinePanels({ searchBar, onCloseCallbackChange }) {
+interface PipelinePanelsProps {
+  searchBar: React.ReactNode;
+  onCloseCallbackChange?: (callback: () => () => void) => void;
+}
+
+export function PipelinePanels({ searchBar, onCloseCallbackChange }: PipelinePanelsProps) {
   const [openPanel, setOpenPanel] = useState('select'); // Only one panel open at a time
   const [operations, setOperations] = useState([]);
   const [outputFormat, setOutputFormat] = useState('json');
   const [showPreview, setShowPreview] = useState(false);
   const [transformJustOpened, setTransformJustOpened] = useState(false);
-  const currentTab = useCurrentTab();
+  const { getActiveTab } = useDocumentStore();
+  const currentTab = getActiveTab();
   const filters = currentTab?.filters || { conditions: [], logic: 'AND' };
   const documents = currentTab?.documents || [];
   const totalCount = currentTab?.totalCount || 0;

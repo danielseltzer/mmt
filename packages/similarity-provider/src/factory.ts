@@ -5,6 +5,7 @@ import { Loggers, type Logger } from '@mmt/logger';
 /**
  * Factory for creating and managing similarity providers
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class SimilarityProviderFactory {
   private static providers = new Map<string, () => SimilarityProvider>();
   private static instances = new Map<string, SimilarityProvider>();
@@ -31,9 +32,9 @@ export class SimilarityProviderFactory {
     // Also cleanup any instances
     const instance = this.instances.get(name);
     if (instance) {
-      instance.shutdown().catch(error => 
-        this.logger.error(`Error shutting down provider ${name}`, { error })
-      );
+      instance.shutdown().catch((error: unknown) => {
+        this.logger.error(`Error shutting down provider ${name}`, { error });
+      });
       this.instances.delete(name);
     }
   }
@@ -106,9 +107,9 @@ export class SimilarityProviderFactory {
    */
   static async shutdownAll(): Promise<void> {
     const shutdownPromises = Array.from(this.instances.values()).map(
-      instance => instance.shutdown().catch(error =>
-        this.logger.error('Error during provider shutdown', { error })
-      )
+      instance => instance.shutdown().catch((error: unknown) => {
+        this.logger.error('Error during provider shutdown', { error });
+      })
     );
     await Promise.all(shutdownPromises);
     this.instances.clear();
@@ -119,9 +120,10 @@ export class SimilarityProviderFactory {
    * Useful for testing
    */
   static clear(): void {
-    this.shutdownAll().catch(error =>
-      this.logger.error('Error during factory clear', { error })
-    );
+    // eslint-disable-next-line no-void
+    void this.shutdownAll().catch((error: unknown) => {
+      this.logger.error('Error during factory clear', { error });
+    });
     this.providers.clear();
     this.instances.clear();
   }

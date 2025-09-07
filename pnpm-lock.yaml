@@ -210,6 +210,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.1.0)
+      '@mmt/entities':
+        specifier: workspace:*
+        version: link:../../packages/entities
       '@mmt/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -328,6 +331,9 @@ importers:
       '@mmt/entities':
         specifier: workspace:*
         version: link:../entities
+      '@mmt/filesystem-access':
+        specifier: workspace:*
+        version: link:../filesystem-access
       '@mmt/logger':
         specifier: workspace:*
         version: link:../logger

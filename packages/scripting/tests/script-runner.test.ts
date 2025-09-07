@@ -37,8 +37,7 @@ describe('ScriptRunner', () => {
     });
     await indexer.initialize();
     // Use the internal method to set indexer
-    // @ts-ignore - using internal method for testing
-    runner._setIndexer(indexer);
+    (runner as any).setIndexerForTesting(indexer);
   }
   
   // Helper to start API server after files are created

@@ -8,6 +8,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./date-parser": {
+      "types": "./dist/date-parser.d.ts",
+      "import": "./dist/date-parser.js"
+    },
+    "./size-parser": {
+      "types": "./dist/size-parser.d.ts",
+      "import": "./dist/size-parser.js"
     }
   },
   "scripts": {

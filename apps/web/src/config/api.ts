@@ -2,14 +2,30 @@
  * API Configuration
  * Centralized configuration for API endpoints
  * 
- * IMPORTANT: Configuration comes from server
- * In development, Vite proxy handles /api routes
- * In production, the app fetches configuration from the server
+ * IMPORTANT: All API URLs must be constructed through this module
+ * Never hardcode API URLs in components or stores
  */
 
-// In development, use relative URLs to leverage Vite's proxy
-// In production, the API URL should be fetched from server configuration
-export const API_BASE_URL = '';
+/**
+ * Get API base URL from environment or configuration
+ * @returns Base URL for API server
+ */
+function getApiBaseUrl(): string {
+  // Check for environment variable first
+  if (typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Check for API host and port from environment
+  const apiHost = import.meta.env.VITE_API_HOST || 'localhost';
+  const apiPort = import.meta.env.VITE_API_PORT || import.meta.env.MMT_API_PORT || '3001';
+  const apiProtocol = import.meta.env.VITE_API_PROTOCOL || 'http';
+  
+  return `${apiProtocol}://${apiHost}:${apiPort}`;
+}
+
+// API base URL - constructed from environment configuration
+export const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Construct full API URL

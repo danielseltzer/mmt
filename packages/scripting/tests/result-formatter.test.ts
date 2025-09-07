@@ -67,8 +67,7 @@ describe('ResultFormatter', () => {
     });
     await indexer.initialize();
     // Use the internal method to set indexer
-    // @ts-ignore - using internal method for testing
-    scriptRunner._setIndexer(indexer);
+    (scriptRunner as any).setIndexerForTesting(indexer);
     
     // Create a test script that will generate mixed results
     class TestScript implements Script {
@@ -205,8 +204,7 @@ describe('ResultFormatter', () => {
         useWorkers: false,
       });
       await indexer.initialize();
-      // @ts-ignore
-      scriptRunner.indexer = indexer;
+      (scriptRunner as any).indexer = indexer;
       
       const script = new FailScript();
       const pipeline = script.define({

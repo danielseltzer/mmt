@@ -262,7 +262,7 @@ describe('Entity Schemas', () => {
       const op: Operation = {
         type: 'remove-frontmatter',
         path: '/path/to/file.md',
-        keys: ['deprecated', 'old_field'],
+        keys: ['unwanted_key', 'another_field'],
       };
       
       const result = OperationSchema.safeParse(op);

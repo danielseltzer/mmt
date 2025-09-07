@@ -65,10 +65,20 @@ describe('Config Store', () => {
 
     // Override fetch to use our test server
     global.fetch = async (url, options) => {
-      // Convert relative URLs to absolute URLs pointing to our test server
-      const testUrl = url.startsWith('/') 
-        ? `http://127.0.0.1:${serverPort}${url}`
-        : url;
+      // Handle absolute URLs from getApiEndpoint
+      let testUrl = url;
+      if (typeof url === 'string' && url.includes('http://localhost:3001')) {
+        // Replace the localhost:3001 with our test server
+        testUrl = url.replace('http://localhost:3001', `http://127.0.0.1:${serverPort}`);
+      } else if (url.startsWith('/')) {
+        // Convert relative URLs to absolute URLs pointing to our test server
+        testUrl = `http://127.0.0.1:${serverPort}${url}`;
+      }
+      
+      // Simulate network error if shouldThrowError is true
+      if (shouldThrowError) {
+        throw new Error('Failed to execute "fetch()" on "Window" with URL "' + url + '": ');
+      }
       
       // Use the original fetch (from happy-dom environment)
       const response = await originalFetch(testUrl, options);
@@ -147,7 +157,7 @@ describe('Config Store', () => {
       expect(state.error).toBeTruthy();
       expect(typeof state.error).toBe('string');
       // Check that it's a network-related error (exact message may vary)
-      expect(state.error.toLowerCase()).toMatch(/socket|network|connection|econnreset/);
+      expect(state.error.toLowerCase()).toMatch(/failed to execute|fetch|window|network|connection|econnreset/);
     });
   });
 });

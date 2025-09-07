@@ -16,3 +16,7 @@ export type {
   OperationRequest 
 } from './core/types';
 export * from './core/utils';
+
+// Export hooks
+export { useTableSelection } from './hooks';
+export type { UseTableSelectionReturn } from './hooks';

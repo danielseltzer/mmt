@@ -59,8 +59,6 @@ export class Vault implements IVault {
    */
   async initialize(): Promise<void> {
     try {
-      // eslint-disable-next-line no-console
-      console.log(`Initializing vault: ${this.id} at path: ${this.config.path}`);
       this.logger.info(`Initializing vault: ${this.id}`);
       this.vaultDebugLogger.debug(`Vault ID: ${this.id}, Path: ${this.config.path}`);
       this.status = 'initializing';
@@ -81,7 +79,7 @@ export class Vault implements IVault {
       let similaritySearch: SimilaritySearchService | undefined;
       
       // Use per-vault config if available, otherwise fall back to global config
-      const similarityConfig = this.config.similarity || this.globalConfig?.similarity;
+      const similarityConfig = this.config.similarity ?? this.globalConfig?.similarity;
       
       if (similarityConfig?.enabled) {
         try {
@@ -101,14 +99,12 @@ export class Vault implements IVault {
       };
 
       this.status = 'ready';
-      // eslint-disable-next-line no-console
-      console.log(`✓ Vault ${this.id} initialized successfully`);
       this.logger.info(`Vault ${this.id} initialized successfully`);
     } catch (error) {
       this.status = 'error';
       this.error = error instanceof Error ? error : new Error(String(error));
       const errorMsg = this.error.message;
-      // eslint-disable-next-line no-console
+       
       console.error(`✗ Failed to initialize vault ${this.id}: ${errorMsg}`);
       this.logger.error(`Failed to initialize vault ${this.id}`, { error });
       throw error; // Re-throw to allow fail-fast behavior
@@ -158,11 +154,11 @@ export class Vault implements IVault {
    * NOTE: After shutdown, vault must be re-initialized before use.
    */
   async shutdown(): Promise<void> {
-    // eslint-disable-next-line no-console
+     
     this.logger.info(`Shutting down vault: ${this.id}`);
     
     // Shutdown similarity search if it exists
-    if (this.services?.similaritySearch) {
+    if (this.services?.similaritySearch !== undefined) {
       await this.services.similaritySearch.shutdown();
     }
     

@@ -175,7 +175,9 @@ describe('Type Schemas', () => {
       
       const parsed = SimilarityConfigSchema.parse(config);
       expect(parsed.provider).toBe('orama');
+       
       expect(parsed.orama?.indexFilename).toBe('custom-index.msp');
+       
       expect(parsed.orama?.maxDepth).toBe(200);
     });
     

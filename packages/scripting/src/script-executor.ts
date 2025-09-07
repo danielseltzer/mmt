@@ -5,7 +5,6 @@ import type {
   ScriptExecutionResult,
   OperationPipeline,
   ScriptOperation,
-  FilterCollection,
 } from '@mmt/entities';
 import { AnalysisRunner } from './analysis-runner.js';
 import { FilterEvaluator } from './filter-evaluator.js';
@@ -83,7 +82,7 @@ export class ScriptExecutor {
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(`API error: ${response.status} - ${error}`);
+        throw new Error(`API error: ${String(response.status)} - ${error}`);
       }
 
       const apiResponse = await response.json();
@@ -123,11 +122,16 @@ export class ScriptExecutor {
         }[];
       };
       
-      if (isPreview && apiResponse && typeof apiResponse === 'object' && 'preview' in apiResponse) {
+      interface PreviewResponse {
+        preview?: unknown;
+        documents?: Document[];
+      }
+
+      if (isPreview && typeof apiResponse === 'object' && apiResponse !== null && 'preview' in apiResponse) {
         // Convert preview response to execution result format
-        const previewResponse = apiResponse as any;
-        const documents = previewResponse.documents || [];
-        const operations = pipeline.operations;
+        const previewResponse = apiResponse as PreviewResponse;
+        const documents = previewResponse.documents ?? [];
+        const {operations} = pipeline;
         
         // In preview mode, all operations are skipped
         const skippedResults = [];
@@ -157,7 +161,7 @@ export class ScriptExecutor {
         };
       } else {
         // Regular execution result
-        apiResult = apiResponse as any;
+        apiResult = apiResponse as typeof apiResult;
       }
 
       // Convert API result to ScriptExecutionResult format

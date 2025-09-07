@@ -37,6 +37,7 @@ export interface DocumentStoreState {
   // Vault state (shared across tabs)
   vaults: Vault[];
   isLoadingVaults: boolean;
+  isLoadingDocuments: boolean;
   similarityAvailable: boolean;
   
   // Tab management actions

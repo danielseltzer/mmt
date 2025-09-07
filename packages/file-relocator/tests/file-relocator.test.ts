@@ -93,18 +93,16 @@ This [[task1]] should not be updated - it's in a code block
     expect(references).toHaveLength(2); // project1.md and daily note
     expect(references).toContainEqual({
       filePath: path.join(tempDir, 'Projects/project1.md'),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       links: expect.arrayContaining([
         { type: 'wikilink', raw: '[[Tasks/task1]]', target: 'Tasks/task1', line: 2 },
         { type: 'wikilink', raw: '[[task1]]', target: 'task1', line: 6 }
-      ])
+      ]) as any
     });
     expect(references).toContainEqual({
       filePath: path.join(tempDir, 'Daily/2024-06-25.md'),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       links: expect.arrayContaining([
         { type: 'wikilink', raw: '[[task1]]', target: 'task1', line: 3 }
-      ])
+      ]) as any
     });
   });
 

@@ -23,7 +23,7 @@ export class MetadataExtractor {
     
     // Calculate folder path relative to vault root
     const lastSlash = relativePath.lastIndexOf('/');
-    const folderPath = lastSlash === -1 ? '/' : '/' + relativePath.substring(0, lastSlash);
+    const folderPath = lastSlash === -1 ? '/' : `/${relativePath.substring(0, lastSlash)}`;
     
     return {
       path: fullPath,

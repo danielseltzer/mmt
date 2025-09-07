@@ -1,23 +1,50 @@
 import { TableView } from '@mmt/table-view';
 import { EnhancedDocumentTable } from './EnhancedDocumentTable';
-import { useDocumentStore, useCurrentTab } from '../stores/document-store';
+import { useDocumentStore } from '../stores/document-store';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Sparkles } from 'lucide-react';
 import { Loggers } from '@mmt/logger';
+import { useCallback, useMemo } from 'react';
 
 const logger = Loggers.web();
 
 export function DocumentTable() {
-  const currentTab = useCurrentTab();
-  const { setSort } = useDocumentStore();
-  
-  const filteredDocuments = currentTab?.filteredDocuments || [];
+  const { getActiveTab } = useDocumentStore();
+  const currentTab = getActiveTab();
+
+  const documents = currentTab?.documents || [];
   const loading = currentTab?.loading || false;
   const error = currentTab?.error || null;
-  const sortBy = currentTab?.sortBy;
-  const sortOrder = currentTab?.sortOrder || 'asc';
-  const searchMode = currentTab?.searchMode || 'text';
   const searchQuery = currentTab?.searchQuery || '';
+  
+  // Get sort state from the tab or use default - memoize to prevent infinite loops
+  const sortState = useMemo(() => {
+    if (currentTab?.sortBy) {
+      return { field: currentTab.sortBy, order: currentTab.sortOrder || 'asc' };
+    }
+    return { field: 'modified', order: 'desc' as const };
+  }, [currentTab?.sortBy, currentTab?.sortOrder]);
+  
+  const handleSortChange = useCallback((field: string, order: 'asc' | 'desc') => {
+    // Only reload if sort actually changed
+    if (currentTab && (currentTab.sortBy !== field || currentTab.sortOrder !== order)) {
+      const store = useDocumentStore.getState();
+      const tabs = store.tabs.map(tab => 
+        tab.id === currentTab.id 
+          ? { ...tab, sortBy: field, sortOrder: order }
+          : tab
+      );
+      useDocumentStore.setState({ tabs });
+      
+      // Reload documents with new sort order
+      // This will fetch from API with sorting parameters
+      store.loadDocuments(currentTab.id);
+    }
+  }, [currentTab]);
+
+  // For now, use documents directly as filtered documents
+  // TODO: Add filtering logic if needed
+  const filteredDocuments = documents;
   
   console.log('[DocumentTable] Current tab:', currentTab);
   console.log('[DocumentTable] Loading:', loading, 'Documents:', filteredDocuments.length);
@@ -27,7 +54,7 @@ export function DocumentTable() {
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         <span className="ml-2 text-muted-foreground">
-          {searchMode === 'similarity' ? 'Searching for similar documents...' : 'Loading documents...'}
+          Loading documents...
         </span>
       </div>
     );
@@ -43,35 +70,19 @@ export function DocumentTable() {
     );
   }
   
-  if (searchMode === 'similarity' && filteredDocuments.length === 0 && searchQuery) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <Sparkles className="h-12 w-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">No similar documents found</p>
-        <p className="text-sm mt-2">Try adjusting your search query</p>
-      </div>
-    );
-  }
-  
-  // Use EnhancedDocumentTable for similarity mode, standard TableView otherwise
-  if (searchMode === 'similarity') {
-    return (
-      <div className="flex-1 overflow-hidden" data-testid="document-table">
-        <EnhancedDocumentTable documents={filteredDocuments} />
-      </div>
-    );
-  }
-  
+  // Always render TableView (even with empty documents) to maintain sort state
+  // The table will handle empty state internally
+
   return (
     <div className="flex-1 overflow-hidden" data-testid="document-table">
-      <TableView 
+      <TableView
         documents={filteredDocuments as any}
         onSelectionChange={(selectedIds) => {
           logger.debug('Selected documents:', selectedIds);
         }}
-        currentSort={sortBy ? { field: sortBy, order: sortOrder } : undefined}
-        onSortChange={setSort}
         vaultId={currentTab?.vaultId || ''}
+        currentSort={sortState}
+        onSortChange={handleSortChange}
       />
     </div>
   );

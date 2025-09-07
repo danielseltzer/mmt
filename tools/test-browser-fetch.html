@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Fetch Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        .pending { background: #fff3cd; }
+    </style>
+</head>
+<body>
+    <h1>Browser Fetch Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(testName, status, message, data = null) {
+            const div = document.createElement('div');
+            div.className = `test ${status}`;
+            div.innerHTML = `
+                <h3>${testName}</h3>
+                <p><strong>Status:</strong> ${status.toUpperCase()}</p>
+                <p><strong>Message:</strong> ${message}</p>
+                ${data ? `<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}
+            `;
+            resultsDiv.appendChild(div);
+        }
+        
+        async function testDirectFetch() {
+            addResult('Direct Fetch Test', 'pending', 'Starting...');
+            
+            try {
+                const url = 'http://localhost:3001/api/vaults/Personal/documents?limit=3&offset=0';
+                console.log('Testing URL:', url);
+                
+                const startTime = Date.now();
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const endTime = Date.now();
+                
+                console.log('Response received:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data received:', data);
+                
+                addResult('Direct Fetch Test', 'success', 
+                    `Completed in ${endTime - startTime}ms`, 
+                    {
+                        status: response.status,
+                        documentCount: data.documents?.length || 0,
+                        total: data.total,
+                        vaultTotal: data.vaultTotal
+                    }
+                );
+                
+                return { success: true, data };
+            } catch (error) {
+                console.error('Direct fetch error:', error);
+                addResult('Direct Fetch Test', 'error', error.message);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function testWithTimeout() {
+            addResult('Timeout Test', 'pending', 'Starting with 5s timeout...');
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    controller.abort();
+                    console.log('Fetch aborted due to timeout');
+                }, 5000);
+                
+                const url = 'http://localhost:3001/api/vaults/Personal/documents?limit=3&offset=0';
+                const startTime = Date.now();
+                
+                const response = await fetch(url, {
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                const endTime = Date.now();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                addResult('Timeout Test', 'success', 
+                    `Completed in ${endTime - startTime}ms`, 
+                    {
+                        status: response.status,
+                        documentCount: data.documents?.length || 0,
+                        total: data.total
+                    }
+                );
+                
+                return { success: true, data };
+            } catch (error) {
+                console.error('Timeout test error:', error);
+                addResult('Timeout Test', 'error', error.message);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function testPromiseRace() {
+            addResult('Promise Race Test', 'pending', 'Starting with 3s race...');
+            
+            try {
+                const url = 'http://localhost:3001/api/vaults/Personal/documents?limit=3&offset=0';
+                
+                const fetchPromise = fetch(url, {
+                    headers: { 'Accept': 'application/json' }
+                }).then(r => r.json());
+                
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Race timeout after 3 seconds')), 3000)
+                );
+                
+                const startTime = Date.now();
+                const result = await Promise.race([fetchPromise, timeoutPromise]);
+                const endTime = Date.now();
+                
+                addResult('Promise Race Test', 'success', 
+                    `Completed in ${endTime - startTime}ms`, 
+                    {
+                        documentCount: result.documents?.length || 0,
+                        total: result.total
+                    }
+                );
+                
+                return { success: true, data: result };
+            } catch (error) {
+                console.error('Promise race error:', error);
+                addResult('Promise Race Test', 'error', error.message);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function runAllTests() {
+            console.log('Starting browser fetch tests...');
+            
+            const results = [];
+            results.push(await testDirectFetch());
+            results.push(await testWithTimeout());
+            results.push(await testPromiseRace());
+            
+            const allPassed = results.every(r => r.success);
+            
+            addResult('Summary', allPassed ? 'success' : 'error', 
+                `${results.filter(r => r.success).length}/${results.length} tests passed`
+            );
+            
+            console.log('All tests completed:', results);
+        }
+        
+        // Start tests when page loads
+        window.addEventListener('load', runAllTests);
+    </script>
+</body>
+</html>
