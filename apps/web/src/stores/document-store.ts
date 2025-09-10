@@ -168,12 +168,27 @@ async function performSimilaritySearch(vaultId: string, query: string): Promise<
 // Generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+// Create initial default tab for UI to function even without vaults
+const initialDefaultTab: Tab = {
+  id: generateId(),
+  vaultId: 'default',
+  name: 'Default',
+  documents: [],
+  filteredDocuments: [],
+  filters: { conditions: [], logic: 'AND' },
+  searchQuery: '',
+  searchMode: 'text',
+  loading: false,
+  error: null,
+  totalCount: 0
+};
+
 // Store implementation
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
-  // Initial state
+  // Initial state with default tab
   vaults: [],
-  tabs: [],
-  activeTabId: null,
+  tabs: [initialDefaultTab],
+  activeTabId: initialDefaultTab.id,
   loadingVaults: false,
   error: null,
   
@@ -185,28 +200,53 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     set({ loadingVaults: true, error: null });
     
     try {
-      console.log('[DocumentStore] Loading vaults...');
       const vaults = await fetchVaults();
-      console.log('[DocumentStore] Loaded vaults:', vaults.length);
       
       set({ vaults, loadingVaults: false });
       
-      // Auto-create tabs for all vaults if no tabs exist
+      // Replace default tab with vault tabs when vaults are loaded
       const { tabs } = get();
-      if (tabs.length === 0 && vaults.length > 0) {
-        // Create tabs for all vaults
+      
+      // Check if we only have the default tab
+      const hasOnlyDefaultTab = tabs.length === 1 && tabs[0].vaultId === 'default';
+      
+      if (vaults.length > 0 && hasOnlyDefaultTab) {
+        // Clear the default tab and create tabs for all vaults
+        const newTabs = [];
+        let firstTabId = null;
+        
         vaults.forEach((vault, index) => {
-          get().createTab(vault.id);
-          // Set first vault as active
+          const newTab: Tab = {
+            id: generateId(),
+            vaultId: vault.id,
+            name: vault.name,
+            documents: [],
+            filteredDocuments: [],
+            filters: { conditions: [], logic: 'AND' },
+            searchQuery: '',
+            searchMode: 'text',
+            loading: false,
+            error: null,
+            totalCount: 0
+          };
+          newTabs.push(newTab);
+          
           if (index === 0) {
-            const newTabs = get().tabs;
-            const firstTab = newTabs.find(t => t.vaultId === vault.id);
-            if (firstTab) {
-              set({ activeTabId: firstTab.id });
-            }
+            firstTabId = newTab.id;
           }
         });
+        
+        set({ 
+          tabs: newTabs,
+          activeTabId: firstTabId
+        });
+        
+        // Load documents for the first tab
+        if (firstTabId) {
+          get().loadDocuments(firstTabId);
+        }
       }
+      // If no vaults, keep the default tab as is
       
     } catch (error) {
       console.error('[DocumentStore] Error loading vaults:', error);
@@ -382,6 +422,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   // Perform similarity search
   setFilters: (filters: FilterCollection) => {
     const { tabs, activeTabId } = get();
+    
     if (!activeTabId) return;
     
     const tab = tabs.find(t => t.id === activeTabId);
