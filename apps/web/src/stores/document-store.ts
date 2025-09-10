@@ -13,6 +13,7 @@ import { create } from 'zustand';
 import type { FilterCollection } from './types';
 import { applyFilters } from './filter-manager';
 import { useConfigStore } from './config-store';
+import { API_ENDPOINTS } from '../config/api';
 
 // Types (simplified from original)
 interface Vault {
@@ -87,7 +88,7 @@ const getApiBase = () => {
 };
 
 async function fetchVaults(): Promise<Vault[]> {
-  const response = await fetch(`${getApiBase()}/api/vaults`);
+  const response = await fetch(API_ENDPOINTS.vaults());
   if (!response.ok) {
     throw new Error(`Failed to fetch vaults: ${response.statusText}`);
   }
@@ -113,7 +114,7 @@ async function fetchDocuments(
     params.append('sortOrder', sortOrder || 'desc');
   }
 
-  const url = `${getApiBase()}/api/vaults/${encodeURIComponent(vaultId)}/documents?${params}`;
+  const url = `${API_ENDPOINTS.vaultDocuments(vaultId)}?${params}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch documents: ${response.statusText}`);
@@ -126,7 +127,7 @@ async function fetchDocuments(
 }
 
 async function performSimilaritySearch(vaultId: string, query: string): Promise<Document[]> {
-  const url = `${getApiBase()}/api/vaults/${encodeURIComponent(vaultId)}/similarity/search`;
+  const url = API_ENDPOINTS.similaritySearch(vaultId);
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -13,7 +13,7 @@ export function parseDateExpression(expression: string): { operator: string; val
   if (lastMatch) {
     const [, amount, unit] = lastMatch;
     const unitChar = unit.charAt(0); // d, w, m, y
-    return { operator: 'gt', value: `-${amount}${unitChar}` };
+    return { operator: '>', value: `-${amount}${unitChar}` };
   }
   
   // Pattern: "< X days/weeks/months/years"
@@ -21,27 +21,22 @@ export function parseDateExpression(expression: string): { operator: string; val
   if (ltMatch) {
     const [, amount, unit] = ltMatch;
     const unitChar = unit.charAt(0);
-    return { operator: 'gt', value: `-${amount}${unitChar}` };
+    return { operator: '>', value: `-${amount}${unitChar}` };
   }
   
   // Pattern: "> YYYY-MM-DD" or ">= YYYY-MM-DD"
   const dateCompareMatch = trimmed.match(/^(>|>=|<|<=)\s*(\d{4}(?:-\d{2}){0,2})$/);
   if (dateCompareMatch) {
     const [, op, date] = dateCompareMatch;
-    const operatorMap: Record<string, string> = {
-      '>': 'gt',
-      '>=': 'gte',
-      '<': 'lt',
-      '<=': 'lte'
-    };
-    return { operator: operatorMap[op], value: date };
+    // Return the operator as-is (already in symbol format)
+    return { operator: op, value: date };
   }
   
   // Pattern: "since YYYY"
   const sinceMatch = trimmed.match(/^since\s+(\d{4})$/);
   if (sinceMatch) {
     const [, year] = sinceMatch;
-    return { operator: 'gte', value: year };
+    return { operator: '>=', value: year };
   }
   
   return null;
@@ -61,7 +56,7 @@ export function parseSizeExpression(expression: string): { operator: string; val
   const overUnderMatch = trimmed.match(/^(over|under)\s+(\d+(?:\.\d+)?)\s*([kmgt]b?)?$/);
   if (overUnderMatch) {
     const [, direction, amount, unit = 'b'] = overUnderMatch;
-    const operator = direction === 'over' ? 'gt' : 'lt';
+    const operator = direction === 'over' ? '>' : '<';
     const multipliers: Record<string, number> = {
       'b': 1,
       'k': 1024,
@@ -81,12 +76,6 @@ export function parseSizeExpression(expression: string): { operator: string; val
   const operatorMatch = trimmed.match(/^([<>]=?)\s*(\d+(?:\.\d+)?)\s*([kmgt]b?)?$/);
   if (operatorMatch) {
     const [, op, amount, unit = 'b'] = operatorMatch;
-    const operatorMap: Record<string, string> = {
-      '>': 'gt',
-      '>=': 'gte',
-      '<': 'lt',
-      '<=': 'lte'
-    };
     const multipliers: Record<string, number> = {
       'b': 1,
       'k': 1024,
@@ -99,14 +88,14 @@ export function parseSizeExpression(expression: string): { operator: string; val
       'tb': 1024 * 1024 * 1024 * 1024
     };
     const bytes = parseFloat(amount) * (multipliers[unit.toLowerCase()] || 1);
-    return { operator: operatorMap[op], value: bytes.toString() };
+    return { operator: op, value: bytes.toString() };
   }
   
   // Pattern: "at least X" or "at most X"
   const atMatch = trimmed.match(/^at\s+(least|most)\s+(\d+(?:\.\d+)?)\s*([kmgt]b?)?$/);
   if (atMatch) {
     const [, bound, amount, unit = 'b'] = atMatch;
-    const operator = bound === 'least' ? 'gte' : 'lte';
+    const operator = bound === 'least' ? '>=' : '<=';
     const multipliers: Record<string, number> = {
       'b': 1,
       'k': 1024,

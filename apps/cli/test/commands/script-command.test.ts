@@ -41,8 +41,11 @@ export default {
     
     context = {
       config: {
-        vaultPath: tempDir,
-        indexPath: join(tempDir, '.mmt-index'),
+        vaults: [{
+          name: 'default',
+          path: tempDir,
+          indexPath: join(tempDir, '.mmt-index')
+        }]
       }
     };
   });

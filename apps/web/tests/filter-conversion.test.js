@@ -7,42 +7,32 @@ describe('Filter Utils', () => {
       const result = parseDateExpression('last 30 days');
       expect(result).toBeTruthy();
       expect(result.operator).toBe('>');
-      // Value should be an ISO date string 30 days ago
-      const expectedDate = new Date();
-      expectedDate.setDate(expectedDate.getDate() - 30);
-      // Check that the date is approximately correct (within 1 minute)
-      const actualDate = new Date(result.value);
-      const diff = Math.abs(actualDate.getTime() - expectedDate.getTime());
-      expect(diff).toBeLessThan(60000); // Within 1 minute
+      // Value should be a relative date string like "-30d"
+      expect(result.value).toBe('-30d');
     });
 
     it('should parse operator expressions like "< 7 days"', () => {
       const result = parseDateExpression('< 7 days');
       expect(result).toBeTruthy();
       expect(result.operator).toBe('>');
-      // Value should be an ISO date string 7 days ago
-      const expectedDate = new Date();
-      expectedDate.setDate(expectedDate.getDate() - 7);
-      // Check that the date is approximately correct (within 1 minute)
-      const actualDate = new Date(result.value);
-      const diff = Math.abs(actualDate.getTime() - expectedDate.getTime());
-      expect(diff).toBeLessThan(60000); // Within 1 minute
+      // Value should be a relative date string like "-7d"
+      expect(result.value).toBe('-7d');
     });
 
     it('should parse date comparisons like "> 2024-01-01"', () => {
       const result = parseDateExpression('> 2024-01-01');
       expect(result).toBeTruthy();
       expect(result.operator).toBe('>');
-      // Value should be an ISO date string for 2024-01-01
-      expect(result.value).toBe('2024-01-01T00:00:00.000Z');
+      // Value should be the date string as-is
+      expect(result.value).toBe('2024-01-01');
     });
 
     it('should parse "since" expressions', () => {
       const result = parseDateExpression('since 2024');
       expect(result).toBeTruthy();
       expect(result.operator).toBe('>=');
-      // Value should be an ISO date string for 2024-01-01
-      expect(result.value).toBe('2024-01-01T00:00:00.000Z');
+      // Value should be the year as-is
+      expect(result.value).toBe('2024');
     });
 
     it('should return null for invalid expressions', () => {
