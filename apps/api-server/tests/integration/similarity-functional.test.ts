@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { SimilaritySearchService } from '../../src/services/similarity-search.js';
+import { SimilaritySearchService } from '@mmt/vault';
 import type { Config } from '@mmt/entities';
 import fs from 'fs/promises';
 import path from 'path';
@@ -77,16 +77,17 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   ];
 
   beforeAll(async () => {
-    // Skip if Ollama is not available
+    // Require Ollama to be available
     try {
       const response = await fetch('http://localhost:11434/api/tags');
       if (!response.ok) {
-        console.log('Skipping tests - Ollama not available');
-        return;
+        throw new Error('Test failed: Ollama service returned non-OK status at http://localhost:11434');
       }
-    } catch {
-      console.log('Skipping tests - Ollama not running');
-      return;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Test failed:')) {
+        throw error;
+      }
+      throw new Error('Test failed: Ollama service not available at http://localhost:11434. Please start Ollama to run similarity tests.');
     }
     
     // Create test directory and documents
@@ -125,7 +126,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should index documents and handle empty ones gracefully', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     await service.indexDirectory(testDir);
     const errors = service.getIndexingErrors();
@@ -142,7 +145,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should find similar ML documents when searching for ML terms', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     const results = await service.search('neural networks artificial intelligence machine learning', {
       limit: 5,
@@ -170,7 +175,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should find cooking document when searching for recipes', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     const results = await service.search('pasta recipe italian cooking tomatoes basil', { limit: 3 });
     
@@ -186,7 +193,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should find travel document when searching for Paris', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     const results = await service.search('Paris France Eiffel Tower tourist attractions museums', { limit: 3 });
     
@@ -196,7 +205,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should handle search for non-existent content gracefully', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     const results = await service.search('quantum computing blockchain cryptocurrency', { limit: 5 });
     
@@ -210,7 +221,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should return excerpts when requested', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     const results = await service.search('machine learning', {
       limit: 2,
@@ -227,7 +240,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should persist and reload index correctly', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     const initialStatus = await service.getStatus();
     const docCount = initialStatus.stats.documentsIndexed;
@@ -247,7 +262,9 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
   });
 
   it('should report indexing progress correctly', async () => {
-    if (!service) return; // Skip if Ollama not available
+    if (!service) {
+      throw new Error('Test failed: Service not initialized. Ollama is required for these tests.');
+    }
     
     // Clear any existing index
     service.clearIndexingErrors();

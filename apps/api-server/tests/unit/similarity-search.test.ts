@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-// import { SimilaritySearchService } from '@mmt/vault'; // Service moved to vault package
+import { SimilaritySearchService } from '@mmt/vault';
 import type { Config } from '@mmt/entities';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
-describe.skip('SimilaritySearchService', () => {
-  // let service: SimilaritySearchService; // Service moved to vault package
+describe('SimilaritySearchService', () => {
+  let service: SimilaritySearchService;
   let testDir: string;
   let config: Config;
 
@@ -57,11 +57,10 @@ describe.skip('SimilaritySearchService', () => {
   });
 
   it('should index a markdown file', async () => {
-    // Skip if Ollama is not available
+    // Require Ollama to be available
     const status = await service.getStatus();
     if (!status.ollamaHealthy) {
-      console.log('Skipping test - Ollama not available');
-      return;
+      throw new Error('Test failed: Ollama service not available. Please start Ollama to run similarity tests.');
     }
 
     // Create a test markdown file
@@ -88,17 +87,15 @@ It contains some technical content for testing similarity search.
   });
 
   it('should search for similar content', async () => {
-    // Skip if Ollama is not available
+    // Require Ollama to be available
     const status = await service.getStatus();
     if (!status.ollamaHealthy) {
-      console.log('Skipping test - Ollama not available');
-      return;
+      throw new Error('Test failed: Ollama service not available. Please start Ollama to run similarity tests.');
     }
 
     // Ensure we have indexed content
     if (status.stats.documentsIndexed === 0) {
-      console.log('No documents indexed, skipping search test');
-      return;
+      throw new Error('Test failed: No documents indexed. Cannot test search functionality.');
     }
 
     // Search
@@ -119,11 +116,10 @@ It contains some technical content for testing similarity search.
   });
 
   it('should persist and reload index', async () => {
-    // Skip if Ollama is not available
+    // Require Ollama to be available
     const status = await service.getStatus();
     if (!status.ollamaHealthy) {
-      console.log('Skipping test - Ollama not available');
-      return;
+      throw new Error('Test failed: Ollama service not available. Please start Ollama to run similarity tests.');
     }
 
     const docCount = status.stats.documentsIndexed;
