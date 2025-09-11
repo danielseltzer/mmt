@@ -17,10 +17,10 @@ export function parseSizeExpression(input: string): SizeFilter | null {
   if (!normalized) {return null;}
   
   // Check for explicit operator syntax first (e.g., "> 10mb", "<= 1.5k")
-  const operatorMatch = /^(<=?|>=?|=)\s*(.+)$/.exec(normalized);
+  const operatorMatch = /^(<=?|>=?|=)\s*(.+)$/u.exec(normalized);
   if (operatorMatch) {
     const operator = operatorMatch[1] as '<' | '>' | '<=' | '>=' | '=';
-    const sizeStr = operatorMatch[2];
+    const [, , sizeStr] = operatorMatch;
     const sizeInBytes = parseSize(sizeStr);
     
     if (sizeInBytes !== null) {
@@ -29,11 +29,11 @@ export function parseSizeExpression(input: string): SizeFilter | null {
   }
   
   // Pattern for "under/over X" or "less than/greater than X"
-  const comparisonMatch = /^(?:(under|over|less\s+than|greater\s+than|larger\s+than|smaller\s+than|at\s+least|at\s+most))\s+(.+)$/.exec(normalized);
+  const comparisonMatch = /^(?:(under|over|less\s+than|greater\s+than|larger\s+than|smaller\s+than|at\s+least|at\s+most))\s+(.+)$/u.exec(normalized);
   
   if (comparisonMatch) {
-    const comparison = comparisonMatch[1].replace(/\s+/g, ' ');
-    const sizeStr = comparisonMatch[2];
+    const [, comparisonMatch1, sizeStr] = comparisonMatch;
+    const comparison = comparisonMatch1.replace(/\s+/gu, ' ');
     const sizeInBytes = parseSize(sizeStr);
     
     if (sizeInBytes === null) {return null;}
@@ -51,11 +51,13 @@ export function parseSizeExpression(input: string): SizeFilter | null {
         return { operator: '>=', value: sizeInBytes.toString() };
       case 'at most':
         return { operator: '<=', value: sizeInBytes.toString() };
+      default:
+        return null;
     }
   }
   
   // Pattern for "between X and Y"
-  const betweenMatch = /^between\s+(.+?)\s+and\s+(.+)$/.exec(normalized);
+  const betweenMatch = /^between\s+(.+?)\s+and\s+(.+)$/u.exec(normalized);
   if (betweenMatch) {
     const minSize = parseSize(betweenMatch[1]);
     const maxSize = parseSize(betweenMatch[2]);
@@ -86,11 +88,11 @@ function parseSize(sizeStr: string): number | null {
   const normalized = sizeStr.trim().toLowerCase();
   
   // Match number with optional decimal and unit
-  const match = /^(\d+(?:\.\d+)?)\s*([a-z]*)$/.exec(normalized);
+  const match = /^(\d+(?:\.\d+)?)\s*([a-z]*)$/u.exec(normalized);
   if (!match) {return null;}
   
-  const num = parseFloat(match[1]);
-  const unit = match[2];
+  const [, numStr, unit] = match;
+  const num = parseFloat(numStr);
   
   // Handle empty unit (assume bytes)
   if (!unit) {return num;}
@@ -126,7 +128,7 @@ function parseSize(sizeStr: string): number | null {
   };
   
   const multiplier = unitMap[unit];
-  if (multiplier === undefined) {return null;}
+  if (!multiplier) {return null;}
   
   return Math.floor(num * multiplier);
 }
@@ -137,7 +139,7 @@ function parseSize(sizeStr: string): number | null {
  * @returns Human-readable description
  */
 export function describeSizeFilter(filter: SizeFilter): string {
-  const sizeInBytes = parseInt(filter.value);
+  const sizeInBytes = parseInt(filter.value, 10);
   const sizeStr = formatBytes(sizeInBytes);
   
   switch (filter.operator) {
@@ -166,5 +168,5 @@ function formatBytes(bytes: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1)) } ${ sizes[i]}`;
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1)).toString()} ${sizes[i] ?? 'B'}`;
 }

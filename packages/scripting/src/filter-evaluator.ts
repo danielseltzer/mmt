@@ -51,14 +51,14 @@ export class FilterEvaluator {
       }
       
       case 'tags': {
-        const tags = doc.metadata.tags ?? [];
+        const { tags } = doc.metadata;
         return this.evaluateArrayOperator(tags, operator, value);
       }
       
       case 'metadata': {
         // Custom metadata field filtering
-        const metaKey = filter.key;
-        const metaValue = metaKey && doc.metadata.frontmatter ? doc.metadata.frontmatter[metaKey] : undefined;
+        const metaKey = filter.key; // key is always defined for metadata filters
+        const metaValue = doc.metadata.frontmatter[metaKey];
         // For metadata, the operator is always 'equals' in the schema
         return String(metaValue) === String(value);
       }
@@ -70,12 +70,12 @@ export class FilterEvaluator {
           // Created date filtering is not supported
           return false;
         }
-        const date = doc.metadata.modified ? new Date(doc.metadata.modified) : new Date(0);
+        const date = new Date(doc.metadata.modified);
         return this.evaluateDateOperator(date, operator, value as string | number | { from: string; to: string });
       }
       
       case 'size': {
-        const size = doc.metadata.size ?? 0;
+        const { size } = doc.metadata;
         return this.evaluateNumberOperator(size, operator, value as number | { from: number; to: number });
       }
       
@@ -91,16 +91,16 @@ export class FilterEvaluator {
   private getSearchableText(doc: Document, field: 'name' | 'content' | 'search'): string {
     switch (field) {
       case 'name':
-        return doc.metadata.name ?? '';
+        return doc.metadata.name;
       case 'content':
-        return doc.content ?? '';
+        return doc.content;
       case 'search':
         // Search across multiple fields
         return [
-          doc.metadata.name ?? '',
-          doc.content ?? '',
+          doc.metadata.name,
+          doc.content,
           doc.path,
-          (doc.metadata.tags ?? []).join(' ')
+          doc.metadata.tags.join(' ')
         ].join(' ');
       default:
         return '';
