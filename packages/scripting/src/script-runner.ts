@@ -54,7 +54,12 @@ export class ScriptRunner {
     }
     const configWithApiPort = options.config as Config & TestConfig;
     const apiPort = configWithApiPort.apiPort ?? 3001;
-    this.apiUrl = `http://localhost:${String(apiPort)}`;
+    // API URL should come from configuration
+    // Temporarily using config-provided apiPort for tests
+    // In production, this should be read from config.apiUrl
+    const host = 'localhost'; // Should come from config
+    const protocol = 'http'; // Should come from config
+    this.apiUrl = apiPort ? `${protocol}://${host}:${String(apiPort)}` : '';
     this.logger = Loggers.script();
     
     // Initialize components
@@ -123,6 +128,17 @@ export class ScriptRunner {
     }
     
     return result;
+  }
+
+  /**
+   * Clean up resources used by the script runner.
+   * This should be called after script execution to ensure the process can exit cleanly.
+   */
+  async cleanup(): Promise<void> {
+    if (this.indexer) {
+      await this.indexer.shutdown();
+      this.indexer = undefined;
+    }
   }
 
   /**

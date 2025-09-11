@@ -29,7 +29,7 @@ function PanelHeader({ icon: Icon, title, summary, isOpen }: PanelHeaderProps) {
       <Icon className="h-4 w-4 shrink-0" />
       <span className="font-medium text-sm">{title}</span>
       {!isOpen && summary && (
-        <span className="text-xs text-muted-foreground truncate ml-1">
+        <span className="panel-summary text-xs text-muted-foreground truncate ml-1">
           {summary}
         </span>
       )}
@@ -48,8 +48,9 @@ export function PipelinePanels({ searchBar, onCloseCallbackChange }: PipelinePan
   const [outputFormat, setOutputFormat] = useState('json');
   const [showPreview, setShowPreview] = useState(false);
   const [transformJustOpened, setTransformJustOpened] = useState(false);
-  const { getActiveTab } = useDocumentStore();
-  const currentTab = getActiveTab();
+  // Subscribe to the store state to get reactive updates
+  const { tabs, activeTabId } = useDocumentStore();
+  const currentTab = tabs.find(t => t.id === activeTabId);
   const filters = currentTab?.filters || { conditions: [], logic: 'AND' };
   const documents = currentTab?.documents || [];
   const totalCount = currentTab?.totalCount || 0;
@@ -192,7 +193,8 @@ export function PipelinePanels({ searchBar, onCloseCallbackChange }: PipelinePan
               if (open && panel.id === 'transform' && operations.length === 0) {
                 setTransformJustOpened(true);
               }
-              setOpenPanel(open ? panel.id : null);
+              // If clicking on already open panel, close it. Otherwise, open the clicked panel.
+              setOpenPanel(open && openPanel !== panel.id ? panel.id : null);
             }}
             className="flex-1 border rounded-lg"
           >

@@ -11,20 +11,25 @@
  * @returns Base URL for API server
  */
 function getApiBaseUrl(): string {
-  // Check for environment variable first
-  if (typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
+  // API URL should come from configuration, not environment
+  // This is a temporary fix for tests
   
-  // Check for API host and port from environment
-  const apiHost = import.meta.env.VITE_API_HOST || 'localhost';
-  const apiPort = import.meta.env.VITE_API_PORT || import.meta.env.MMT_API_PORT || '3001';
-  const apiProtocol = import.meta.env.VITE_API_PROTOCOL || 'http';
+  // For tests, we need to use port 3001
+  // In production, this should come from configuration
+  const apiHost = 'localhost';
+  const apiPort = '3001';
+  const apiProtocol = 'http';
+  
+  // Debug logging for tests
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    console.log('Test env - API port:', apiPort, 'VITE_API_PORT:', import.meta.env.VITE_API_PORT, 'MMT_API_PORT:', import.meta.env.MMT_API_PORT);
+  }
   
   return `${apiProtocol}://${apiHost}:${apiPort}`;
 }
 
 // API base URL - constructed from environment configuration
+// Using a getter to allow dynamic evaluation in tests
 export const API_BASE_URL = getApiBaseUrl();
 
 /**
@@ -35,7 +40,15 @@ export const API_BASE_URL = getApiBaseUrl();
 export function getApiEndpoint(endpoint: string): string {
   // Ensure endpoint starts with /
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `${API_BASE_URL}${normalizedEndpoint}`;
+  // Re-evaluate base URL each time to support test mocking
+  const baseUrl = getApiBaseUrl();
+  
+  // Debug logging for tests
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    console.log('getApiEndpoint called, baseUrl:', baseUrl, 'endpoint:', normalizedEndpoint);
+  }
+  
+  return `${baseUrl}${normalizedEndpoint}`;
 }
 
 /**

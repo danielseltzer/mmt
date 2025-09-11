@@ -415,13 +415,14 @@ export function TransformPanel({ operations = [], onOperationsChange, justOpened
       <div className="flex justify-start mt-2">
         <Select open={showAddDropdown} onOpenChange={setShowAddDropdown} onValueChange={addOperation}>
           <SelectTrigger className="w-auto h-7 px-2">
-            <Plus className="h-3 w-3" />
+            <Plus className="h-3 w-3 mr-1" />
+            <span className="text-sm">Add operation</span>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="rename">Rename</SelectItem>
-            <SelectItem value="move">Move</SelectItem>
-            <SelectItem value="delete">Delete</SelectItem>
-            <SelectItem value="updateFrontmatter">Update Frontmatter</SelectItem>
+            <SelectItem value="rename">Rename files</SelectItem>
+            <SelectItem value="move">Move to folder</SelectItem>
+            <SelectItem value="delete">Delete files</SelectItem>
+            <SelectItem value="updateFrontmatter">Update frontmatter</SelectItem>
           </SelectContent>
         </Select>
       </div>

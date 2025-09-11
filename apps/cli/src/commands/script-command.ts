@@ -86,8 +86,12 @@ export class ScriptCommand implements CommandHandler {
     try {
       // Execute the script
       await runner.runScript(absoluteScriptPath, cliOptions);
+      // Clean up resources to allow process to exit
+      await runner.cleanup();
       return CommandResults.success();
     } catch (error) {
+      // Clean up resources even on error
+      await runner.cleanup();
       if (error instanceof Error) {
         return CommandResults.error(error);
       }

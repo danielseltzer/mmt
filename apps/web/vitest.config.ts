@@ -9,6 +9,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    // API configuration should come from config files, not env vars
+    // These are only for test compatibility
+  },
   test: {
     globals: true,
     environment: 'happy-dom',

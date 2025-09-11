@@ -100,9 +100,8 @@ describe('CliParser', () => {
       expect(result.commandArgs).toEqual([]);
     });
 
-    it('should ignore unknown flags', () => {
-      const result = parser.parse(['--unknown', 'script']);
-      expect(result.command).toBe('script');
+    it('should throw error for unknown flags', () => {
+      expect(() => parser.parse(['--unknown', 'script'])).toThrow('Unknown flag: --unknown');
     });
 
     it('should parse unknown commands', () => {

@@ -17,8 +17,8 @@ test.describe('Pipeline Panels Visibility', () => {
   });
 
   test('Filter panel should open and display controls', async ({ page }) => {
-    // Look for the Filter panel button
-    const filterButton = page.locator('button:has-text("Filter")').first();
+    // Look for the Filter panel button (labeled "Select:")
+    const filterButton = page.locator('button:has-text("Select:")').first();
     await expect(filterButton).toBeVisible({ timeout: 5000 });
     
     // Click to open the Filter panel
@@ -41,8 +41,8 @@ test.describe('Pipeline Panels Visibility', () => {
   });
 
   test('Transform panel should open and display operations', async ({ page }) => {
-    // Look for the Transform panel button
-    const transformButton = page.locator('button:has-text("Transform")').first();
+    // Look for the Transform panel button (labeled "Transform:")
+    const transformButton = page.locator('button:has-text("Transform:")').first();
     await expect(transformButton).toBeVisible({ timeout: 5000 });
     
     // Click to open the Transform panel
@@ -55,8 +55,13 @@ test.describe('Pipeline Panels Visibility', () => {
     const addOperationDropdown = page.locator('button:has-text("Add operation")');
     await expect(addOperationDropdown).toBeVisible({ timeout: 3000 });
     
+    // The dropdown should already be open, but if not, click it
+    const dropdownOptions = page.locator('text=Rename files');
+    if (!(await dropdownOptions.isVisible({ timeout: 500 }).catch(() => false))) {
+      await addOperationDropdown.click();
+    }
+    
     // Verify dropdown options are available
-    await addOperationDropdown.click();
     await expect(page.locator('text=Rename files')).toBeVisible();
     await expect(page.locator('text=Move to folder')).toBeVisible();
     await expect(page.locator('text=Delete files')).toBeVisible();
@@ -70,8 +75,8 @@ test.describe('Pipeline Panels Visibility', () => {
   });
 
   test('Output panel should open and display format options', async ({ page }) => {
-    // Look for the Output panel button
-    const outputButton = page.locator('button:has-text("Output")').first();
+    // Look for the Output panel button (labeled "Output:")
+    const outputButton = page.locator('button:has-text("Output:")').first();
     await expect(outputButton).toBeVisible({ timeout: 5000 });
     
     // Click to open the Output panel
@@ -87,8 +92,8 @@ test.describe('Pipeline Panels Visibility', () => {
     // Verify options section is visible
     await expect(page.locator('text=Options')).toBeVisible();
     
-    // Check for preview section
-    await expect(page.locator('text=Preview')).toBeVisible();
+    // Check for preview section (the div label, not the button)
+    await expect(page.locator('div:has-text("Preview")').first()).toBeVisible();
     
     // Take screenshot
     await page.screenshot({ 
@@ -98,8 +103,8 @@ test.describe('Pipeline Panels Visibility', () => {
   });
 
   test('All panels should be collapsible', async ({ page }) => {
-    // Open Filter panel
-    const filterButton = page.locator('button:has-text("Filter")').first();
+    // Open Filter panel (labeled "Select:")
+    const filterButton = page.locator('button:has-text("Select:")').first();
     await filterButton.click();
     await expect(page.locator('input[placeholder="Name..."]')).toBeVisible();
     
@@ -107,16 +112,20 @@ test.describe('Pipeline Panels Visibility', () => {
     await filterButton.click();
     await expect(page.locator('input[placeholder="Name..."]')).not.toBeVisible();
     
-    // Open Transform panel
-    const transformButton = page.locator('button:has-text("Transform")').first();
+    // Open Transform panel (labeled "Transform:")
+    const transformButton = page.locator('button:has-text("Transform:")').first();
     await transformButton.click();
     
     // Verify only Transform panel is open (Filter should be closed)
     await expect(page.locator('input[placeholder="Name..."]')).not.toBeVisible();
     await expect(page.locator('button:has-text("Add operation")')).toBeVisible();
     
-    // Open Output panel
-    const outputButton = page.locator('button:has-text("Output")').first();
+    // Close the Transform panel dropdown if it's open by pressing Escape
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    
+    // Open Output panel (labeled "Output:")
+    const outputButton = page.locator('button:has-text("Output:")').first();
     await outputButton.click();
     
     // Verify only Output panel is open (Transform should be closed)
@@ -133,31 +142,45 @@ test.describe('Pipeline Panels Visibility', () => {
     await previewButton.click();
     
     // Verify the preview modal opens
-    await expect(page.locator('text=Pipeline Preview')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('text=Preview Pipeline Execution')).toBeVisible({ timeout: 3000 });
     
-    // Close the modal
-    const closeButton = page.locator('button[aria-label="Close"]').or(page.locator('button:has-text("Close")'));
+    // Close the modal (use the first Close button found)
+    const closeButton = page.locator('button:has-text("Close")').first();
     await closeButton.click();
     
     // Verify modal is closed
-    await expect(page.locator('text=Pipeline Preview')).not.toBeVisible();
+    await expect(page.locator('text=Preview Pipeline Execution')).not.toBeVisible();
   });
 
   test('Panel summaries should update when content changes', async ({ page }) => {
+    // Wait for the app to initialize with default tab
+    await page.waitForTimeout(500);
+    
     // Open Filter panel and add a filter
-    const filterButton = page.locator('button:has-text("Filter")').first();
+    const filterButton = page.locator('button:has-text("Select:")').first();
     await filterButton.click();
+    
+    // Wait for panel to open
+    await expect(page.locator('input[placeholder="Name..."]')).toBeVisible();
     
     // Type in the name filter
     const nameInput = page.locator('input[placeholder="Name..."]');
     await nameInput.fill('test');
     
+    // Wait for the filter to be applied (React state update)
+    await page.waitForTimeout(500);
+    
     // Close the panel
     await filterButton.click();
     
+    // Wait for panel to close and summary to render
+    await expect(page.locator('input[placeholder="Name..."]')).not.toBeVisible();
+    await page.waitForTimeout(200);
+    
     // Verify the summary shows the filter is active
-    // (The summary should show something other than "All")
-    const filterSummary = page.locator('button:has-text("Filter")').locator('span.text-muted-foreground');
+    // The summary span should be visible when panel is closed
+    const filterSummary = filterButton.locator('span.panel-summary');
+    await expect(filterSummary).toBeVisible();
     const summaryText = await filterSummary.textContent();
     expect(summaryText).toContain('name');
   });
