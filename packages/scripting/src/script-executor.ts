@@ -182,7 +182,7 @@ export class ScriptExecutor {
           item: r.document,
           operation: r.operation,
           details: {
-            ...(r.details || {}),
+            ...(r.details ?? {}),
             preview: !pipeline.options?.destructive
           },
         })) ?? [],

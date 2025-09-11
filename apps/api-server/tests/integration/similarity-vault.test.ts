@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SimilaritySearchService } from '../../src/services/similarity-search.js';
+import { SimilaritySearchService } from '@mmt/vault';
 import { ConfigService } from '@mmt/config';
 import path from 'path';
 import fs from 'fs/promises';
@@ -9,20 +9,20 @@ describe('Full Vault Indexing', () => {
     // This test requires a config file path from environment
     const configPath = process.env.MMT_TEST_CONFIG;
     if (!configPath) {
-      console.log('Skipping vault test - set MMT_TEST_CONFIG to run');
-      return;
+      throw new Error('Test failed: MMT_TEST_CONFIG environment variable not set. Set it to run similarity tests.');
     }
     
     // Check if Ollama is available
     try {
       const response = await fetch('http://localhost:11434/api/tags');
       if (!response.ok) {
-        console.log('Skipping vault test - Ollama not available');
-        return;
+        throw new Error('Test failed: Ollama service returned non-OK status at http://localhost:11434');
       }
-    } catch {
-      console.log('Skipping vault test - Ollama not running');
-      return;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Test failed:')) {
+        throw error;
+      }
+      throw new Error('Test failed: Ollama service not available at http://localhost:11434. Please start Ollama to run similarity tests.');
     }
     
     console.log(`\nTesting with config: ${configPath}`);
@@ -31,8 +31,7 @@ describe('Full Vault Indexing', () => {
     const config = await configService.load(configPath);
     
     if (!config.similarity?.enabled) {
-      console.log('Skipping vault test - similarity not enabled in config');
-      return;
+      throw new Error('Test failed: Similarity search not enabled in config. Enable similarity in config to run tests.');
     }
     
     const service = new SimilaritySearchService(config);

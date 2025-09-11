@@ -16,8 +16,18 @@ import { DocumentSelector } from './document-selector.js';
 import { aq } from './analysis-pipeline.js';
 import { Loggers, type Logger } from '@mmt/logger';
 
+// Test config structure that mirrors the real Config but with simplified vault structure
+interface TestConfig {
+  vaultPath?: string;
+  indexPath?: string;
+  apiPort?: number;
+}
+
+// Union type to support both real Config and test configs
+type ScriptRunnerConfig = Config | TestConfig;
+
 export interface ScriptRunnerOptions {
-  config: Config;
+  config: ScriptRunnerConfig;
   fileSystem: FileSystemAccess;
   queryParser: QueryParser;
   outputStream?: NodeJS.WritableStream;
@@ -30,7 +40,7 @@ export interface ScriptRunnerOptions {
  * the validator, executor, and document selector components.
  */
 export class ScriptRunner {
-  private readonly config: ScriptRunnerOptions['config'];
+  private readonly config: ScriptRunnerConfig;
   private readonly fs: FileSystemAccess;
   private readonly queryParser: QueryParser;
   private readonly output: NodeJS.WritableStream;
@@ -49,11 +59,10 @@ export class ScriptRunner {
     this.output = options.outputStream ?? process.stdout;
     
     // Handle both Config structure and test config structure
-    interface TestConfig {
-      apiPort?: number;
-    }
-    const configWithApiPort = options.config as Config & TestConfig;
-    const apiPort = configWithApiPort.apiPort ?? 3001;
+    // In tests, apiPort might not be present
+    const apiPort = 'apiPort' in options.config && typeof options.config.apiPort === 'number' 
+      ? options.config.apiPort 
+      : 3001;
     // API URL should come from configuration
     // Temporarily using config-provided apiPort for tests
     // In production, this should be read from config.apiUrl
@@ -68,8 +77,10 @@ export class ScriptRunner {
     this.documentSelector = new DocumentSelector({
       fileSystem: this.fs,
     });
-    // Get vault ID from config (use first vault's name or 'TestVault' for tests)
-    const vaultId = this.config.vaults && this.config.vaults[0]?.name ? this.config.vaults[0].name : 'TestVault';
+    // Get vault ID from config - check if this is a real Config with vaults array
+    const vaultId = 'vaults' in this.config && this.config.vaults[0]?.name 
+      ? this.config.vaults[0].name 
+      : 'TestVault';
     
     this.scriptExecutor = new ScriptExecutor({
       apiUrl: this.apiUrl,
@@ -150,13 +161,18 @@ export class ScriptRunner {
     }
 
     // Handle both Config structure and test config structure
-    const vaultPath = this.config.vaults?.[0]?.path ?? (this.config as any).vaultPath;
-    const fileWatchingConfig = this.config.vaults?.[0]?.fileWatching;
+    interface TestConfigWithPath {
+      vaultPath?: string;
+    }
+    const vaultPath = 'vaults' in this.config && this.config.vaults[0]?.path
+      ? this.config.vaults[0].path
+      : (this.config as TestConfigWithPath).vaultPath;
+    const fileWatchingConfig = 'vaults' in this.config && this.config.vaults[0]?.fileWatching
+      ? this.config.vaults[0].fileWatching
+      : undefined;
     
-    // Convert boolean or object to the expected format
-    const fileWatching = typeof fileWatchingConfig === 'boolean' 
-      ? (fileWatchingConfig ? { enabled: true } : undefined)
-      : fileWatchingConfig;
+    // fileWatchingConfig is already an object or undefined per schema
+    const fileWatching = fileWatchingConfig;
     
     this.indexer = new VaultIndexer({
       vaultPath,
@@ -189,23 +205,24 @@ export class ScriptRunner {
     cliOptions: Record<string, unknown>
   ): ScriptContext & { aq: typeof aq } {
     // Handle both Config structure and test config structure
-    interface TestConfig {
-      vaultPath?: string;
-      indexPath?: string;
+    const vaultPath = 'vaults' in this.config && this.config.vaults[0]?.path
+      ? this.config.vaults[0].path
+      : ('vaultPath' in this.config && typeof this.config.vaultPath === 'string' ? this.config.vaultPath : '');
+    const indexPath = 'vaults' in this.config && this.config.vaults[0]?.indexPath
+      ? this.config.vaults[0].indexPath
+      : ('indexPath' in this.config && typeof this.config.indexPath === 'string' ? this.config.indexPath : '');
+    
+    // Indexer must be initialized before creating context
+    if (!this.indexer) {
+      throw new Error('Indexer must be initialized before creating script context');
     }
-    const vaultPath = (this.config.vaults && this.config.vaults[0]?.path) 
-      ? this.config.vaults[0].path 
-      : (this.config as TestConfig).vaultPath ?? '';
-    const indexPath = (this.config.vaults && this.config.vaults[0]?.indexPath) 
-      ? this.config.vaults[0].indexPath 
-      : (this.config as TestConfig).indexPath ?? '';
     
     const context: ScriptContext = {
       vaultPath,
       indexPath,
       scriptPath,
       cliOptions,
-      indexer: this.indexer as VaultIndexer,
+      indexer: this.indexer,
     };
     
     // Extend context with Arquero namespace for scripts
@@ -230,12 +247,9 @@ export class ScriptRunner {
   ): Promise<void> {
     const resultWithTable = result as ScriptExecutionResult & { analysisTable?: Table };
     // Handle both Config structure and test config structure
-    interface TestConfig {
-      vaultPath?: string;
-    }
-    const vaultPath = (this.config.vaults && this.config.vaults[0]?.path) 
-      ? this.config.vaults[0].path 
-      : (this.config as TestConfig).vaultPath ?? '';
+    const vaultPath = 'vaults' in this.config && this.config.vaults[0]?.path
+      ? this.config.vaults[0].path
+      : ('vaultPath' in this.config && typeof this.config.vaultPath === 'string' ? this.config.vaultPath : '');
     
     await this.reportGenerator.generateReport({
       scriptPath,
