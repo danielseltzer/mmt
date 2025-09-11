@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Loggers } from '@mmt/logger';
 import { getApiEndpoint, API_ENDPOINTS } from '../config/api';
+import { API_ROUTES } from '@mmt/entities';
 
 const logger = Loggers.web();
 
@@ -58,7 +59,7 @@ export function VaultStatusIndicator({
     if (!vaultId) return;
     
     try {
-      const response = await fetch(getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/index/status`));
+      const response = await fetch(getApiEndpoint(API_ROUTES.vaults.index.status(vaultId)));
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -100,7 +101,7 @@ export function VaultStatusIndicator({
     // Set up SSE connection for real-time updates
     const setupSSE = () => {
       try {
-        const es = new EventSource(getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/index/events`));
+        const es = new EventSource(getApiEndpoint(API_ROUTES.vaults.index.events(vaultId)));
         
         es.onmessage = (event) => {
           try {
@@ -127,7 +128,7 @@ export function VaultStatusIndicator({
     };
 
     // Only set up SSE if endpoint exists (may not be available yet)
-    fetch(getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/index/events`), { method: 'HEAD' })
+    fetch(getApiEndpoint(API_ROUTES.vaults.index.events(vaultId)), { method: 'HEAD' })
       .then(res => {
         if (res.ok || res.status === 405) { // 405 means endpoint exists but HEAD not allowed
           setupSSE();
@@ -150,7 +151,7 @@ export function VaultStatusIndicator({
   const handleReindex = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch(getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/index/refresh`), {
+      const response = await fetch(getApiEndpoint(API_ROUTES.vaults.index.refresh(vaultId)), {
         method: 'POST'
       });
       

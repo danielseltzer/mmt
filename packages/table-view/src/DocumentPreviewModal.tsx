@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Calendar, HardDrive, Tag, Hash, Loader2, AlertCircle, X, ExternalLink, FolderOpen, Database } from 'lucide-react';
 import { Loggers } from '@mmt/logger';
 import { getApiEndpoint } from './config/api';
+import { API_ROUTES } from '@mmt/entities';
 
 const logger = Loggers.web();
 
@@ -51,7 +52,7 @@ export function DocumentPreviewModal({
     try {
       // Encode the path to handle special characters
       const encodedPath = encodeURIComponent(documentPath);
-      const apiUrl = getApiEndpoint(`/api/vaults/${vaultId}/documents/preview/${encodedPath}`);
+      const apiUrl = getApiEndpoint(API_ROUTES.documents.preview(vaultId, documentPath));
       console.log('[DocumentPreviewModal] Fetching preview from:', apiUrl);
       
       const response = await fetch(apiUrl, {
@@ -248,7 +249,7 @@ export function DocumentPreviewModal({
                     // Reveal in Finder/Explorer using system call
                     if (previewData.fullPath) {
                       // This would need to be implemented via API endpoint
-                      fetch(getApiEndpoint(`/api/vaults/${vaultId}/documents/reveal`), {
+                      fetch(getApiEndpoint(API_ROUTES.documents.reveal(vaultId)), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ path: previewData.fullPath })

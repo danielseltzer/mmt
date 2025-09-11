@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDocumentStore, VaultIndexStatus } from '../stores/document-store';
 import { API_ENDPOINTS, getApiEndpoint } from '../config/api';
+import { API_ROUTES } from '@mmt/entities';
 
 interface ApiCall {
   id: string;
@@ -107,7 +108,7 @@ export function TestHarness() {
     // Fetch documents
     setTimeout(() => {
       documentStore.fetchDocuments();
-      const url = `/api/vaults/${encodeURIComponent(vaultId)}/documents`;
+      const url = API_ROUTES.documents.list(vaultId);
       logApiCall('GET', url, 'PENDING', { message: 'Check active tab for results' });
     }, 100);
   };
@@ -119,7 +120,7 @@ export function TestHarness() {
     }
     
     console.log('[TestHarness] Applying filter:', filterQuery);
-    const url = getApiEndpoint(`/api/vaults/${encodeURIComponent(currentTab.vaultId)}/documents/parse-query`);
+    const url = getApiEndpoint(API_ROUTES.documents.parseQuery(currentTab.vaultId));
     
     try {
       const response = await fetch(url, {
@@ -151,7 +152,7 @@ export function TestHarness() {
   // File Operations
   const handleRevealInFinder = async () => {
     console.log('[TestHarness] Revealing in finder:', testFilePath);
-    const url = getApiEndpoint('/api/files/reveal');
+    const url = getApiEndpoint(API_ROUTES.files.reveal());
     
     try {
       const response = await fetch(url, {
@@ -180,7 +181,7 @@ export function TestHarness() {
   
   const handleQuickLook = async () => {
     console.log('[TestHarness] QuickLook preview:', testFilePath);
-    const url = getApiEndpoint('/api/files/quicklook');
+    const url = getApiEndpoint(API_ROUTES.files.quicklook());
     
     try {
       const response = await fetch(url, {

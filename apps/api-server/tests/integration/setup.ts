@@ -15,14 +15,17 @@ beforeAll(async () => {
   
   // Create test config
   const testConfig = {
-    vaultPath: testVaultPath,
-    indexPath: join(tmpdir(), `mmt-api-test-index-${Date.now()}`),
+    vaults: [{
+      name: 'TestVault',
+      path: testVaultPath,
+      indexPath: join(tmpdir(), `mmt-api-test-index-${Date.now()}`),
+      fileWatching: {
+        enabled: true,
+        debounceMs: 50
+      }
+    }],
     apiPort: 3001,
-    webPort: 3002,  // Required by config schema
-    fileWatching: {
-      enabled: true,
-      debounceMs: 50
-    }
+    webPort: 3002  // Required by config schema
   };
   
   testConfigPath = join(tmpdir(), `mmt-api-test-config-${Date.now()}.json`);
