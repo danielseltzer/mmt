@@ -25,6 +25,11 @@ pnpm --filter @mmt/indexer dev
 ./bin/mmt start --config multi-vault-test-config.yaml
 ./bin/mmt stop           # Stop running instance
 
+# Test Service Management (for similarity search tests)
+./bin/mmt test:start     # Start Ollama and Qdrant services for testing
+./bin/mmt test:stop      # Stop test services
+./bin/mmt test:status    # Check test service health
+
 # IMPORTANT: Verify UI loads without errors
 node tools/check-browser-health.js http://localhost:5173
 # Returns exit code 0 if healthy, 1 if errors found
@@ -95,6 +100,26 @@ The project is documented but not yet implemented. Follow these steps:
 3. **Create GitHub repo**: Set up milestones and issues as documented
 4. **Start with Issue #1**: Initialize monorepo structure
 5. **Follow TDD**: Write tests first for each component
+
+## Testing with Similarity Services
+
+Some tests require Ollama and Qdrant services for similarity search functionality. Use the test service manager:
+
+```bash
+# Before running similarity tests
+./bin/mmt test:start     # Starts Ollama (port 11434) and Qdrant (port 6333)
+
+# Run your tests
+pnpm test
+
+# After testing
+./bin/mmt test:stop      # Stops both services
+
+# Check service health
+./bin/mmt test:status    # Shows if services are running and healthy
+```
+
+**Important**: Tests will fail fast with clear error messages if services are not available. The test service manager ensures proper service lifecycle management.
 
 ## Important Implementation Notes
 
