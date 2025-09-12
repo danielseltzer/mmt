@@ -6,6 +6,8 @@
  * Never hardcode API URLs in components or stores
  */
 
+import { API_ROUTES } from '@mmt/entities';
+
 /**
  * Get API base URL from environment or configuration
  * @returns Base URL for API server
@@ -53,19 +55,20 @@ export function getApiEndpoint(endpoint: string): string {
 
 /**
  * API endpoints configuration
+ * Uses centralized route definitions from @mmt/entities
  */
 export const API_ENDPOINTS = {
   // Vault endpoints
-  vaults: () => getApiEndpoint('/api/vaults'),
-  vaultDocuments: (vaultId: string) => getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/documents`),
-  vaultDocumentsSearch: (vaultId: string) => getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/documents/search`),
-  vaultStatus: (vaultId: string) => getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/status`),
+  vaults: () => getApiEndpoint(API_ROUTES.vaults.list()),
+  vaultDocuments: (vaultId: string) => getApiEndpoint(API_ROUTES.documents.list(vaultId)),
+  vaultDocumentsSearch: (vaultId: string) => getApiEndpoint(API_ROUTES.documents.search(vaultId)),
+  vaultStatus: (vaultId: string) => getApiEndpoint(API_ROUTES.vaults.status(vaultId)),
   
   // Similarity endpoints
-  similaritySearch: (vaultId: string) => getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/similarity/search`),
-  similarDocuments: (vaultId: string) => getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/similarity/similar`),
-  similarityStatus: (vaultId: string) => getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/similarity/status`),
+  similaritySearch: (vaultId: string) => getApiEndpoint(API_ROUTES.similarity.search(vaultId)),
+  similarDocuments: (vaultId: string) => getApiEndpoint(API_ROUTES.similarity.similar(vaultId)),
+  similarityStatus: (vaultId: string) => getApiEndpoint(API_ROUTES.similarity.status(vaultId)),
   
   // Document endpoints
-  documentPreview: (vaultId: string, path: string) => getApiEndpoint(`/api/vaults/${encodeURIComponent(vaultId)}/documents/${encodeURIComponent(path)}`)
+  documentPreview: (vaultId: string, path: string) => getApiEndpoint(API_ROUTES.documents.preview(vaultId, path))
 };

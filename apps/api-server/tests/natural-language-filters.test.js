@@ -63,8 +63,11 @@ describe('Natural Language Filter API', () => {
     
     // Create app with test config
     app = await createApp({
-      vaultPath: testVaultPath,
-      indexPath: testIndexPath
+      vaults: [{
+        name: 'TestVault',
+        path: testVaultPath,
+        indexPath: testIndexPath
+      }]
     });
   });
 

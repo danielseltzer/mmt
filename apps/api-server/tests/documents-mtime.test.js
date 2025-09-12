@@ -44,8 +44,11 @@ describe('API Documents mtime field', () => {
     
     // Create app with test config
     app = await createApp({
-      vaultPath: testVaultPath,
-      indexPath: testIndexPath
+      vaults: [{
+        name: 'TestVault',
+        path: testVaultPath,
+        indexPath: testIndexPath
+      }]
     });
     
     // Get documents from API
@@ -96,8 +99,11 @@ describe('API Documents mtime field', () => {
     
     // Create app
     app = await createApp({
-      vaultPath: testVaultPath,
-      indexPath: testIndexPath
+      vaults: [{
+        name: 'TestVault',
+        path: testVaultPath,
+        indexPath: testIndexPath
+      }]
     });
     
     // Search for documents with query

@@ -9,6 +9,7 @@ import {
 import { FileText, Calendar, HardDrive, Tag, Hash, Loader2, AlertCircle } from 'lucide-react';
 import { Loggers } from '@mmt/logger';
 import { getApiEndpoint } from '../config/api';
+import { API_ROUTES } from '@mmt/entities';
 
 const logger = Loggers.web();
 
@@ -58,7 +59,7 @@ export function DocumentPreviewModal({
       // Encode the path to handle special characters
       const encodedPath = encodeURIComponent(documentPath);
       const response = await fetch(
-        getApiEndpoint(`/api/vaults/${vaultId}/documents/preview/${encodedPath}`),
+        getApiEndpoint(API_ROUTES.documents.preview(vaultId, documentPath)),
         {
           method: 'GET',
           headers: {

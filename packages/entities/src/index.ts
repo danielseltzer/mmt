@@ -77,3 +77,6 @@ export * from './errors.js';
 
 // Export URL builder utilities
 export * from './url-builder.js';
+
+// Export API routes management
+export * from './api-routes.js';

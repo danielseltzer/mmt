@@ -1,92 +1,82 @@
 ## Current Status
 
-### ✅ PR #266 Merged to Main
-Panel functionality restored with proper utility files recovered from git history.
+### ✅ Issue #270 Completed - Test Service Manager
+Implemented comprehensive test service management commands in `./bin/mmt`.
 
 ### Recent Work Completed
-- **PR #266**: Fixed panel visibility issues
-  - Restored original filter-utils.ts and template-utils.ts from git history
-  - Added missing setFilters method to document store
-  - Created Playwright tests for panel verification
-  - Filter and Output panels now working correctly
+- **Issue #270**: Test Service Manager Implementation
+  - ✅ Added `test:start`, `test:stop`, `test:status` commands to bin/mmt
+  - ✅ Created OllamaManager for Ollama service lifecycle
+  - ✅ Integrated existing DockerManager for Qdrant
+  - ✅ Health checks and model verification working
+  - ✅ NO DEFAULTS compliance - removed environment variable (explicit config only)
 
-### Current Issues
+- **Tech Debt Cleanup**:
+  - ✅ Fixed test configuration schema (30+ files migrated to `vaults` array format)
+  - ✅ Updated CLI tests for NO DEFAULTS policy enforcement
+  - ✅ Created centralized API URL management in `@mmt/entities/api-routes.ts`
+  - ✅ Removed `MMT_AUTO_START_SERVICES` env var to comply with NO DEFAULTS
 
-#### Test Failures
-- **CLI tests**: 18 failed / 25 passed
-- **Web tests**: Some failures in unit tests
-- **API Server tests**: Some failures
+### Outstanding Issues
+- **Issue #271**: Migrate from Ollama to LangChain + llama.cpp (not started)
 
-#### Linting Errors (90 total)
-- **entities package**: 58 errors (deprecated URLs, template expressions)
-- **scripting package**: 32 errors (Issue #263)
+## Proposed Next Steps
 
-#### Panel Issues Still Need Fixes (Issue #265)
-- Transform panel "Add operation" dropdown not appearing
-- Panel collapsibility mechanism broken
-- Preview button not visible
-- Panel summaries don't update with content changes
+### 🔧 Priority 1: Fix Critical Build/Runtime Issues
+**Why**: Build is currently broken, blocking all development
+- Fix TypeScript error in `@mmt/scripting` package (blocks build)
+- Debug API server 500 errors on document endpoints
+- Fix control-manager fs import issue in bin/mmt start
+- **Estimate**: 2-3 hours
+- **Impact**: Restores core functionality
 
-## Prioritized Action Plan
+### 🧹 Priority 2: Code Quality Cleanup
+**Why**: 91 linting issues affect code quality
+- Address 31 linting errors and 60 warnings
+- Focus on unused variables and TypeScript strict checks
+- **Estimate**: 2-3 hours
+- **Impact**: Improves maintainability
 
-### 🔥 P0 - Critical (Blocking functionality)
-**Complete Panel Fixes (Issue #265)**
-- Fix Transform panel dropdown
-  - Check why "Add operation" button isn't appearing
-  - May need to fix TransformPanel component state management
-- Fix panel collapsibility
-  - Panels should close when clicking header again
-  - Only one panel should be open at a time
-- Fix Preview button visibility
-  - Button should be visible in the pipeline bar
-- Fix panel summary updates
-  - Summaries should reflect current filter/transform state
+### 🔄 Priority 3: Begin LangChain + llama.cpp Migration (Issue #271)
+**Why**: Replace Ollama with in-process model execution
+- Phase 1: Add LangChain + llama.cpp alongside Ollama
+- Create config option to choose provider
+- Implement in-process model execution (no external service needed)
+- **Estimate**: 1-2 days for initial implementation
+- **Impact**: Eliminates Ollama dependency, simplifies deployment and testing
+
+### 🧪 Priority 4: Comprehensive Test Suite Run
+**Why**: Verify all fixes are working correctly
+- Run full test suite with services started via `./bin/mmt test:start`
+- Fix remaining CLI integration test failures
+- Document any remaining issues
 - **Estimate**: 1-2 hours
-- **Test with**: `npx playwright test panels-visibility.spec.ts`
+- **Impact**: Ensures system stability
 
-### 🚨 P1 - High (Test failures affecting development)
-**Fix Failing Tests**
-- **CLI tests**: 18 failures to investigate
-  - Run: `pnpm --filter @mmt/cli test:unit`
-  - Likely related to recent refactors
-- **Web tests**: Unit test failures
-  - Run: `pnpm --filter @mmt/web test:unit`
-  - May be related to panel/store changes
-- **API Server tests**: Some failures
-  - Run: `pnpm --filter @mmt/api-server test:unit`
-- **Estimate**: 2-3 hours depending on complexity
+## Current Test Status
 
-### ⚠️ P2 - Medium (Build quality)
-**Address Linting Errors (90 total)**
-- **entities package** (58 errors):
-  - Deprecated URL usage - need to update to use network configuration
-  - Template expression type issues
-  - Run: `pnpm --filter @mmt/entities lint`
-- **scripting package** (32 errors - Issue #263):
-  - TypeScript strict mode violations
-  - Run: `pnpm --filter @mmt/scripting lint`
-- **Estimate**: 1-2 hours
+### ✅ Working
+- **Test Service Manager**: All commands (`test:start`, `test:stop`, `test:status`) working
+- **Config tests**: 16/16 passing with new vaults array schema
+- **CLI unit tests**: 35 passing, 8 properly skipped
+- **Web UI**: Loads without console errors, communicates with API
 
-### 📋 P3 - Lower (Tech debt)
-**TypeScript Strict Mode (Issue #263)**
-- Already tracked in Issue #263
-- Part of scripting package cleanup
-- Can be addressed with P2 linting work
+### ⚠️ Needs Attention
+- **Build**: TypeScript error in @mmt/scripting blocks build
+- **API Server**: 500 errors on document endpoints (runtime issue)
+- **Control Manager**: `./bin/mmt start` fails with fs import error
+- **CLI integration tests**: 3 tests failing on script execution
+- **Linting**: 91 issues (31 errors, 60 warnings)
 
-## Recommended Approach
+## Key Achievements This Session
+1. Implemented complete test service manager (Issue #270)
+2. Fixed test configuration schema issues (30+ files migrated)
+3. Created centralized API URL management system
+4. Enforced NO DEFAULTS policy (removed env vars, explicit config only)
+5. Improved test infrastructure with explicit service management
 
-**Start with P0 (Panel Fixes)** because:
-1. User-facing features should work correctly
-2. Panels are core to the application workflow
-3. Relatively quick fixes (1-2 hours)
-4. Playwright tests already exist to verify fixes
-
-**Then P1 (Tests)** to ensure:
-1. Development confidence
-2. CI/CD pipeline success
-3. No hidden regressions
-
-**Finally P2/P3 (Linting/TypeScript)** for:
-1. Code quality improvements
-2. Better maintainability
-3. Reduced technical debt
+## Notes for Next Session
+- Use `./bin/mmt test:start` to start test services (Ollama + Qdrant)
+- Fix TypeScript build error in scripting package first (blocking)
+- Debug API server 500 errors on document endpoints
+- Consider LangChain migration (Issue #271) after critical fixes

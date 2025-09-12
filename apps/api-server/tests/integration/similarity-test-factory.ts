@@ -6,14 +6,36 @@ import type { Config } from '@mmt/entities';
  * This wraps the actual service to match the test interface expectations
  */
 export async function createSimilarityService(config: Partial<Config>): Promise<any> {
-  // Ensure we have minimum required config
-  const fullConfig: Config = {
-    vaultPath: config.vaultPath || '/tmp/test-vault',
-    indexPath: config.indexPath || '/tmp/test-index',
-    apiPort: 3001,
-    webPort: 5173,
-    ...config
-  } as Config;
+  // Convert old format to new format if needed
+  let fullConfig: Config;
+  
+  if ('vaultPath' in config && 'indexPath' in config) {
+    // Old format - convert to new format
+    const { vaultPath, indexPath, ...rest } = config as any;
+    fullConfig = {
+      vaults: [{
+        name: 'TestVault',
+        path: vaultPath || '/tmp/test-vault',
+        indexPath: indexPath || '/tmp/test-index',
+        fileWatching: (config as any).fileWatching
+      }],
+      apiPort: 3001,
+      webPort: 5173,
+      ...rest
+    } as Config;
+  } else {
+    // New format - ensure we have minimum required config
+    fullConfig = {
+      vaults: config.vaults || [{
+        name: 'TestVault',
+        path: '/tmp/test-vault',
+        indexPath: '/tmp/test-index'
+      }],
+      apiPort: config.apiPort || 3001,
+      webPort: config.webPort || 5173,
+      ...config
+    } as Config;
+  }
   
   const service = new SimilaritySearchService(fullConfig);
   await service.initialize();

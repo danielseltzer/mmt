@@ -8,6 +8,7 @@
 
 import { create } from 'zustand';
 import { getApiEndpoint } from '../config/api';
+import { API_ROUTES } from '@mmt/entities';
 
 interface ServerConfig {
   vaultPath?: string;
@@ -32,7 +33,7 @@ export const useConfigStore = create<ConfigStore>((set) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch(getApiEndpoint('/api/config'));
+      const response = await fetch(getApiEndpoint(API_ROUTES.config()));
       
       if (!response.ok) {
         throw new Error(`Failed to fetch config: ${response.statusText}`);

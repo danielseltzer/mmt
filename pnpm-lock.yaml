@@ -185,6 +185,9 @@ importers:
 
   apps/control-manager:
     dependencies:
+      '@mmt/filesystem-access':
+        specifier: workspace:*
+        version: link:../../packages/filesystem-access
       '@mmt/logger':
         specifier: workspace:*
         version: link:../../packages/logger

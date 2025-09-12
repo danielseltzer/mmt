@@ -7,6 +7,8 @@ import os from 'os';
  * @param ollamaUrl The URL where Ollama should be running (default: http://localhost:11434)
  * @returns true if Ollama is available, false otherwise
  */
+// Test helpers use default localhost URLs for local testing convenience
+// In production, these would come from configuration
 export async function isOllamaAvailable(ollamaUrl = 'http://localhost:11434'): Promise<boolean> {
   try {
     const response = await fetch(`${ollamaUrl}/api/tags`);
@@ -17,16 +19,54 @@ export async function isOllamaAvailable(ollamaUrl = 'http://localhost:11434'): P
 }
 
 /**
+ * Check if Qdrant is available and running
+ * @param qdrantUrl The URL where Qdrant should be running (default: http://localhost:6333)
+ * @returns true if Qdrant is available, false otherwise
+ */
+// Default Qdrant URL for test environment
+export async function isQdrantAvailable(qdrantUrl = 'http://localhost:6333'): Promise<boolean> {
+  try {
+    const response = await fetch(qdrantUrl);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Assert that Ollama is available, failing the test if not
  * @param ollamaUrl The URL where Ollama should be running
  */
+// Test helper - uses default Ollama URL for local testing
 export async function requireOllama(ollamaUrl = 'http://localhost:11434'): Promise<void> {
+  // Check if Ollama is available
   const available = await isOllamaAvailable(ollamaUrl);
   if (!available) {
     throw new Error(
       `Ollama is not available at ${ollamaUrl}. ` +
-      `Please ensure Ollama is running before running similarity search tests. ` +
-      `You can start Ollama with: ollama serve`
+      `Please ensure Ollama is running before running similarity search tests.\n` +
+      `You can:\n` +
+      `  1. Start test services with: ./bin/mmt test:start\n` +
+      `  2. Or start Ollama manually with: ollama serve`
+    );
+  }
+}
+
+/**
+ * Assert that Qdrant is available, failing the test if not
+ * @param qdrantUrl The URL where Qdrant should be running
+ */
+// Test helper - uses default Qdrant URL for local testing
+export async function requireQdrant(qdrantUrl = 'http://localhost:6333'): Promise<void> {
+  // Check if Qdrant is available
+  const available = await isQdrantAvailable(qdrantUrl);
+  if (!available) {
+    throw new Error(
+      `Qdrant is not available at ${qdrantUrl}. ` +
+      `Please ensure Qdrant is running before running similarity search tests.\n` +
+      `You can:\n` +
+      `  1. Start test services with: ./bin/mmt test:start\n` +
+      `  2. Or start Qdrant manually with Docker`
     );
   }
 }

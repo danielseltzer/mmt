@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Loggers } from '@mmt/logger';
 import { getApiEndpoint } from '../config/api';
+import { API_ROUTES } from '@mmt/entities';
 
 const logger = Loggers.web();
 
@@ -222,7 +223,7 @@ function getRowMenuItems(rowId?: string, context?: ContextMenuContext): MenuItem
           
           if (currentVaultId) {
             try {
-              const response = await fetch(getApiEndpoint(`/api/vaults/${currentVaultId}/documents/reveal-in-finder`), {
+              const response = await fetch(getApiEndpoint(API_ROUTES.documents.revealInFinder(currentVaultId)), {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -259,7 +260,7 @@ function getRowMenuItems(rowId?: string, context?: ContextMenuContext): MenuItem
           
           if (currentVaultId) {
             try {
-              const response = await fetch(getApiEndpoint(`/api/vaults/${currentVaultId}/documents/quicklook`), {
+              const response = await fetch(getApiEndpoint(API_ROUTES.documents.quicklook(currentVaultId)), {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

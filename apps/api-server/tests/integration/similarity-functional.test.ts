@@ -101,8 +101,11 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
     }
 
     config = {
-      vaultPath: testDir,
-      indexPath: indexDir,
+      vaults: [{
+        name: 'TestVault',
+        path: testDir,
+        indexPath: indexDir
+      }],
       apiPort: 3001,
       webPort: 5173,
       similarity: {
@@ -110,7 +113,7 @@ Visit the Eiffel Tower, Louvre Museum, and enjoy French cuisine.
         ollamaUrl: 'http://localhost:11434',
         model: 'nomic-embed-text'
       }
-    };
+    } as Config;
     
     service = new SimilaritySearchService(config);
     await service.initialize();

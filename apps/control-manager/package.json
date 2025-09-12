@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@mmt/logger": "workspace:*",
+    "@mmt/filesystem-access": "workspace:*",
     "commander": "^12.0.0",
     "node-fetch": "^3.3.2"
   },

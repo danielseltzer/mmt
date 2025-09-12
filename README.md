@@ -29,9 +29,15 @@ A desktop application for managing large markdown vaults with bulk operations, s
 
 ### Commands
 
+#### Application Commands
 - `./bin/mmt start --config <file>` - Start both API and web servers
 - `./bin/mmt stop` - Stop all running servers
 - `./bin/mmt status` - Show whether MMT is running
+
+#### Test Service Commands (for development)
+- `./bin/mmt test:start` - Start Ollama and Qdrant services for testing
+- `./bin/mmt test:stop` - Stop test services
+- `./bin/mmt test:status` - Check test service health
 
 ### Logs
 
@@ -89,3 +95,20 @@ Example configurations:
 ## Development
 
 See [Implementation Guide](docs/planning/implementation-guide.md) for setup instructions.
+
+### Testing
+
+MMT uses real file operations for testing (no mocks). Some tests require similarity search services:
+
+```bash
+# Start test services (Ollama and Qdrant)
+./bin/mmt test:start
+
+# Run all tests
+pnpm test
+
+# Stop test services when done
+./bin/mmt test:stop
+```
+
+Tests that require similarity services will fail fast with clear error messages if services are not available.
