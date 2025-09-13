@@ -15,7 +15,6 @@ export function DocumentTable() {
   const documents = currentTab?.documents || [];
   const loading = currentTab?.loading || false;
   const error = currentTab?.error || null;
-  const searchQuery = currentTab?.searchQuery || '';
   
   // Get sort state from the tab or use default - memoize to prevent infinite loops
   const sortState = useMemo(() => {

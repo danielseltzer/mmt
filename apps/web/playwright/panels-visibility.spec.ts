@@ -49,7 +49,7 @@ test.describe('Pipeline Panels Visibility', () => {
     await transformButton.click();
     
     // Verify the Transform panel content area is visible
-    const transformContent = page.locator('.border.rounded-lg.p-3').filter({ hasText: 'Rename' });
+    page.locator('.border.rounded-lg.p-3').filter({ hasText: 'Rename' });
     
     // Check for the Add operation dropdown (should auto-open on empty panel)
     const addOperationDropdown = page.locator('button:has-text("Add operation")');

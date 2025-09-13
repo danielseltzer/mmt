@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { DocumentSchema } from './document.schema.js';
-import { ScriptOperationSchema } from './scripting.schema.js';
 
 /**
  * Example showing before/after for an operation

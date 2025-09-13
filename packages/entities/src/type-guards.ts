@@ -136,7 +136,7 @@ export function isObject(value: unknown): value is Record<string, unknown> {
 /**
  * Type guard for functions
  */
-export function isFunction(value: unknown): value is Function {
+export function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
   return typeof value === 'function';
 }
 

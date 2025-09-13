@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { API_BASE_URL, getApiEndpoint, API_ENDPOINTS } from '../src/config/api';
 
 describe('API Configuration', () => {

@@ -6,14 +6,8 @@
 import type { TabState, Vault } from './types.js';
 import {
   createInitialTabState,
-  loadTabsFromStorage,
-  saveTabsToStorage,
-  saveActiveTabId
+  loadTabsFromStorage
 } from './tab-manager.js';
-import { fetchDocuments } from './document-operations.js';
-import { Loggers } from '@mmt/logger';
-
-const logger = Loggers.web();
 
 export interface TabInitResult {
   tabs: TabState[];

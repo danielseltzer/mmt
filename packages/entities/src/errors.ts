@@ -123,7 +123,7 @@ export class IndexerError extends MmtError {
  */
 export class VaultError extends MmtError {
   constructor(message: string, vaultId?: string, details?: unknown) {
-    const errorDetails = details
+    const errorDetails = details !== null && details !== undefined
       ? { vaultId, ...(details as Record<string, unknown>) }
       : { vaultId };
     super(message, 'VAULT_ERROR', 500, errorDetails);
@@ -135,7 +135,7 @@ export class VaultError extends MmtError {
  */
 export class OperationError extends MmtError {
   constructor(operation: string, message: string, details?: unknown) {
-    const errorDetails = details
+    const errorDetails = details !== null && details !== undefined
       ? { operation, ...(details as Record<string, unknown>) }
       : { operation };
     super(message, 'OPERATION_ERROR', 500, errorDetails);
@@ -248,12 +248,12 @@ export function toMmtError(error: unknown): MmtError {
  */
 export enum ErrorCode {
   // Configuration errors
-  ConfigError = 'CONFIG_ERROR',
+  Config = 'CONFIG_ERROR',
   ConfigInvalid = 'CONFIG_INVALID',
   ConfigMissing = 'CONFIG_MISSING',
 
   // Validation errors
-  ValidationError = 'VALIDATION_ERROR',
+  Validation = 'VALIDATION_ERROR',
   InvalidInput = 'INVALID_INPUT',
   InvalidFormat = 'INVALID_FORMAT',
 
@@ -271,14 +271,14 @@ export enum ErrorCode {
   PermissionDenied = 'PERMISSION_DENIED',
 
   // Operation errors
-  OperationError = 'OPERATION_ERROR',
+  Operation = 'OPERATION_ERROR',
   OperationFailed = 'OPERATION_FAILED',
 
   // System errors
   InternalError = 'INTERNAL_ERROR',
   ServiceUnavailable = 'SERVICE_UNAVAILABLE',
-  TimeoutError = 'TIMEOUT_ERROR',
-  RateLimitError = 'RATE_LIMIT_ERROR',
+  Timeout = 'TIMEOUT_ERROR',
+  RateLimit = 'RATE_LIMIT_ERROR',
 
   // Unknown errors
   UnknownError = 'UNKNOWN_ERROR'

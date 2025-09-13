@@ -26,7 +26,7 @@ interface OutputPanelProps {
   onFormatChange?: (format: string) => void;
 }
 
-export function OutputPanel({ selectedDocuments = [], onFormatChange }: OutputPanelProps) {
+export function OutputPanel({ selectedDocuments: _selectedDocuments = [], onFormatChange }: OutputPanelProps) {
   const [format, setFormat] = useState('json');
   
   const handleFormatChange = (newFormat: string) => {

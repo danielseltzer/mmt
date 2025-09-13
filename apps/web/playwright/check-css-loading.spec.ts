@@ -4,7 +4,7 @@ test('check CSS loading and classes', async ({ page }) => {
   await page.goto('/');
   
   // Get the page source
-  const htmlContent = await page.content();
+  await page.content();
   
   // Check for CSS link tags
   const cssLinks = await page.locator('link[rel="stylesheet"]').count();

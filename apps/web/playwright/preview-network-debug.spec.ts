@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test.describe('Preview Network Debug', () => {
   test('capture preview API request and response', async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe('Preview Network Debug', () => {
         if (postData) {
           try {
             console.log('Parsed Body:', JSON.stringify(JSON.parse(postData), null, 2));
-          } catch (e) {
+          } catch {
             console.log('Could not parse body as JSON');
           }
         }
@@ -122,7 +122,7 @@ test.describe('Preview Network Debug', () => {
           const errorBody = JSON.parse(responses[0].body);
           console.log('Error:', errorBody.error);
           console.log('Details:', JSON.stringify(errorBody.details, null, 2));
-        } catch (e) {
+        } catch {
           console.log('Raw error body:', responses[0].body);
         }
       }

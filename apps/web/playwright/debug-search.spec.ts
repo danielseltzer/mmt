@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test('debug search functionality', async ({ page }) => {
   // Enable console logging

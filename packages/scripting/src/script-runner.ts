@@ -167,6 +167,11 @@ export class ScriptRunner {
     const vaultPath = 'vaults' in this.config && this.config.vaults[0]?.path
       ? this.config.vaults[0].path
       : (this.config as TestConfigWithPath).vaultPath;
+    
+    if (!vaultPath) {
+      throw new Error('No vault path found in configuration');
+    }
+    
     const fileWatchingConfig = 'vaults' in this.config && this.config.vaults[0]?.fileWatching
       ? this.config.vaults[0].fileWatching
       : undefined;
