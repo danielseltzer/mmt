@@ -8,8 +8,6 @@ import { useDocumentStore } from '../stores/document-store';
 export function StatusBar() {
   const { 
     vaults, 
-    tabs, 
-    activeTabId, 
     loadingVaults, 
     getActiveTab 
   } = useDocumentStore();

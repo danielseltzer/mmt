@@ -168,7 +168,7 @@ export function PreviewModal({
     );
   }
 
-  const { summary, validation, filterDescription, documents } = previewData;
+  const { summary, validation, filterDescription } = previewData;
   const hasErrors = validation && !validation.valid;
   const hasWarnings = validation?.warnings && validation.warnings.length > 0;
 

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useDocumentStore } from '@/stores/document-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -58,7 +57,6 @@ export function TabBar() {
       {/* Tab list */}
       <div className="flex items-end overflow-x-auto">
         {tabs.map((tab) => {
-          const vault = vaults.find(v => v.id === tab.vaultId);
           const isActive = tab.id === activeTabId;
 
           return (

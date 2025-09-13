@@ -62,7 +62,7 @@ interface FilterConditionForSelection {
 }
 
 // Helper to convert FilterCriteria to a serializable operation selection
-export function filterCriteriaToSelection(criteria: FilterCriteria) {
+export function filterCriteriaToSelection(criteria: FilterCriteria): { conditions: FilterConditionForSelection[] } {
   const conditions: FilterConditionForSelection[] = [];
   
   if (criteria.search) {

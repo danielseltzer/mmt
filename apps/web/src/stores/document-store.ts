@@ -12,7 +12,6 @@
 import { create } from 'zustand';
 import type { FilterCollection } from './types';
 import { applyFilters } from './filter-manager';
-import { useConfigStore } from './config-store';
 import { API_ENDPOINTS } from '../config/api';
 
 // Types (simplified from original)
@@ -77,16 +76,6 @@ interface DocumentStore {
 }
 
 // API functions
-const getApiBase = () => {
-  // Get from config store or derive from location
-  const config = useConfigStore.getState().config;
-  if (config?.apiUrl) {
-    return config.apiUrl;
-  }
-  // Fallback to deriving from window location
-  return window.location.origin;
-};
-
 async function fetchVaults(): Promise<Vault[]> {
   const response = await fetch(API_ENDPOINTS.vaults());
   if (!response.ok) {

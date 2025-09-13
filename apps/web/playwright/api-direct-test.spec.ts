@@ -54,7 +54,7 @@ test.describe('API Direct Test', () => {
         console.log('\n=== VALIDATION ERROR ===');
         console.log('Error:', error.error);
         console.log('Details:', JSON.stringify(error.details, null, 2));
-      } catch (e) {
+      } catch {
         console.log('Could not parse error response');
       }
     }

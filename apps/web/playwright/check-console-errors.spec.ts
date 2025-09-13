@@ -69,7 +69,7 @@ test('captures runtime errors in document table', async ({ page }) => {
   await page.waitForTimeout(2000);
   
   // Check what's visible on the page
-  const pageContent = await page.content();
+  await page.content();
   console.log('\n📄 Page state:');
   
   // Check if loading

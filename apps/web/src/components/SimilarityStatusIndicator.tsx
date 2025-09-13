@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useDocumentStore, useCurrentTab } from '../stores/document-store';
+import { useCurrentTab } from '../stores/document-store';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Loggers } from '@mmt/logger';
 import { API_ENDPOINTS } from '../config/api';
 
@@ -14,7 +13,7 @@ export function SimilarityStatusIndicator() {
   const vaultId = currentTab?.vaultId;
   
   const [status, setStatus] = useState(null);
-  const [isPolling, setIsPolling] = useState(false);
+  const [, setIsPolling] = useState(false);
   
   // Only poll when in similarity mode
   useEffect(() => {
